@@ -1,0 +1,19 @@
+.mainLink {
+  color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-black));
+  display: block;
+  width: 100%;
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
+  &:hover {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
+    /* color: 'red'; */
+  }
+}
+
+.mainLinkText {
+  color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-white));
+}
+
+.mainContainer {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}

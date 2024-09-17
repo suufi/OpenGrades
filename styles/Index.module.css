@@ -1,0 +1,14 @@
+.linkedText  {
+    color: var(--mantine-color-anchor);
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover {
+        color: var(--mantine---primary-color);
+        text-decoration: underline;
+    }
+}
+
+.text {
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-200));
+}

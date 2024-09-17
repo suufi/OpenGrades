@@ -1,0 +1,11 @@
+.ClassButton {
+    width: 100%;
+    padding: var(--mantine-spacing-md);
+    padding: var(--mantine-spacing-md);
+    border-radius: var(--mantine-radius-sm);
+    color: light-dark(var(--mantine-color-black), var(--mantine-color-dark-0));
+    background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+    }
+}

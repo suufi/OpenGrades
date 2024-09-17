@@ -1,0 +1,12 @@
+.comment {
+    padding: 1rem 2rem;
+}
+
+.commentBody {
+    padding-top: 1rem;
+    padding-left: 54px;
+}
+
+.text {
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-white));
+}

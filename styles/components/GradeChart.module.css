@@ -1,0 +1,88 @@
+.region {
+    /* Add styles for the region elements */
+    position: absolute;
+    /* Make the region elements absolute positioned */
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    /* Fill the entire height of the container element */
+    /* border-radius: 1rem; */
+}
+
+.regionLeft,
+.regionRight {
+    border-radius: 1rem;
+}
+
+
+.pointContainer {
+    /* Add styles for the point container elements */
+    position: absolute;
+    /* Make the point container elements relative positioned */
+    display: inline-block;
+    /* Display the point container elements as inline-block elements */
+    margin: auto;
+    /* Vertically center the points within the container element */
+    position: absolute;
+    /* Make the point elements absolute positioned */
+    top: 0;
+    bottom: 0;
+}
+
+.numberLine {
+    width: 100%;
+    background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-8));
+    border-radius: 1rem;
+    height: 1.2rem;
+    border: 2px solid;
+    border-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+    position: relative;
+    margin: 1rem;
+}
+
+.point {
+    background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+    border: 2px solid;
+    /* borderColor: theme.colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6], */
+    border-color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
+    border-radius: 50%;
+    height: var(--mantine-spacing-lg);
+    width: var(--mantine-spacing-lg);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    transform: translateX(-50%);
+}
+
+.firstPoint {
+    right: 100%;
+    transform: translateX(100%);
+}
+
+.lastPoint {
+    left: 100%;
+    transform: translateX(-100%);
+}
+
+/*   pointLabel: {
+    position: 'absolute',
+    bottom: -theme.spacing.xl,
+    width: '100%',
+    fontSize: theme.fontSizes.sm,
+    marginLeft: -theme.spacing.xs,
+    textAlign: 'center',
+    color: theme.colorScheme === 'dark' ? theme.colors.white : theme.colors.dark[4]
+  } */
+
+.pointLabel {
+    position: absolute;
+    bottom: -var(--mantine-spacing-xl);
+    width: 100%;
+    font-size: var(--mantine-font-size-sm);
+    margin-left: -var(--mantine-spacing-xs);
+    text-align: center;
+    margin-top: var(--mantine-spacing-md);
+    color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-white));
+    
+}
