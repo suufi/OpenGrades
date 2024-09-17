@@ -29,5 +29,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME}}/{docker_repository}:${{ github.sha }}
-            ${{ secrets.DOCKER_HUB_USERNAME}}/{docker_repository}:latest
+            ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
+            ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:latest
