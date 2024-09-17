@@ -31,3 +31,22 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
             ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:latest
+
+  deploy: 
+    name: Deploy Image
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Connect and deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+          script: |
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
+            docker stop mitopengrades || true
+            docker rm mitopengrades || true
+            docker run -d -p 80:80 --name mitopengrades ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
