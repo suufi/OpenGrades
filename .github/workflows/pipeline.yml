@@ -32,6 +32,17 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
             ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:latest
 
+          secrets: |
+             "MONGODB_CONNECTION_URI=${{ secrets.MONGODB_CONNECTION_URI }}"
+             "MIT_OIDC_WELLKNOWN=${{ secrets.MIT_OIDC_WELLKNOWN }}"
+             "MIT_OIDC_CLIENT_ID=${{ secrets.MIT_OIDC_CLIENT_ID }}"
+             "MIT_OIDC_CLIENT_SECRET=${{ secrets.MIT_OIDC_CLIENT_SECRET }}"
+             "MIT_OIDC_AUTHORIZATION_ENDPOINT=${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}"
+             "MIT_OIDC_ISSUER=${{ secrets.MIT_OIDC_ISSUER }}"
+             "MIT_API_CLIENT_ID=${{ secrets.MIT_API_CLIENT_ID }}"
+             "MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }}"
+             "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+
   deploy: 
     name: Deploy Image
     needs: build
@@ -44,7 +55,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          
+
           script: |
             docker pull ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
             docker stop mitopengrades || true
