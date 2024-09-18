@@ -50,24 +50,23 @@ jobs:
 
     steps:
       - name: Connect and deploy to server
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.2
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-
           script: |
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
             docker stop mitopengrades || true
             docker rm mitopengrades || true
             docker run -d -p 80:3000 --name mitopengrades \
-              -e MONGODB_CONNECTION_URI=${{ secrets.MONGODB_CONNECTION_URI }} \
-              -e MIT_OIDC_WELLKNOWN=${{ secrets.MIT_OIDC_WELLKNOWN }} \
-              -e MIT_OIDC_CLIENT_ID=${{ secrets.MIT_OIDC_CLIENT_ID }} \
-              -e MIT_OIDC_CLIENT_SECRET=${{ secrets.MIT_OIDC_CLIENT_SECRET }} \
-              -e MIT_OIDC_AUTHORIZATION_ENDPOINT=${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }} \
-              -e MIT_OIDC_ISSUER=${{ secrets.MIT_OIDC_ISSUER }} \
-              -e MIT_API_CLIENT_ID=${{ secrets.MIT_API_CLIENT_ID }} \
-              -e MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }} \
-              -e NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
+              -e MONGODB_CONNECTION_URI="${{ secrets.MONGODB_CONNECTION_URI }}" \
+              -e MIT_OIDC_WELLKNOWN="${{ secrets.MIT_OIDC_WELLKNOWN }}" \
+              -e MIT_OIDC_CLIENT_ID="${{ secrets.MIT_OIDC_CLIENT_ID }}" \
+              -e MIT_OIDC_CLIENT_SECRET="${{ secrets.MIT_OIDC_CLIENT_SECRET }}" \
+              -e MIT_OIDC_AUTHORIZATION_ENDPOINT="${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}" \
+              -e MIT_OIDC_ISSUER="${{ secrets.MIT_OIDC_ISSUER }}" \
+              -e MIT_API_CLIENT_ID="${{ secrets.MIT_API_CLIENT_ID }}" \
+              -e MIT_API_CLIENT_SECRET="${{ secrets.MIT_API_CLIENT_SECRET }}" \
+              -e NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
               ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
