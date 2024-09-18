@@ -60,4 +60,4 @@ jobs:
             docker pull ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
             docker stop mitopengrades || true
             docker rm mitopengrades || true
-            docker run -d -p 3000:80 --name mitopengrades ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
+            docker run -d -p 80:3000 --name mitopengrades ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
