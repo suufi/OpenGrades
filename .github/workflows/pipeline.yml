@@ -42,6 +42,7 @@ jobs:
              "MIT_API_CLIENT_ID=${{ secrets.MIT_API_CLIENT_ID }}"
              "MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }}"
              "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+             "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}"
 
   deploy: 
     name: Deploy Image
@@ -69,4 +70,5 @@ jobs:
               -e MIT_API_CLIENT_ID="${{ secrets.MIT_API_CLIENT_ID }}" \
               -e MIT_API_CLIENT_SECRET="${{ secrets.MIT_API_CLIENT_SECRET }}" \
               -e NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
+              -e NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}" \
               ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
