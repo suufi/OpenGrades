@@ -33,7 +33,7 @@ services:
       - /etc/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
-      - nodejs
+      - opengrades
 
 volumes:
   certbot-etc:
