@@ -79,8 +79,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: |
-            docker-compose.yml
-            .env
+            ./docker-compose.yml
+            ./.env
           target: /home/suufi/.deploy
 
       - name: Verify files on the server
