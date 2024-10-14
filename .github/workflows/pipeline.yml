@@ -76,7 +76,7 @@ jobs:
           source: |
             ./docker-compose.yml
             ./.env
-          target: /home/suufi/.deploy/
+          target: /home/suufi/.deploy
 
       - name: Connect and deploy to server
         uses: appleboy/ssh-action@master
