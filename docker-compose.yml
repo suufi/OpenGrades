@@ -1,0 +1,50 @@
+version: '3.9'
+
+services:
+  opengrades:
+    image: suufi/mitopengrades:latest
+    ports:
+      - 80:80
+    networks:
+      - web
+    environment:
+      MONGODB_CONNECTION_URI: ${MONGODB_CONNECTION_URI}
+      MIT_OIDC_WELLKNOWN: ${MIT_OIDC_WELLKNOWN}
+      MIT_OIDC_CLIENT_ID: ${MIT_OIDC_CLIENT_ID}
+      MIT_OIDC_CLIENT_SECRET: ${MIT_OIDC_CLIENT_SECRET}
+      MIT_OIDC_AUTHORIZATION_ENDPOINT: ${MIT_OIDC_AUTHORIZATION_ENDPOINT}
+      MIT_OIDC_ISSUER: ${MIT_OIDC_ISSUER}
+      MIT_API_CLIENT_ID: ${MIT_API_CLIENT_ID}
+      MIT_API_CLIENT_SECRET: ${MIT_API_CLIENT_SECRET}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+
+  nginx:
+    image: nginx:mainline-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - web
+    volumes:
+      - web-root:/var/www/html
+      - ./nginx:/etc/nginx/conf.d
+      - /etc/ssl:/etc/nginx/ssl:ro
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - nodejs
+
+volumes:
+  certbot-etc:
+  certbot-var:
+  web-root:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/suufi/mitopengrades/public
+      o: bind
+
+networks:
+  web:
+    driver: bridge

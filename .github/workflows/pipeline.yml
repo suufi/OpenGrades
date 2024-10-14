@@ -13,8 +13,13 @@ jobs:
       - name: Check out repository code 🛎️
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx 🚀
-        uses: docker/setup-buildx-action@v3
+      # - name: Set up Docker Buildx 🚀
+        # uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        run: docker compose -f docker-compose.yml build
+
+        
 
       - name: Login to Docker Hub 🚢
         uses: docker/login-action@v3
@@ -52,23 +57,22 @@ jobs:
     steps:
       - name: Connect and deploy to server
         uses: appleboy/ssh-action@master
+        env:
+          MONDODB_CONNECTION_URI: ${{ secrets.MONGODB_CONNECTION_URI }}
+          MIT_OIDC_WELLKNOWN: ${{ secrets.MIT_OIDC_WELLKNOWN }}
+          MIT_OIDC_CLIENT_ID: ${{ secrets.MIT_OIDC_CLIENT_ID }}
+          MIT_OIDC_CLIENT_SECRET: ${{ secrets.MIT_OIDC_CLIENT_SECRET }}
+          MIT_OIDC_AUTHORIZATION_ENDPOINT: ${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}
+          MIT_OIDC_ISSUER: ${{ secrets.MIT_OIDC_ISSUER }}
+          MIT_API_CLIENT_ID: ${{ secrets.MIT_API_CLIENT_ID }}
+          MIT_API_CLIENT_SECRET: ${{ secrets.MIT_API_CLIENT_SECRET }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
-            docker stop mitopengrades || true
-            docker rm mitopengrades || true
-            docker run -d -p 80:3000 --name mitopengrades \
-              -e MONGODB_CONNECTION_URI="${{ secrets.MONGODB_CONNECTION_URI }}" \
-              -e MIT_OIDC_WELLKNOWN="${{ secrets.MIT_OIDC_WELLKNOWN }}" \
-              -e MIT_OIDC_CLIENT_ID="${{ secrets.MIT_OIDC_CLIENT_ID }}" \
-              -e MIT_OIDC_CLIENT_SECRET="${{ secrets.MIT_OIDC_CLIENT_SECRET }}" \
-              -e MIT_OIDC_AUTHORIZATION_ENDPOINT="${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}" \
-              -e MIT_OIDC_ISSUER="${{ secrets.MIT_OIDC_ISSUER }}" \
-              -e MIT_API_CLIENT_ID="${{ secrets.MIT_API_CLIENT_ID }}" \
-              -e MIT_API_CLIENT_SECRET="${{ secrets.MIT_API_CLIENT_SECRET }}" \
-              -e NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
-              -e NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}" \
-              ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
+            docker build -t nextjs:latest -f Dockerfile .
+            docker build -t nginx:latest -f nginx/Dockerfile nginx
+            docker-compose up -d
