@@ -66,6 +66,8 @@ jobs:
           echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
           echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
 
+      - name: List files in the root for debugging
+        run: ls -la
 
       - name: Copy docker-compose.yml to the server
         uses: appleboy/scp-action@master
@@ -77,6 +79,15 @@ jobs:
             docker-compose.yml
             .env
           target: /home/suufi/.deploy
+
+      - name: Verify files on the server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            ls -la /home/suufi/.deploy
 
       - name: Connect and deploy to server
         uses: appleboy/ssh-action@master
