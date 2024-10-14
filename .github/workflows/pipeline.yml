@@ -53,6 +53,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create .env file
+        run: |
+          echo "MONGODB_CONNECTION_URI=${{ secrets.MONGODB_CONNECTION_URI }}" >> .env
+          echo "MIT_OIDC_WELLKNOWN=${{ secrets.MIT_OIDC_WELLKNOWN }}" >> .env
+          echo "MIT_OIDC_CLIENT_ID=${{ secrets.MIT_OIDC_CLIENT_ID }}" >> .env
+          echo "MIT_OIDC_CLIENT_SECRET=${{ secrets.MIT_OIDC_CLIENT_SECRET }}" >> .env
+          echo "MIT_OIDC_AUTHORIZATION_ENDPOINT=${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}" >> .env
+          echo "MIT_OIDC_ISSUER=${{ secrets.MIT_OIDC_ISSUER }}" >> .env
+          echo "MIT_API_CLIENT_ID=${{ secrets.MIT_API_CLIENT_ID }}" >> .env
+          echo "MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }}" >> .env
+          echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
+          echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
+
+
+      - name: Copy docker-compose.yml to the server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: |
+            ./docker-compose.yml
+            ./.env
+          target: /home/suufi/.deploy/
+
       - name: Connect and deploy to server
         uses: appleboy/ssh-action@master
         env:
@@ -73,5 +98,4 @@ jobs:
           script: |
             set -e
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
-            docker-compose pull
-            docker-compose up -d
+            docker-compose --env-file .deploy/.env -f .deploy/docker-compose.yml up -d
