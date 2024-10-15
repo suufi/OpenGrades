@@ -88,7 +88,9 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: mkdir -p /home/suufi/.deploy
+          script: |
+            mkdir -p /home/suufi/.deploy
+            mkdir -p /home/suufi/.deploy/nginx
 
       # Copy docker-compose.yml and .env to the server
       - name: Copy docker-compose.yml and .env to the server
