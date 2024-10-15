@@ -17,7 +17,7 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
     volumes:
-      - web-root:/app/public
+      - ./public:/app/public
 
   nginx:
     image: nginx:mainline-alpine
@@ -28,7 +28,7 @@ services:
     networks:
       - web
     volumes:
-      - web-root:/usr/share/nginx/html
+      - ./public:/usr/share/nginx/html
       - ./nginx:/etc/nginx/conf.d
       - /etc/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt
