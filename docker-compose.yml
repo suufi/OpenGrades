@@ -17,7 +17,7 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
     volumes:
-      - ./public:/app/public
+      - web-root:/app/public
 
   nginx:
     image: nginx:mainline-alpine
@@ -28,20 +28,16 @@ services:
     networks:
       - web
     volumes:
-      - web-root:/var/www/html
+      - web-root:/usr/share/nginx/html
       - ./nginx:/etc/nginx/conf.d
       - /etc/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - opengrades
 
-volumes:
-  web-root:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./public
+  volumes:
+    web-root:
+
 
 networks:
   web:
