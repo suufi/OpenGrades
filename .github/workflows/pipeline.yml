@@ -92,26 +92,15 @@ jobs:
             mkdir -p /home/suufi/.deploy
             mkdir -p /home/suufi/.deploy/nginx
 
-      # Copy docker-compose.yml and .env to the server
+      # Copy docker-compose.yml, nginx.conf, and .env to the server
       - name: Copy docker-compose.yml and .env to the server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml,.env"
+          source: "docker-compose.yml,.env,nginx/nginx.conf"
           target: "/home/suufi/.deploy/"
-          debug: true
-
-      # Copy nginx.conf to the server
-      - name: Copy nginx.conf to the server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "nginx/nginx.conf"
-          target: "/home/suufi/.deploy/nginx"
           debug: true
 
       # Connect and deploy to server
