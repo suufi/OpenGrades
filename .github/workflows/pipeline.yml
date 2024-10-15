@@ -100,7 +100,7 @@ jobs:
           source: |
             ${{ github.workspace }}/docker-compose.yml
             ${{ github.workspace }}/.env
-          target: /home/suufi/.deploy
+          target: "/home/suufi/.deploy/"
 
       # Debug SCP action
       - name: Debug SCP action
