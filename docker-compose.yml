@@ -29,7 +29,7 @@ services:
       - web
     volumes:
       - ./public:/usr/share/nginx/html
-      - ./nginx:/etc/nginx/conf.d
+      - /home/suufi/.deploy/nginx:/etc/nginx/conf.d
       - /etc/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt
     depends_on:

@@ -101,6 +101,17 @@ jobs:
           target: "/home/suufi/.deploy/"
           debug: true
 
+      # Copy nginx.conf to the server
+      - name: Copy nginx.conf to the server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "nginx/nginx.conf"
+          target: "/home/suufi/.deploy/nginx"
+          debug: true
+
       # Connect and deploy to server
       - name: Connect and deploy to server
         uses: appleboy/ssh-action@master
