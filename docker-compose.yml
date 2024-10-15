@@ -35,8 +35,8 @@ services:
     depends_on:
       - opengrades
 
-  volumes:
-    web-root:
+volumes:
+  web-root:
 
 
 networks:
