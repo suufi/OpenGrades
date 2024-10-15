@@ -98,8 +98,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: |
-            ./docker-compose.yml
-            ./.env
+            ${{ github.workspace }}/docker-compose.yml
+            ${{ github.workspace }}/.env
           target: /home/suufi/.deploy
 
       # Debug SCP action
@@ -109,9 +109,12 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: ./docker-compose.yml
+          source: |
+            ${{ github.workspace }}/docker-compose.yml
+            ${{ github.workspace }}/.env
           target: /home/suufi/.deploy
           debug: true
+
 
       # Connect and deploy to server
       - name: Connect and deploy to server
