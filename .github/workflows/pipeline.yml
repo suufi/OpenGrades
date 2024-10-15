@@ -47,15 +47,23 @@ jobs:
              "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
              "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}"
 
-  deploy: 
+  deploy:
     name: Deploy Image
     needs: build
     runs-on: ubuntu-latest
 
     steps:
+      # Check out the repository
       - name: Check out repository code 🛎️
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # Debug step: List files to ensure docker-compose.yml is checked out
+      - name: List files in the repository root for debugging
+        run: ls -la
+
+      # Create .env file from secrets
       - name: Create .env file
         run: |
           echo "MONGODB_CONNECTION_URI=${{ secrets.MONGODB_CONNECTION_URI }}" >> .env
@@ -69,10 +77,21 @@ jobs:
           echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
           echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
 
-      - name: List files in the root for debugging
-        run: ls -la
+      # Check if .env file is properly created
+      - name: Display .env file contents for debugging
+        run: cat .env
 
-      - name: Copy docker-compose.yml to the server
+      # Create the target directory on the server if it doesn't exist
+      - name: Create target directory on the server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: mkdir -p /home/suufi/.deploy
+
+      # Copy docker-compose.yml and .env to the server
+      - name: Copy docker-compose.yml and .env to the server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -83,28 +102,20 @@ jobs:
             ./.env
           target: /home/suufi/.deploy
 
-      - name: Verify files on the server
-        uses: appleboy/ssh-action@master
+      # Debug SCP action
+      - name: Debug SCP action
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            ls -la /home/suufi/.deploy
+          source: ./docker-compose.yml
+          target: /home/suufi/.deploy
+          debug: true
 
+      # Connect and deploy to server
       - name: Connect and deploy to server
         uses: appleboy/ssh-action@master
-        env:
-          MONDODB_CONNECTION_URI: ${{ secrets.MONGODB_CONNECTION_URI }}
-          MIT_OIDC_WELLKNOWN: ${{ secrets.MIT_OIDC_WELLKNOWN }}
-          MIT_OIDC_CLIENT_ID: ${{ secrets.MIT_OIDC_CLIENT_ID }}
-          MIT_OIDC_CLIENT_SECRET: ${{ secrets.MIT_OIDC_CLIENT_SECRET }}
-          MIT_OIDC_AUTHORIZATION_ENDPOINT: ${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}
-          MIT_OIDC_ISSUER: ${{ secrets.MIT_OIDC_ISSUER }}
-          MIT_API_CLIENT_ID: ${{ secrets.MIT_API_CLIENT_ID }}
-          MIT_API_CLIENT_SECRET: ${{ secrets.MIT_API_CLIENT_SECRET }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -112,4 +123,5 @@ jobs:
           script: |
             set -e
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
-            docker-compose --env-file .deploy/.env -f .deploy/docker-compose.yml up -d
+            docker-compose --env-file /home/suufi/.deploy/.env -f /home/suufi/.deploy/docker-compose.yml up -d
+          
