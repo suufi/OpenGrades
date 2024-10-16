@@ -44,7 +44,7 @@ export default async function handler (
             break
         case 'POST':
             try {
-                if (await User.exists({ sub: session.user?.id })) {
+                if (await User.exists({ email: session.user?.id })) {
                     const author = await User.findOne({ email: session.user?.email })
 
                     if (!session.user || session.user?.trustLevel < 2) {

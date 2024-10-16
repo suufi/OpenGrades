@@ -26,14 +26,14 @@ export const config = {
             profile: async (profile: Profile) => {
                 await mongoConnection()
 
-                if (!profile.sub) {
-                    throw new Error('No sub found in profile')
+                if (!profile.email) {
+                    throw new Error('No email found in profile')
                 }
 
-                const user = await User.findOne({ email: profile.sub })
+                const user = await User.findOne({ email: profile.email })
 
                 return {
-                    id: profile.sub,
+                    id: profile.email,
                     name: profile.name,
                     email: profile.email,
                     kerb: profile.email?.split('@')[0],
@@ -99,7 +99,7 @@ export const config = {
 
                         await User.findOneAndUpdate(
                             {
-                                sub: profile?.sub
+                                email: profile?.email
                             },
                             {
                                 $set: {

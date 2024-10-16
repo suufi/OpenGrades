@@ -28,7 +28,7 @@ export default async function handler (
     case 'GET':
       try {
         if (session.user?.id) {
-          const user = await User.findOne({ sub: session.user.id }).populate('classesTaken').lean()
+          const user = await User.findOne({ email: session.user.id }).populate('classesTaken').lean()
 
           return res.status(200).json({ success: true, data: { session, user } })
         } else {
@@ -42,7 +42,7 @@ export default async function handler (
       break
     case 'PUT':
       try {
-        if (await User.exists({ sub: session.user?.id })) {
+        if (await User.exists({ email: session.user?.id })) {
           const schema = z.object({
             kerb: z.string(),
             name: z.string(),
@@ -57,7 +57,7 @@ export default async function handler (
 
           const data = schema.parse(body)
 
-          await User.findOneAndUpdate({ sub: session.user?.id }, {
+          await User.findOneAndUpdate({ email: session.user?.id }, {
             classOf: data.classOf,
             classesTaken: data.flatClasses,
             identityFlags: data.identityFlags,
@@ -65,7 +65,7 @@ export default async function handler (
             trustLevel: 1
           })
 
-          return res.status(200).json({ success: true, data: await User.findOne({ sub: session.user?.id }).populate('classesTaken').lean() })
+          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id }).populate('classesTaken').lean() })
         } else {
           throw new Error("User doesn't have ID.")
         }

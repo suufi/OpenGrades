@@ -20,7 +20,7 @@ export default async function handler (
         case 'GET':
             try {
                 if (session.user?.id) {
-                    const user = await User.findOne({ sub: session.user.id }).populate('classesTaken').lean()
+                    const user = await User.findOne({ email: session.user.id }).populate('classesTaken').lean()
 
                     return res.status(200).json({ success: true, data: { classesTaken: user.classesTaken } })
                 } else {
@@ -34,9 +34,9 @@ export default async function handler (
             break
         case 'POST':
             try {
-                if (await User.exists({ sub: session.user?.id })) {
+                if (await User.exists({ email: session.user?.id })) {
 
-                    await User.findOneAndUpdate({ sub: session.user?.id }, {
+                    await User.findOneAndUpdate({ email: session.user?.id }, {
                         $addToSet: {
                             classesTaken: {
                                 $each: body.classesTaken
@@ -44,7 +44,7 @@ export default async function handler (
                         }
                     })
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ sub: session.user?.id }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id }).populate('classesTaken').lean() })
                 } else {
                     throw new Error('User does not exist.')
                 }
@@ -56,15 +56,15 @@ export default async function handler (
             break
         case 'DELETE':
             try {
-                if (await User.exists({ sub: session.user?.id })) {
+                if (await User.exists({ email: session.user?.id })) {
 
-                    await User.findOneAndUpdate({ sub: session.user?.id }, {
+                    await User.findOneAndUpdate({ email: session.user?.id }, {
                         $pull: {
                             classesTaken: body.classId
                         }
                     })
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ sub: session.user?.id }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id }).populate('classesTaken').lean() })
                 } else {
                     throw new Error('User does not exist.')
                 }

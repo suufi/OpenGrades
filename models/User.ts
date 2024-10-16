@@ -5,11 +5,6 @@ import { IUser } from '../types'
 const { Schema } = mongoose
 
 const UserSchema = new mongoose.Schema<IUser>({
-  sub: {
-    type: String,
-    required: true,
-    index: true
-  },
   kerb: {
     type: String,
     required: true,
@@ -19,7 +14,8 @@ const UserSchema = new mongoose.Schema<IUser>({
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    index: true
   },
   name: {
     type: String,
