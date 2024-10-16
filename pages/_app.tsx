@@ -23,6 +23,7 @@ import '@mantine/notifications/styles.css'
 import 'primeicons/primeicons.css'
 import 'primereact/resources/primereact.min.css' // core css
 
+import ErrorBoundary from '@/components/ErrorBoundary'
 import NotLoggedIn from '../components/NotLoggedIn'
 import mainClasses from '../styles/Main.module.css'
 
@@ -268,18 +269,20 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
       <ColorSchemeScript defaultColorScheme='auto' />
     </Head>
 
-    <SessionProvider session={pageProps.session}>
-      <UserContextProvider>
-        <MantineProvider
-          theme={theme}
-        >
-          <Notifications />
-          <ModalsProvider>
-            {/* <App {...pageProps} /> */}
-            <App pageProps={pageProps} Component={Component} />
-          </ModalsProvider>
-        </MantineProvider>
-      </UserContextProvider>
-    </SessionProvider>
+    <ErrorBoundary>
+      <SessionProvider session={pageProps.session}>
+        <UserContextProvider>
+          <MantineProvider
+            theme={theme}
+          >
+            <Notifications />
+            <ModalsProvider>
+              {/* <App {...pageProps} /> */}
+              <App pageProps={pageProps} Component={Component} />
+            </ModalsProvider>
+          </MantineProvider>
+        </UserContextProvider>
+      </SessionProvider>
+    </ErrorBoundary>
   </>
 }
