@@ -26,13 +26,13 @@ type UserProfile = {
   name?: string,
   classOf?: number,
   affiliation?: string,
-  identityFlags?: IdentityFlags[],
+  flags?: IdentityFlags[],
   classes: string[],
   flatClasses?: string[]
 }
 
 function LockdownModule ({ academicYears }: { academicYears: string[] }) {
-  const { status } = useSession()
+  const { status, update } = useSession()
   const router = useRouter()
   const [active, setActive] = useState(0)
   const [academicYearsTaken, setAcademicYearsTaken] = useState<string[]>([])
@@ -50,20 +50,20 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     affiliation: z.string(),
     classes: z.record(z.array(z.string()))
   }).partial({
-    identityFlags: true,
+    flags: true,
     classes: true
   })
 
   const form = useForm<UserProfile>({
     initialValues: {
-      kerb: status === 'authenticated' ? userProfile.kerb : '',
-      name: status === 'authenticated' ? userProfile.name : '',
-      classOf: status === 'authenticated' ? (userProfile.classOf) : new Date().getFullYear(),
-      affiliation: status === 'authenticated' ? userProfile.affiliation : '',
-      identityFlags: [],
+      kerb: status === 'authenticated' ? userProfile?.kerb : '',
+      name: status === 'authenticated' ? userProfile?.name : '',
+      classOf: status === 'authenticated' ? (userProfile?.classOf) : new Date().getFullYear(),
+      affiliation: status === 'authenticated' ? userProfile?.affiliation : '',
+      flags: [],
       classes: []
     },
-
+    mode: 'uncontrolled',
     validateInputOnBlur: true,
     validate: zodResolver(schema),
 
@@ -72,6 +72,19 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       flatClasses: Object.values(values.classes).flat()
     })
   })
+
+  useEffect(() => {
+    console.log('user profile changed')
+    form.setInitialValues({
+      kerb: userProfile?.kerb,
+      name: userProfile?.name,
+      classOf: userProfile?.classOf,
+      affiliation: userProfile?.affiliation,
+      flags: userProfile?.flags || [],
+      classes: userProfile?.classesTaken as unknown as string[] || []
+    })
+    form.reset()
+  }, [userProfile])
 
   async function submitProfile (values: UserProfile) {
     setFormLoading(true)
@@ -90,6 +103,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
           title: 'Success!',
           message: 'Your account is now active!'
         })
+        update()
         setUserProfile(body.data)
         router.push('/classes')
       } else {
@@ -105,10 +119,10 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
 
   useEffect(() => {
     form.setValues({
-      kerb: userProfile.kerb,
-      name: userProfile.name,
-      classOf: userProfile.classOf,
-      affiliation: userProfile.affiliation
+      kerb: userProfile?.kerb,
+      name: userProfile?.name,
+      classOf: userProfile?.classOf,
+      affiliation: userProfile?.affiliation
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
@@ -141,7 +155,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                 <Group grow>
                   <TextInput disabled {...form.getInputProps('kerb')} label="Kerb" />
                   <TextInput disabled {...form.getInputProps('name')} label="Name" />
-                  <NumberInput {...form.getInputProps('classOf')} label="Class of" min={2019} max={2027} />
+                  <NumberInput {...form.getInputProps('classOf')} label="Class of" min={2019} max={2029} />
                 </Group>
                 <Space h='md' />
                 <Select {...form.getInputProps('affiliation')} label="Affiliation" disabled data={['staff', 'student', 'affiliate']} />
@@ -151,12 +165,12 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                 <Text c='dimmed' fz='sm'>
                   The following field is optional. Data collected from this field will only be used in aggregate form to observe trends in classes where students of a particular background consistently have a less favorable experience compared to the overall rating of the class. If we do observe such a trend, we may reach out to the Office of Minority Education, student groups, and/or committees to identify and address issues.
                   The following definitions are used in the options below:
-                  <List withPadding>
-                    <List.Item> <Text c='dimmed' fz='sm'>First Generation: no parent in your household has received a Bachelor&apos;s degree or more in any country. </Text> </List.Item>
-                    <List.Item> <Text c='dimmed' fz='sm'>Low Income: you are a Pell-eligible student and/or your family EFC at MIT is &le; $5,000 </Text> </List.Item>
-                    <List.Item> <Text c='dimmed' fz='sm'>International: any student who does not hold United States citizenship or permanent residency, regardless of where they live or attend school.⁠ </Text> </List.Item>
-                  </List>
                 </Text>
+                <List withPadding>
+                  <List.Item> <Text c='dimmed' fz='sm'>First Generation: no parent in your household has received a Bachelor&apos;s degree or more in any country. </Text> </List.Item>
+                  <List.Item> <Text c='dimmed' fz='sm'>Low Income: you are a Pell-eligible student and/or your family EFC at MIT is &le; $5,000 </Text> </List.Item>
+                  <List.Item> <Text c='dimmed' fz='sm'>International: any student who does not hold United States citizenship or permanent residency, regardless of where they live or attend school.⁠ </Text> </List.Item>
+                </List>
                 <Space h="sm" />
                 <MultiSelect {...form.getInputProps('identityFlags')} label='Identity Flags (optional)' description="Please select identities that you identify with." data={[
                   {

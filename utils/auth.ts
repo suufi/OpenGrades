@@ -8,6 +8,7 @@ import type {
 } from "next"
 import { getServerSession, Profile } from "next-auth"
 
+const LATEST_GRAD_YEAR = 2028
 // You'll need to import and pass this
 // to `NextAuth` in `app/api/auth/[...nextauth]/route.ts`
 export const config = {
@@ -29,18 +30,18 @@ export const config = {
                     throw new Error('No sub found in profile')
                 }
 
-                const user = await User.findOne({ sub: profile.sub })
+                const user = await User.findOne({ email: profile.sub })
 
                 return {
                     id: profile.sub,
                     name: profile.name,
                     email: profile.email,
-                    // kerb: profile.email?.split('@')[0],
-                    // _id: user?._id,
-                    // verified: user?.verified,
-                    // classOf: user?.classOf,
-                    // affiliation: user?.affiliation,
-                    // trustLevel: user?.trustLevel || 0
+                    kerb: profile.email?.split('@')[0],
+                    _id: user?._id,
+                    verified: user?.verified,
+                    classOf: user?.classOf,
+                    affiliation: user?.affiliation,
+                    trustLevel: user?.trustLevel || 0
                 }
             },
             userinfo: {
@@ -94,7 +95,7 @@ export const config = {
 
                     if (response.ok) {
                         const classYearAffiliations = res.item.affiliations.filter((affiliation: any) => Object.keys(affiliation).includes('classYear'))
-                        const classOf = (classYearAffiliations.length > 0 && classYearAffiliations[0].classYear !== 'G' && classYearAffiliations[0].classYear !== 'U') ? 2027 - Number(classYearAffiliations[0].classYear) : null
+                        const classOf = (classYearAffiliations.length > 0 && classYearAffiliations[0].classYear !== 'G' && classYearAffiliations[0].classYear !== 'U') ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliations[0].classYear) : null
 
                         await User.findOneAndUpdate(
                             {
@@ -146,6 +147,10 @@ export const config = {
             //   year: 2
             // })
         }
+    },
+    theme: {
+        colorScheme: 'light',
+        brandColor: '#008CFF'
     }
 }
 // Use it in server contexts

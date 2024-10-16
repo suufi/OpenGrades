@@ -383,9 +383,12 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
   }
 
   return {
-    redirect: {
-      destination: '/api/auth/signin',
-      permanent: false
+    // redirect: {
+    // destination: '/api/auth/signin',
+    // permanent: false
+    // }
+    props: {
+
     }
   }
 }

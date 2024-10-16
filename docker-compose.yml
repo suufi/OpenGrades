@@ -16,6 +16,7 @@ services:
       MIT_API_CLIENT_SECRET: ${MIT_API_CLIENT_SECRET}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
     volumes:
       - ./public:/app/public
 

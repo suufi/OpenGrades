@@ -49,17 +49,17 @@ export default async function handler (
             classOf: z.number(),
             affiliation: z.string(),
             identityFlags: z.array(z.nativeEnum(IdentityFlags)),
-            classes: z.array(z.string())
+            flatClasses: z.array(z.string())
           }).partial({
             identityFlags: true,
-            classes: true
+            flatClasses: true
           })
 
           const data = schema.parse(body)
 
           await User.findOneAndUpdate({ sub: session.user?.id }, {
             classOf: data.classOf,
-            classesTaken: data.classes,
+            classesTaken: data.flatClasses,
             identityFlags: data.identityFlags,
             verified: session.user?.affiliation === 'student',
             trustLevel: 1

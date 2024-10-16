@@ -38,6 +38,7 @@ RUN \
     --mount=type=secret,id=MIT_API_CLIENT_SECRET \
     --mount=type=secret,id=NEXTAUTH_SECRET \
     --mount=type=secret,id=NEXTAUTH_URL \
+    --mount=type=secret,id=AUTH_TRUST_HOST \
     export MONGODB_CONNECTION_URI=$(cat /run/secrets/MONGODB_CONNECTION_URI) && \
     export MIT_OIDC_WELLKNOWN=$(cat /run/secrets/MIT_OIDC_WELLKNOWN) && \
     export MIT_OIDC_CLIENT_ID=$(cat /run/secrets/MIT_OIDC_CLIENT_ID) && \
@@ -48,6 +49,7 @@ RUN \
     export MIT_API_CLIENT_SECRET=$(cat /run/secrets/MIT_API_CLIENT_SECRET) && \
     export NEXTAUTH_SECRET=$(cat /run/secrets/NEXTAUTH_SECRET) && \
     export NEXTAUTH_URL=$(cat /run/secrets/NEXTAUTH_URL) && \
+    export AUTH_TRUST_HOST=$(cat /run/secrets/AUTH_TRUST_HOST) && \
     yarn run build
 
 # Production image, copy all the files and run next

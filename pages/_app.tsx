@@ -176,7 +176,7 @@ function ContentFetcher (props: AppProps) {
   return (
     userProfile !== undefined
       ? <>
-        {(userProfile?.trustLevel !== undefined && userProfile?.trustLevel > 1)
+        {(userProfile?.trustLevel !== undefined && userProfile?.trustLevel > 0)
           ? <Component {...pageProps} />
           : <LockdownModule academicYears={availableAcademicYears} />
         }
