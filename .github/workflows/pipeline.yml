@@ -46,6 +46,7 @@ jobs:
              "MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }}"
              "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
              "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}"
+             "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}"
 
   deploy:
     name: Deploy Image
@@ -76,6 +77,7 @@ jobs:
           echo "MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }}" >> .env
           echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
           echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
+          echo "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}" >> .env
 
       # Check if .env file is properly created
       - name: Display .env file contents for debugging
