@@ -128,6 +128,8 @@ export const config = {
                         //   year: res.item.affiliations.filter((affiliation: any) => Object.keys(affiliation).includes('classYear'))[0].classYear,
                         //   classOf
                         // })
+                    } else {
+                        throw new Error(res.errorDescription)
                     }
                     throw new Error(res.errorDescription)
                 })
