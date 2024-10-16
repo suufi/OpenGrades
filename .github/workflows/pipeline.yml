@@ -114,6 +114,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }} 
+            docker-compose -f /home/suufi/.deploy/docker-compose.yml pull
             docker-compose --env-file /home/suufi/.deploy/.env -f /home/suufi/.deploy/docker-compose.yml up -d
           
