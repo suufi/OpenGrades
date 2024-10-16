@@ -5,6 +5,12 @@ import { IUser } from '../types'
 const { Schema } = mongoose
 
 const UserSchema = new mongoose.Schema<IUser>({
+  sub: {
+    type: String,
+    required: true,
+    unique: true,
+    // index: true
+  },
   kerb: {
     type: String,
     required: true,

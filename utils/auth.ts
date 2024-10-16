@@ -103,6 +103,7 @@ export const config = {
                             },
                             {
                                 $set: {
+                                    sub: profile?.email,
                                     name: profile?.name,
                                     email: profile?.email,
                                     kerb: profile?.email?.split('@')[0],
