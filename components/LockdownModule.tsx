@@ -53,7 +53,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     flags: true,
     classes: true
   })
-
+  console.log('userProfile', userProfile)
+  console.log('auth', status)
   const form = useForm<UserProfile>({
     initialValues: {
       kerb: status === 'authenticated' ? userProfile?.kerb : '',
@@ -63,7 +64,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       flags: [],
       classes: []
     },
-    mode: 'uncontrolled',
+    // mode: 'uncontrolled',
     validateInputOnBlur: true,
     validate: zodResolver(schema),
 
@@ -87,6 +88,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   }, [userProfile])
 
   async function submitProfile (values: UserProfile) {
+    console.log('submitting profile')
     setFormLoading(true)
     await fetch('/api/me', {
       method: 'PUT',
@@ -204,11 +206,11 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
                               <Title order={3}> 🍁 Fall {year} </Title>
-                              <ClassSearch term={`${year}FA`} display={`Fall ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1}FA`} display={`Fall ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
                               <Title order={3}> ❄️ IAP {year + 1} </Title>
-                              <ClassSearch term={`${year}JA`} display={`IAP ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1}JA`} display={`IAP ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
                               <Title order={3}> 🌹 Spring {year + 1} </Title>
-                              <ClassSearch term={`${year}SP`} display={`Spring ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1}SP`} display={`Spring ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
                             </React.Fragment>
                           )
                         })
