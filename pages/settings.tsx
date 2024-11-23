@@ -1,4 +1,5 @@
 // @ts-nocheck
+require('better-logging')(console)
 
 import React, { useContext, useEffect, useState } from 'react'
 

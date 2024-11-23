@@ -1,3 +1,5 @@
+require('better-logging')(console)
+
 // @ts-nocheck
 
 import type { InferGetServerSidePropsType, NextPage } from 'next'

@@ -1,3 +1,5 @@
+require('better-logging')(console)
+
 import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Text, TextInput, Title } from '@mantine/core'
 import { useForm, UseFormReturnType, zodResolver } from '@mantine/form'
 import { showNotification } from '@mantine/notifications'

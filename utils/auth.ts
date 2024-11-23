@@ -1,3 +1,5 @@
+require('better-logging')(console)
+
 // @ts-nocheck
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'

@@ -1,4 +1,5 @@
 import React from "react"
+require('better-logging')(console)
 
 interface ErrorBoundaryState {
     hasError: boolean

@@ -1,3 +1,4 @@
+require('better-logging')(console)
 import { ActionIcon, Loader, MultiSelect } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
 import { IconRefresh } from '@tabler/icons'

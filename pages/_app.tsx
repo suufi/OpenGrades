@@ -1,3 +1,4 @@
+require('better-logging')(console)
 // @ts-nocheck
 import { AppProps } from 'next/app'
 import Head from 'next/head'

@@ -1,3 +1,5 @@
+require('better-logging')(console)
+
 // @ts-nocheck
 
 import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Checkbox, Container, Divider, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, em } from '@mantine/core'

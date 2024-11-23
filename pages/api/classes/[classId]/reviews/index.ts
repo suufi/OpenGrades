@@ -1,4 +1,6 @@
 // @ts-nocheck
+require('better-logging')(console)
+
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../../../models/Class'
 import ClassReview from '../../../../../models/ClassReview'
