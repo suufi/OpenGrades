@@ -1,4 +1,3 @@
-require('better-logging')(console)
 
 import { Text, Title, Tooltip, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 

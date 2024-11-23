@@ -1,5 +1,4 @@
 // @ts-nocheck
-require('better-logging')(console)
 
 import { auth } from '@/utils/auth'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -32,7 +31,7 @@ export default async function handler (
                 }
 
                 if (session.user?.id) {
-                    // const user = await User.findOne({ sub: session.user.id }).lean()
+                    // const user = await User.findOne({ email: session.user.id }).lean()
                     const reports = await AuditLog.find({}).populate('actor').lean()
                     return res.status(200).json({ success: true, data: { reports } })
                 } else {

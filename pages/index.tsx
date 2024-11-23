@@ -1,4 +1,3 @@
-require('better-logging')(console)
 
 // @ts-nocheck
 
