@@ -28,7 +28,7 @@ export function UserContextProvider ({ children }: { children: React.ReactNode }
           //   title: 'User Profile',
           //   message: JSON.stringify(body.data.user)
           // })
-          setUserProfile(body.data.session.user)
+          setUserProfile(body.data.user)
         } else {
           showNotification({
             color: 'red',
