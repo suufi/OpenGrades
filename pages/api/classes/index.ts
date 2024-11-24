@@ -1,5 +1,6 @@
 // @ts-nocheck
 
+import ClassReview from '@/models/ClassReview'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
 import { APIClass, IClass } from '../../../types'
@@ -7,7 +8,6 @@ import mongoConnection from '../../../utils/mongoConnection'
 
 import { auth } from '@/utils/auth'
 
-import Fuse from 'fuse.js'
 import { decode } from 'html-entities'
 import mongoose from 'mongoose'
 import AuditLog from '../../../models/AuditLog'
@@ -45,26 +45,113 @@ export default async function handler (
   switch (method) {
     case 'GET':
       try {
-        const extraQuery: ClassQuery = req.query
-        delete extraQuery.subjectNumber
+        const {
+          page = '1',
+          limit = '20',
+          search = '',
+          offered = 'true',
+          departments = '',
+          academicYears = '',
+          terms = '',
+          reviewsOnly = 'false',
+          all = 'false',
+        } = req.query
 
-        let classes = await Class.find(extraQuery).lean()
-        if (req.query.subjectNumber) {
-          const fuse = new Fuse(classes, {
-            location: 0,
-            keys: ['subjectNumber']
-          })
+        // Build the query object
+        let query: Record<string, any> = {}
 
-          classes = fuse.search(req.query.subjectNumber as string).map((result) => result.item)
+        if (offered === 'true') {
+          query.offered = true
         }
 
-        return res.status(200).json({ success: true, data: classes })
+        if (reviewsOnly === 'true') {
+          query._id = { $in: await ClassReview.distinct('class') } // Only classes with reviews
+        }
+
+        if (departments) {
+          query.department = { $in: (departments as string).split(',') }
+        }
+
+        if (academicYears) {
+          query.academicYear = { $in: (academicYears as string).split(',').map(Number) }
+        }
+
+        if (terms) {
+          query.term = { $in: (terms as string).split(',') }
+        }
+
+        // Fetch classes
+        let classes = await Class.find(query).lean()
+
+        // Apply fuzzy searching if needed
+        if (search) {
+          const Fuse = require('fuse.js')
+          const fuse = new Fuse(classes, {
+            keys: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors'],
+            threshold: 0.3,
+          })
+
+          const searchResults = fuse.search(search as string)
+          classes = searchResults.map((result) => result.item)
+        }
+
+        // If `all` is set to true, return all classes without pagination
+        if (all === 'true') {
+          // Get the review count for each class
+          const reviewCounts = await ClassReview.aggregate([
+            { $group: { _id: '$class', count: { $sum: 1 } } }
+          ])
+
+          // Map the review count to each class
+          const reviewCountMap = new Map(reviewCounts.map(({ _id, count }) => [_id.toString(), count]))
+          classes = classes.map((classEntry) => ({
+            ...classEntry,
+            classReviewCount: reviewCountMap.get(classEntry._id.toString()) || 0,
+          }))
+
+          return res.status(200).json({
+            success: true,
+            data: classes,
+          })
+        }
+
+        // Calculate pagination details if `all` is not true
+        const totalClasses = classes.length
+        const totalPages = Math.ceil(totalClasses / parseInt(limit, 10))
+        const paginatedClasses = classes.slice(
+          (parseInt(page, 10) - 1) * parseInt(limit, 10),
+          parseInt(page, 10) * parseInt(limit, 10)
+        )
+
+        // Get the review count for each class in the current page
+        const reviewCounts = await ClassReview.aggregate([
+          { $group: { _id: '$class', count: { $sum: 1 } } }
+        ])
+
+        // Map the review count to each class
+        const reviewCountMap = new Map(reviewCounts.map(({ _id, count }) => [_id.toString(), count]))
+        const classesWithReviews = paginatedClasses.map((classEntry) => ({
+          ...classEntry,
+          classReviewCount: reviewCountMap.get(classEntry._id.toString()) || 0,
+        }))
+
+        return res.status(200).json({
+          success: true,
+          data: classesWithReviews,
+          meta: {
+            currentPage: parseInt(page, 10),
+            totalPages,
+            totalClasses,
+          },
+        })
       } catch (error: unknown) {
+        console.error("Error during GET request", error)
         if (error instanceof Error) {
-          return res.status(400).json({ success: false, message: error.toString() })
+          return res.status(400).json({ success: false, message: error.message })
         }
       }
       break
+
     case 'POST':
       try {
         // const classExists = await Class.exists()

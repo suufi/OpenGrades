@@ -84,8 +84,6 @@ export default async function handler (
 
         const data = schema.parse(body)
 
-        const author = await User.findOne({ email: session.user?.email })
-
         if (!(await Class.exists({ _id: data.class }))) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }

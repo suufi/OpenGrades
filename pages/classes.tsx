@@ -1,23 +1,19 @@
 
 // @ts-nocheck
-import type { InferGetServerSidePropsType, NextPage } from 'next'
+import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { Badge, Card, Center, Checkbox, Collapse, Container, Divider, Grid, Group, List, Loader, MultiSelect, Pagination, Space, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
+import { Badge, Box, Card, Center, Checkbox, Collapse, Container, Divider, Grid, Group, List, Loader, LoadingOverlay, MultiSelect, Pagination, Space, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
 
-import mongoConnection from '../utils/mongoConnection'
 
-import Class from '../models/Class'
 import { IClass } from '../types'
 
 import { useDebouncedValue, useDisclosure, useHotkeys } from '@mantine/hooks'
 
 import { IconSearch } from '@tabler/icons'
-import Minisearch from 'minisearch'
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
-import ClassReview from '../models/ClassReview'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
 
@@ -47,10 +43,15 @@ interface ClassesProps {
   classReviewCountsProp: { _id: string, count: number }[]
 }
 
-const Classes: NextPage<ClassesProps> = ({ classesProp, classReviewCountsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+// const Classes: NextPage<ClassesProps> = ({ classesProp, classReviewCountsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const Classes: NextPage = () => {
+
   const [searchTerm, setSearchTerm] = useState('')
-  const [debounced] = useDebouncedValue(searchTerm, 10, { leading: true })
-  const [classes, setClasses] = useState(classesProp)
+  const [debounced] = useDebouncedValue(searchTerm, 500, { leading: true })
+  const [classes, setClasses] = useState([]) // Initialize with empty array
+  const [academicYears, setAcademicYears] = useState([])
+  const [allDepartments, setAllDepartments] = useState([])
+
 
   // turn all of the above into useState variables
   const [offeredFilter, setOfferedFilter] = useState(true)
@@ -59,46 +60,35 @@ const Classes: NextPage<ClassesProps> = ({ classesProp, classReviewCountsProp }:
   const [departmentFilter, setDepartmentFilter] = useState<string[]>([])
   const [termFilter, setTermFilter] = useState<string[]>([])
 
-  const [loading, setLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalClasses, setTotalClasses] = useState(0)
+
+  const itemsPerPage = 21 // Set the number of items per page
+  const [loading, setLoading] = useState(true)
   const [helpOpened, setHelpOpened] = useState(false)
-  const [activePage, setPage] = useState(1)
   const [filtersOpened, { toggle: toggleFilterView }] = useDisclosure(false)
 
-  // get unique class years
-  const academicYears = classesProp.map((academicClass: IClass) => academicClass.academicYear).filter((year: number, index: number, array: number[]) => array.indexOf(year) === index).map((year: number) => {
-    return {
-      value: year.toString(),
-      label: `${year - 1}-${year}`
-    }
-  })
 
-  // get unique departments
-  const allDepartments = classesProp.map((academicClass: IClass) => academicClass.department).filter((department: string, index: number, array: string[]) => array.indexOf(department) === index).map((department: string) => {
-    return {
-      value: department,
-      label: department
-    }
-  })
-
-  const options = {
-    shouldSort: true,
-    threshold: 0.3,
-    keys: [
-      'subjectNumber',
-      'subjectTitle',
-      'aliases'
-    ]
-  }
+  // const options = {
+  //   shouldSort: true,
+  //   threshold: 0.3,
+  //   keys: [
+  //     'subjectNumber',
+  //     'subjectTitle',
+  //     'aliases'
+  //   ]
+  // }
 
   // const classesFuse = new Fuse(classesProp, options)
 
-  const minisearch = new Minisearch({
-    idField: '_id',
-    fields: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors'],
-    storeFields: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors', 'term', 'academicYear', 'display', 'description', 'department', 'units', 'offered']
-  })
+  // const minisearch = new Minisearch({
+  //   idField: '_id',
+  //   fields: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors'],
+  //   storeFields: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors', 'term', 'academicYear', 'display', 'description', 'department', 'units', 'offered']
+  // })
 
-  minisearch.addAll(classesProp)
+  // minisearch.addAll(classesProp)
 
   // useEffect(() => {
   //   setLoading(true)
@@ -169,76 +159,137 @@ const Classes: NextPage<ClassesProps> = ({ classesProp, classReviewCountsProp }:
   //   setLoading(false)
   // }, [debounced])
 
-  useEffect(() => {
-    setLoading(true)
-    setPage(1)
-    console.log('debounced', debounced)
-    if (debounced !== "") {
-      // let results = classesFuse.search(debounced).map(match => match.item)
-      let results = minisearch.search(debounced, {
-        boost: { subjectNumber: 2, subjectTitle: 1, aliases: 2 },
-        fuzzy: false,
-        prefix: function (term) {
-          if (/[0-9.]/.test(term)) {
-            return true
-          }
+  // useEffect(() => {
+  //   setLoading(true)
+  //   setPage(1)
+  //   console.log('debounced', debounced)
+  //   if (debounced !== "") {
+  //     // let results = classesFuse.search(debounced).map(match => match.item)
+  //     let results = minisearch.search(debounced, {
+  //       boost: { subjectNumber: 2, subjectTitle: 1, aliases: 2 },
+  //       fuzzy: false,
+  //       prefix: function (term) {
+  //         if (/[0-9.]/.test(term)) {
+  //           return true
+  //         }
 
-          return false
+  //         return false
+  //       }
+  //     }).map((result: { id: string }) => classesProp.filter((classEntry: IClass) => classEntry._id === result.id)[0])
+  //     if (offeredFilter) {
+  //       results = results.filter((c: IClass) => c.offered)
+  //     }
+
+  //     if (reviewsOnlyFilter) {
+  //       results = results.filter((c: IClass) => classReviewCountsProp.map((classReviewCount: { _id: string, count: number }) => classReviewCount._id).includes(c._id))
+  //     }
+
+  //     if (academicYearFilter.length > 0 && academicYearFilter[0] !== '') {
+  //       results = results.filter((c: IClass) => academicYearFilter.includes(c.academicYear.toString()))
+  //     }
+  //     console.log('departmentFilter', departmentFilter)
+  //     if (departmentFilter.length > 0 && departmentFilter[0] !== '') {
+  //       results = results.filter((c: IClass) => departmentFilter.includes(c.department))
+  //     }
+
+  //     if (termFilter.length > 0 && termFilter[0] !== '') {
+  //       // obtain term from term (2022FA -> FA)
+  //       results = results.filter((c: IClass) => termFilter.includes(c.term.substring(4)))
+  //     }
+  //     setClasses(results)
+  //   }
+  //   setLoading(false)
+  // }, [debounced])
+
+  // useEffect(() => {
+  //   setLoading(true)
+  //   let results = classesProp
+
+  //   if (offeredFilter) {
+  //     results = results.filter((c: IClass) => c.offered)
+  //   }
+
+  //   if (reviewsOnlyFilter) {
+  //     results = results.filter((c: IClass) => classReviewCountsProp.map((classReviewCount: { _id: string, count: number }) => classReviewCount._id).includes(c._id))
+  //   }
+
+  //   if (academicYearFilter.length > 0 && academicYearFilter[0] !== '') {
+  //     results = results.filter((c: IClass) => academicYearFilter.includes(c.academicYear.toString()))
+  //   }
+  //   console.log('departmentFilter', departmentFilter)
+  //   if (departmentFilter.length > 0 && departmentFilter[0] !== '') {
+  //     results = results.filter((c: IClass) => departmentFilter.includes(c.department))
+  //   }
+
+  //   if (termFilter.length > 0 && termFilter[0] !== '') {
+  //     // obtain term from term (2022FA -> FA)
+  //     results = results.filter((c: IClass) => termFilter.includes(c.term.substring(4)))
+  //   }
+
+  //   setClasses(results)
+  //   setLoading(false)
+  // }, [offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      setLoading(true)
+      try {
+        // Construct the query parameters
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+          search: debounced,
+          offered: offeredFilter.toString(),
+          reviewsOnly: reviewsOnlyFilter.toString(),
+        })
+
+        if (academicYearFilter.length > 0) {
+          queryParams.append('academicYears', academicYearFilter.join(','))
         }
-      }).map((result: { id: string }) => classesProp.filter((classEntry: IClass) => classEntry._id === result.id)[0])
-      if (offeredFilter) {
-        results = results.filter((c: IClass) => c.offered)
-      }
 
-      if (reviewsOnlyFilter) {
-        results = results.filter((c: IClass) => classReviewCountsProp.map((classReviewCount: { _id: string, count: number }) => classReviewCount._id).includes(c._id))
-      }
+        if (departmentFilter.length > 0) {
+          queryParams.append('departments', departmentFilter.join(','))
+        }
 
-      if (academicYearFilter.length > 0 && academicYearFilter[0] !== '') {
-        results = results.filter((c: IClass) => academicYearFilter.includes(c.academicYear.toString()))
-      }
-      console.log('departmentFilter', departmentFilter)
-      if (departmentFilter.length > 0 && departmentFilter[0] !== '') {
-        results = results.filter((c: IClass) => departmentFilter.includes(c.department))
-      }
+        if (termFilter.length > 0) {
+          queryParams.append('terms', termFilter.join(','))
+        }
 
-      if (termFilter.length > 0 && termFilter[0] !== '') {
-        // obtain term from term (2022FA -> FA)
-        results = results.filter((c: IClass) => termFilter.includes(c.term.substring(4)))
+        const response = await fetch(`/api/classes?${queryParams.toString()}`)
+        const result = await response.json()
+
+        if (result.success) {
+          setClasses(result.data)
+          setTotalClasses(result.meta.totalClasses)
+          setTotalPages(result.meta.totalPages)
+
+          // Extract academic years and departments for filtering
+          const years = [...new Set(result.data.map((c) => c.academicYear))].map((year) => ({
+            value: year.toString(),
+            label: `${year - 1}-${year}`,
+          }))
+          setAcademicYears(years)
+
+          const departments = [...new Set(result.data.map((c) => c.department))].map((dept) => ({
+            value: dept,
+            label: dept,
+          }))
+          setAllDepartments(departments)
+        }
+
+      } catch (error) {
+        console.error('Error fetching classes:', error)
+      } finally {
+        setLoading(false)
       }
-      setClasses(results)
     }
-    setLoading(false)
-  }, [debounced])
+
+    fetchClasses()
+  }, [currentPage, debounced, offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
 
   useEffect(() => {
-    setLoading(true)
-    let results = classesProp
-
-    if (offeredFilter) {
-      results = results.filter((c: IClass) => c.offered)
-    }
-
-    if (reviewsOnlyFilter) {
-      results = results.filter((c: IClass) => classReviewCountsProp.map((classReviewCount: { _id: string, count: number }) => classReviewCount._id).includes(c._id))
-    }
-
-    if (academicYearFilter.length > 0 && academicYearFilter[0] !== '') {
-      results = results.filter((c: IClass) => academicYearFilter.includes(c.academicYear.toString()))
-    }
-    console.log('departmentFilter', departmentFilter)
-    if (departmentFilter.length > 0 && departmentFilter[0] !== '') {
-      results = results.filter((c: IClass) => departmentFilter.includes(c.department))
-    }
-
-    if (termFilter.length > 0 && termFilter[0] !== '') {
-      // obtain term from term (2022FA -> FA)
-      results = results.filter((c: IClass) => termFilter.includes(c.term.substring(4)))
-    }
-
-    setClasses(results)
-    setLoading(false)
-  }, [offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
+    setCurrentPage(1)
+  }, [debounced, offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
 
   useHotkeys([
     ['mod+\\', () => {
@@ -309,39 +360,63 @@ const Classes: NextPage<ClassesProps> = ({ classesProp, classReviewCountsProp }:
       {/* <Space h="md" /> */}
       {/* <Text> <b> Filters: </b> {Object.entries(filters).length > 0 ? Object.entries(filters).filter(([key]) => key !== 'searchPhrases').map(([key, value]) => (<Badge key={key}> {`${key}: ${value.toString()}`} </Badge>)) : (<> None </>)} </Text> */}
       <Space h="lg" />
-      <Text> Showing {classes.length} result{classes.length === 1 ? '' : 's'}. </Text>
+      {
+        !loading && <Text> Found {totalClasses.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} result{totalClasses === 1 ? '' : 's'}. </Text>
+      }
       <Space h="md" />
-      <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 1500: 2, 1200: 3 }}>
-        <Masonry gutter={'0.5rem'}>
-          {
-            classes.slice((activePage - 1) * 21, activePage * 21).map((classEntry: IClass) => (
-              <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classReviewCountsProp.filter((reviewCount: { _id: string, count: number }) => reviewCount._id === classEntry._id)[0]?.count} {...classEntry} />
-            ))
-          }
-        </Masonry>
-      </ResponsiveMasonry>
+      <Box pos="relative">
+        <LoadingOverlay visible={loading && classes.length > 0} />
+        <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 1500: 2, 1200: 3 }}>
+          <Masonry gutter={'0.5rem'}>
+            {
+              classes.map((classEntry: IClass) => (
+                <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} {...classEntry} />
+              ))
+            }
+          </Masonry>
+        </ResponsiveMasonry>
+      </Box>
       <Space h="md" />
       {/* align Pagination to center */}
+      {
+        (loading && classes.length == 0) && (
+          <>
+            <Center>
+              <Loader size='lg' />
+            </Center>
+            <Space h="md" />
+          </>
+        )
+      }
       <Center>
-        <Pagination value={activePage} onChange={setPage} total={Math.ceil(classes.length / 21)} />
+        <Pagination
+          value={currentPage}
+          onChange={(page) => {
+            setLoading(true)
+            setCurrentPage(page)
+          }}
+          total={totalPages}
+          withControls
+          radius="md"
+        />
       </Center>
 
     </Container>
   )
 }
 
-export async function getServerSideProps (context) {
-  await mongoConnection()
+// export async function getServerSideProps (context) {
+//   await mongoConnection()
 
-  const classesProp: IClass[] = await Class.find({ display: true }).lean() as IClass[]
-  const classReviewCounts = await ClassReview.aggregate().sortByCount('class')
-  // const session: Session | null = await getServerSession(context.req, context.res, authOptions)
-  return {
-    props: {
-      classesProp: JSON.parse(JSON.stringify(classesProp)),
-      classReviewCountsProp: JSON.parse(JSON.stringify(classReviewCounts))
-    }
-  }
-}
+//   const classesProp: IClass[] = await Class.find({display: true }).lean() as IClass[]
+//   const classReviewCounts = await ClassReview.aggregate().sortByCount('class')
+//   // const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+//   return {
+//     props: {
+//       classesProp: JSON.parse(JSON.stringify(classesProp)),
+//       classReviewCountsProp: JSON.parse(JSON.stringify(classReviewCounts))
+//     }
+//   }
+// }
 
 export default Classes
