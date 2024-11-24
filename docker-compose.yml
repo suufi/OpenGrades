@@ -2,8 +2,6 @@ services:
   mongodb:
     image: l33tlamer/mongodb-without-avx
     container_name: mongodb
-    ports:
-      - "127.0.0.1:27017:27017" # Bind MongoDB to localhost only
     networks:
       - web
     restart: unless-stopped
