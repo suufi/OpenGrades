@@ -1,4 +1,14 @@
 services:
+  mongodb:
+    image: l33tlamer/mongodb-without-avx
+    container_name: mongodb
+    ports:
+      - "127.0.0.1:27017:27017" # Bind MongoDB to localhost only
+    networks:
+      - web
+    environment:
+    restart: unless-stopped
+
   opengrades:
     image: suufi/mitopengrades:latest
     ports:
@@ -19,6 +29,8 @@ services:
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
     volumes:
       - ./public:/app/public
+    depends_on:
+      - mongodb
 
   nginx:
     image: nginx:mainline-alpine
