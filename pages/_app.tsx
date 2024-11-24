@@ -258,7 +258,7 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
   console.log('pageProps is', pageProps)
   return <>
     <Head>
-      <title>Page title</title>
+      <title>MIT OpenGrades</title>
       <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: light)" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: dark)" />
