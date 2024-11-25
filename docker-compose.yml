@@ -3,12 +3,11 @@ services:
     image: l33tlamer/mongodb-without-avx
     container_name: mongodb
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     networks:
       - web
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: B65f5RzW1gAS
+    volumes:
+      - ./mongodb:/data/db
     restart: unless-stopped
 
   opengrades:
