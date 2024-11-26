@@ -52,7 +52,7 @@ export default async function handler (
           offered = 'true',
           departments = '',
           academicYears = '',
-          terms = '',
+          term = '',
           reviewsOnly = 'false',
           all = 'false',
         } = req.query
@@ -76,8 +76,8 @@ export default async function handler (
           query.academicYear = { $in: (academicYears as string).split(',').map(Number) }
         }
 
-        if (terms) {
-          query.term = { $in: (terms as string).split(',') }
+        if (term) {
+          query.term = { $in: (term as string).split(',') }
         }
 
         // Fetch classes
