@@ -54,6 +54,8 @@ export default async function handler (
           academicYears = '',
           term = '',
           reviewsOnly = 'false',
+          sortField = '',
+          sortOrder = 'asc', // Default to ascending order
           all = 'false',
         } = req.query
 
@@ -80,8 +82,13 @@ export default async function handler (
           query.term = { $in: (term as string).split(',') }
         }
 
-        // Fetch classes
-        let classes = await Class.find(query).lean()
+        // Prepare for sorting
+        let sortQuery = {}
+        if (sortField) {
+          sortQuery[sortField] = sortOrder === 'asc' ? 1 : -1
+        }
+
+        let classes = await Class.find(query).sort(sortQuery).lean()
 
         // Apply fuzzy searching if needed
         if (search) {
@@ -106,6 +113,8 @@ export default async function handler (
 
         // If `all` is set to true, return all classes without pagination
         if (all === 'true') {
+          let classes = await Class.find(query).sort(sortQuery).lean()
+
           // Get the review count for each class
           const reviewCounts = await ClassReview.aggregate([
             { $group: { _id: '$class', count: { $sum: 1 } } }
@@ -124,13 +133,15 @@ export default async function handler (
           })
         }
 
-        // Calculate pagination details if `all` is not true
+        const pageNumber = parseInt(page as string, 10)
+        const limitNumber = parseInt(limit as string, 10)
+        const skip = (pageNumber - 1) * limitNumber
+
         const totalClasses = classes.length
-        const totalPages = Math.ceil(totalClasses / parseInt(limit, 10))
-        const paginatedClasses = classes.slice(
-          (parseInt(page, 10) - 1) * parseInt(limit, 10),
-          parseInt(page, 10) * parseInt(limit, 10)
-        )
+        const totalPages = Math.ceil(totalClasses / limitNumber)
+
+        // Paginate the filtered classes
+        const paginatedClasses = classes.slice(skip, skip + limitNumber)
 
         // Get the review count for each class in the current page
         const reviewCounts = await ClassReview.aggregate([
@@ -148,7 +159,7 @@ export default async function handler (
           success: true,
           data: classesWithReviews,
           meta: {
-            currentPage: parseInt(page, 10),
+            currentPage: pageNumber,
             totalPages,
             totalClasses,
           },

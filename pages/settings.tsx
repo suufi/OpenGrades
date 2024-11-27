@@ -161,7 +161,85 @@ const Settings = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>
     router.replace(router.asPath)
   }
 
-  const [classes, setClasses] = useState(classesProp)
+  const [loading, setLoading] = useState(false)
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [lazyState, setLazyState] = useState({
+    first: 0,
+    rows: 10,
+    page: 1,
+    sortField: null,
+    sortOrder: null,
+    filters: {
+      subjectNumber: { value: '', matchMode: 'contains' },
+      subjectTitle: { value: '', matchMode: 'contains' },
+      term: { value: '', matchMode: 'contains' },
+    },
+    globalFilter: ''
+  })
+  const [classes, setClasses] = useState([])
+
+  useEffect(() => {
+    loadLazyData()
+  }, [lazyState])
+
+  const loadLazyData = async () => {
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/classes?' + new URLSearchParams({
+        page: lazyState.page,
+        limit: lazyState.rows,
+        sortField: lazyState.sortField || '',
+        sortOrder: lazyState.sortOrder || '',
+        search: lazyState.globalFilter || '',
+        ...Object.fromEntries(
+          Object.entries(lazyState.filters).map(([key, value]) => [key, value.value])
+        )
+      }))
+
+      const result = await response.json()
+
+      if (result.success) {
+        setTotalRecords(result.meta.totalClasses)
+        setClasses(result.data)
+      } else {
+        console.error('Failed to fetch data:', result.message)
+      }
+    } catch (error) {
+      console.error('Error during data fetching:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onPage = (event) => {
+    setLazyState(prevState => ({
+      ...prevState,
+      first: event.first,
+      page: event.page + 1, // PrimeReact starts at 0, so add 1
+      rows: event.rows
+    }))
+  }
+  const onSort = (event) => {
+    setLazyState(prevState => ({
+      ...prevState,
+      sortField: event.sortField,
+      sortOrder: event.sortOrder
+    }))
+  }
+
+  const onFilter = (event) => {
+    setLazyState(prevState => ({
+      ...prevState,
+      filters: event.filters,
+      first: 0,
+      page: 1,
+
+    }))
+  }
+
+
+  // const [classes, setClasses] = useState(classesProp)
   const [term, setTerm] = useState('')
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([])
   const [loadingButton, setLoadingButton] = useState(false)
@@ -189,11 +267,14 @@ const Settings = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    const _filters = { ...filters }
-    _filters.global.value = value
-
-    setFilters(_filters)
     setGlobalFilterValue(value)
+
+    setLazyState(prevState => ({
+      ...prevState,
+      globalFilter: value,
+      first: 0,
+      page: 1
+    }))
   }
 
   const dateFilterTemplate = (options: any) => {
@@ -441,20 +522,33 @@ const Settings = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>
           header={header}
           footer={footer}
           value={classes}
-          filters={filters}
           filterDisplay='menu'
           globalFilterFields={['subjectNumber', 'aliases', 'title', 'instructors', 'createdAt', 'updatedAt']}
-          rows={10}
           scrollable
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
           rowsPerPageOptions={[10, 25, 50]}
           showGridlines
           paginator
           reorderableColumns
-          selection={selectedClasses}
-          selectionMode='checkbox'
-          onSelectionChange={e => setSelectedClasses(e.value)}
           removableSort
+          lazy
+
+          dataKey="id"
+          first={lazyState.first}
+          rows={lazyState.rows}
+          totalRecords={totalRecords}
+          onPage={onPage}
+          onSort={onSort}
+          onFilter={onFilter}
+          sortField={lazyState.sortField}
+          sortOrder={lazyState.sortOrder}
+          filters={lazyState.filters}
+          loading={loading}
+          selectionMode="multiple"
+          selection={selectedClasses}
+          onSelectionChange={(e) => setSelectedClasses(e.value)}
+
+
         >
           <Column selectionMode="multiple" headerStyle={{ width: '3em' }} />
           {dynamicColumns}
