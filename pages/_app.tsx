@@ -281,8 +281,8 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
       <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: light)" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: dark)" />
-      <link id="theme-link" rel="stylesheet" href="/themes/lara-dark-blue/theme.css" />
-      <link id="theme-link" rel="stylesheet" href="/themes/lara-light-blue/theme.css" />
+      <link id="theme-link" rel="stylesheet" href="/static/css/themes/lara-dark-blue/theme.css" />
+      <link id="theme-link" rel="stylesheet" href="/static/css/themes/lara-light-blue/theme.css" />
 
 
       <ColorSchemeScript defaultColorScheme='auto' />
