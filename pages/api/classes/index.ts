@@ -87,8 +87,17 @@ export default async function handler (
         if (search) {
           const Fuse = require('fuse.js')
           const fuse = new Fuse(classes, {
-            keys: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors'],
-            threshold: 0.3,
+            keys: [
+              {
+                name: 'subjectNumber',
+                weight: 2
+              },
+              'subjectTitle',
+              {
+                name: 'aliases',
+                weight: 2
+              }, 'instructors'],
+            threshold: 0.18,
           })
 
           const searchResults = fuse.search(search as string)
