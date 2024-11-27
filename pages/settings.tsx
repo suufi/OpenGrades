@@ -82,51 +82,55 @@ const departments = courseCatalog.split('\n').map(line => {
   return null
 }).filter((department) => department !== null)
 
-function DepartmentalTermGroupings ({ classes }: { classes: IClass[] }) {
-  const termsAndDepartmentsMap: Map<string, Map<string, Record<string, number>>> = new Map()
-  const [activeTerm, setActiveTerm] = useState<string | null>('2022FA')
+function DepartmentalTermGroupings () {
+  const [groupedData, setGroupedData] = useState<DepartmentGroupingData[]>([])
+  const [activeTerm, setActiveTerm] = useState<string | null>(null)
 
-  for (const classEntry of classes.filter(classEntry => classEntry.term === activeTerm)) {
-    const term = classEntry.term
-    const department = classEntry.department
-    const display = classEntry.display
+  useEffect(() => {
+    // Fetch data from the count API endpoint
+    const fetchGroupedData = async () => {
+      try {
+        const response = await fetch('/api/classes/count')
+        const result = await response.json()
 
-    // Check if the term exists in the map
-    if (!termsAndDepartmentsMap.has(term)) {
-      // If not, add the term to the map and set the value to an empty map
-      termsAndDepartmentsMap.set(term, new Map())
+        if (result.success) {
+          setGroupedData(result.data)
+          if (result.data.length > 0) {
+            setActiveTerm(result.data[0].term) // Set the default active term
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching grouped data:', error)
+      }
     }
 
-    // Get the map for the current term
-    const departmentsMap = termsAndDepartmentsMap.get(term) || new Map()
+    fetchGroupedData()
+  }, [])
 
-    // Check if the department exists in the map
-    if (!departmentsMap.has(department)) {
-      // If not, add the department to the map and set the value to 0
-      departmentsMap.set(department, {
-        classCount: 0,
-        displayCount: 0
-      })
+  // Filter the grouped data by the active term
+  const activeTermData = groupedData.find(data => data.term === activeTerm)
+
+  // Sort the department data according to the sorted `departments` list
+  const sortedDepartments = departments.map(department => {
+    const departmentData = activeTermData?.departments.find(
+      d => d.department === department.value
+    )
+    return {
+      department: department.value,
+      classCount: departmentData?.classCount || 0,
+      displayCount: departmentData?.displayCount || 0,
     }
-
-    // Increment the count for the current department
-    departmentsMap.set(department, { classCount: departmentsMap.get(department).classCount + 1, displayCount: departmentsMap.get(department).displayCount + (display ? 1 : 0) })
-  }
-
-  const terms = [...new Set(classes.map(classEntry => classEntry.term))]
-  console.log('termsAndDepartmentsMap', termsAndDepartmentsMap)
-  const rows = departments.map(({ value }: { value: string }) => {
-    console.log(activeTerm, value, termsAndDepartmentsMap.get(activeTerm || "")?.get(value))
-    return (<Table.Tr key={`${activeTerm}-${value}`}>
-      <Table.Td> {value} </Table.Td>
-      <Table.Td> {termsAndDepartmentsMap.get(activeTerm || "")?.get(value)?.classCount || 0} </Table.Td>
-      <Table.Td> {termsAndDepartmentsMap.get(activeTerm || "")?.get(value)?.displayCount || 0} </Table.Td>
-    </Table.Tr>)
   })
 
   return (
     <Stack>
-      <Select allowDeselect={false} defaultValue={activeTerm} data={terms} value={activeTerm} onChange={setActiveTerm} />
+      <Select
+        allowDeselect={false}
+        data={groupedData.map(data => ({ value: data.term, label: data.term }))}
+        value={activeTerm}
+        onChange={setActiveTerm}
+        placeholder="Select a term"
+      />
       <Table striped withTableBorder withColumnBorders withRowBorders>
         <Table.Thead>
           <Table.Tr>
@@ -136,7 +140,13 @@ function DepartmentalTermGroupings ({ classes }: { classes: IClass[] }) {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {rows}
+          {sortedDepartments && sortedDepartments.map(({ department, classCount, displayCount }) => (
+            <Table.Tr key={`${activeTerm}-${department}`}>
+              <Table.Td> {department} </Table.Td>
+              <Table.Td> {classCount} </Table.Td>
+              <Table.Td> {displayCount} </Table.Td>
+            </Table.Tr>
+          ))}
         </Table.Tbody>
       </Table>
     </Stack>
