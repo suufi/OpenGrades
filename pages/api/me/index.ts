@@ -61,7 +61,6 @@ export default async function handler (
             classOf: data.classOf,
             classesTaken: data.flatClasses,
             identityFlags: data.identityFlags,
-            verified: session.user?.affiliation === 'student',
             trustLevel: 1
           })
 

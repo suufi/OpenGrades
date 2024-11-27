@@ -179,19 +179,33 @@ function ContentFetcher (props: AppProps) {
     return <NotLoggedIn />
   }
 
+  if (userProfile === undefined) {
+    return (
+      <Container style={{ height: '100%', padding: '5rem' }}>
+        <Center style={{ height: '90%' }}>
+          <Loader variant='dots' size={'xl'} />
+        </Center>
+      </Container>
+    )
+  }
+
   return (
-    userProfile !== undefined
+    !userProfile.banned || userProfile.verfied === false
       ? <>
         {(userProfile?.trustLevel !== undefined && userProfile?.trustLevel > 0)
           ? <Component {...pageProps} />
           : <LockdownModule academicYears={availableAcademicYears} />
         }
       </>
-      : <Container style={{ height: '100%', padding: '5rem' }}>
-        <Center style={{ height: '90%' }}>
-          <Loader variant='dots' size={'xl'} />
-        </Center>
-      </Container>
+      : <>
+        <Container style={{ height: '100%', padding: '5rem' }}>
+          <Center style={{ height: '90%' }}>
+            <Text size="xl" weight={700}>
+              Your account is not authorized to use this platform. Please contact <a href="mailto:sipb-opengrades@mit.edu">sipb-opengrades@mit.edu</a> if you believe this is a mistake.
+            </Text>
+          </Center>
+        </Container>
+      </>
   )
 }
 

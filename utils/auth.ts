@@ -109,6 +109,7 @@ export const config = {
                                     email: profile?.email,
                                     kerb: profile?.email?.split('@')[0],
                                     affiliation: res.item.affiliations[0].type,
+                                    verified: res.item.affiliations[0].type === 'student',
                                     year: res.item.affiliations.filter((affiliation: any) => Object.keys(affiliation).includes('classYear'))[0].classYear,
                                     classOf
                                 }
