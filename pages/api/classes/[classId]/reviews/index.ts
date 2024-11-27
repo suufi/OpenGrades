@@ -115,7 +115,7 @@ export default async function handler (
         await Karma.create({
           actor: author._id,
           amount: 50,
-          description: `Posting a review for a class - ${(await Class.findById(req.query.classId).lean().then((c) => c && !Array.isArray(c) ? c.name : 'Unknown'))}`
+          description: `Posting a review for a class - ${(await Class.findById(req.query.classId).lean().then((c) => c && !Array.isArray(c) ? c.subjectTitle : 'Unknown'))}`
         })
 
         return res.status(200).json({
