@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { ReactNode, useContext } from 'react'
 
-import { AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeScript, Container, Group, Loader, MantineProvider, Menu, Text, ThemeIcon, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
+import { AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Text, ThemeIcon, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { useDisclosure, useHotkeys } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
-import { Books, ChevronRight, History, Home, Logout, Settings, Shield } from 'tabler-icons-react'
+import { Books, ChevronRight, FireHydrant, History, Home, Logout, Mail, Road, Settings, Shield } from 'tabler-icons-react'
 
 // import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
@@ -39,7 +39,8 @@ interface MainLinkProps {
   color: string,
   label: string,
   href: string,
-  active: boolean
+  active: boolean,
+  target?: string
 }
 
 const theme = createTheme({
@@ -59,9 +60,9 @@ const theme = createTheme({
 
 })
 
-function MainLink ({ icon, color, label, href, active }: MainLinkProps) {
+function MainLink ({ icon, color, label, href, active, target }: MainLinkProps) {
   return (
-    <Link href={href} passHref style={{ textDecoration: 'none' }}>
+    <Link href={href} passHref style={{ textDecoration: 'none' }} target={target}>
       <UnstyledButton
         className={mainClasses.mainLink}
       >
@@ -92,6 +93,10 @@ function NavigationLinks () {
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Reports" icon={<Shield />} color="green" href="/reports" active={pathname === '/reports'} />}
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Settings" icon={<Settings />} color="yellow" href="/settings" active={pathname === '/settings'} />}
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Audit Logs" icon={<History />} color="red" href="/auditlogs" active={pathname === '/auditlogs'} />}
+        {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Projects by SIPB" />}
+        <MainLink label="Hydrant" icon={<FireHydrant />} color="orange" href="https://hydrant.mit.edu/" target="_blank" active={false} />
+        <MainLink label="CourseRoad" icon={<Road />} color="blue" href="https://courseroad.mit.edu/" target="_blank" active={false} />
+        <MainLink label="DormDigest" icon={<Mail />} color="green" href="https://dormdigest.mit.edu/" target="_blank" active={false} />
       </>
     )
     : (
