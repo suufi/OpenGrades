@@ -59,9 +59,11 @@ export default async function handler (
         // const classExists = await Class.exists()
         console.log(body)
         console.log(typeof body)
-        // console.log(session)
+        console.log(session)
 
-        if (session.user && session.user?.trustLevel < 1) {
+        const user = await User.findOne({ email: session.user?.email }).lean()
+
+        if (session.user && user.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
