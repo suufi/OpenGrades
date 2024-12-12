@@ -219,9 +219,6 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                           <Text ta='center'> Select some classes above to show class listings. </Text>
                         )
                     }
-                    {
-                      JSON.stringify(form.values)
-                    }
                   </Stack>
                 </Stack>
               </Stepper.Step>
