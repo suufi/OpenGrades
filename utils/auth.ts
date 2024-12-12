@@ -122,10 +122,13 @@ export const config = {
 
                         // Log any new users created
                         if (res.upserted) {
-
+                            const user = await User.findOne({ email: profile?.email })
+                            if (!user) {
+                                throw new Error('User not found')
+                            }
                             await AuditLog.create({
-                                actor: res.upserted[0]._id,
-                                descriptimon: `User ${res.name} (${res.email}) signed up.`,
+                                actor: user._id,
+                                descriptimon: `User ${user.name} (${user.email}) signed up.`,
                                 type: 'JoinPlatform'
                             })
 
