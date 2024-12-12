@@ -372,7 +372,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
       const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean()
       let reviews = []
       if (user) {
-        const reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean()
+        reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean()
       }
 
       return {
