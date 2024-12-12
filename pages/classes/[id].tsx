@@ -366,7 +366,6 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
                   <Checkbox.Group
                     label="Do any of the following apply to you?"
                     description="Please only select conditions that applied for this specific year and semester."
-                    withAsterisk
                     {...form.getInputProps('conditions')}
                   >
                     <Checkbox value="firstYear" label="Freshman Year" />
