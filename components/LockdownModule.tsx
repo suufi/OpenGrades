@@ -52,6 +52,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     classes: z.record(z.array(z.string()))
   }).partial({
     flags: true,
+    identityFlags: true
     classes: true
   })
   console.log('userProfile', userProfile)
