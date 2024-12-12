@@ -1,5 +1,6 @@
 
 // @ts-nocheck
+import AuditLog from '@/models/AuditLog'
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
 import type {
@@ -98,7 +99,7 @@ export const config = {
                         const classYearAffiliations = res.item.affiliations.filter((affiliation: any) => Object.keys(affiliation).includes('classYear'))
                         const classOf = (classYearAffiliations.length > 0 && classYearAffiliations[0].classYear !== 'G' && classYearAffiliations[0].classYear !== 'U') ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliations[0].classYear) : null
 
-                        await User.findOneAndUpdate(
+                        const res = await User.findOneAndUpdate(
                             {
                                 email: profile?.email
                             },
@@ -118,6 +119,17 @@ export const config = {
                                 upsert: true
                             }
                         )
+
+                        // Log any new users created
+                        if (res.upserted) {
+
+                            await AuditLog.create({
+                                actor: res.upserted[0]._id,
+                                descriptimon: `User ${res.name} (${res.email}) signed up.`,
+                                type: 'JoinPlatform'
+                            })
+
+                        }
 
                         // await User.findOrCreate({
                         //   sub: profile?.id
