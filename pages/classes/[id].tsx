@@ -566,6 +566,14 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
       </Title>
 
       <Space h="lg" />
+      <Card withBorder shadow="sm" p='lg' >
+        {classProp.aliases && classProp.aliases.length > 0 && <><Text size='sm' c='dimmed'> {classProp.aliases.join(', ')} </Text><br /></>}
+        <Text>
+          {classProp.description}
+        </Text>
+      </Card>
+
+      <Space h="lg" />
       <Stack>
 
         <GradeChart data={gradePointsProp.map(({ numericGrade, letterGrade, verified }: IClassReview) => ({ numericGrade, letterGrade, verified }))} />
