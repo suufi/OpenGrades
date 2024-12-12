@@ -95,8 +95,20 @@ export const config = {
                     console.log(res)
 
                     if (response.ok) {
-                        const classYearAffiliations = res.item.affiliations.filter((affiliation: any) => Object.keys(affiliation).includes('classYear'))
-                        const classOf = (classYearAffiliations.length > 0 && classYearAffiliations[0].classYear !== 'G' && classYearAffiliations[0].classYear !== 'U') ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliations[0].classYear) : null
+
+                        const classYearAffiliations = res.item.affiliations.filter((affiliation: any) =>
+                            Object.keys(affiliation).includes('classYear')
+                        )
+
+                        // Safely get the first classYear affiliation or null if not present
+                        const classYearAffiliation = classYearAffiliations.length > 0
+                            ? classYearAffiliations[0]
+                            : null
+
+                        // Safely compute classOf, handling the absence of classYear
+                        const classOf = (classYearAffiliation && classYearAffiliation.classYear !== 'G' && classYearAffiliation.classYear !== 'U')
+                            ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliation.classYear)
+                            : null
 
                         await User.findOneAndUpdate(
                             {
@@ -108,9 +120,9 @@ export const config = {
                                     name: profile?.name,
                                     email: profile?.email,
                                     kerb: profile?.email?.split('@')[0],
-                                    affiliation: res.item.affiliations[0].type,
-                                    verified: res.item.affiliations[0].type === 'student',
-                                    year: res.item.affiliations.filter((affiliation: any) => Object.keys(affiliation).includes('classYear'))[0].classYear,
+                                    affiliation: res.item.affiliations[0]?.type || null,
+                                    verified: res.item.affiliations[0]?.type === 'student',
+                                    year: classYearAffiliation?.classYear || null,
                                     classOf
                                 }
                             },
