@@ -206,12 +206,12 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                           return (
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
-                              <Title order={3}> 🍁 Fall {year - 1} </Title>
-                              <ClassSearch term={`${year + 1}FA`} display={`Fall ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
-                              <Title order={3}> ❄️ IAP {year} </Title>
-                              <ClassSearch term={`${year + 1}JA`} display={`IAP ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
-                              <Title order={3}> 🌹 Spring {year} </Title>
-                              <ClassSearch term={`${year + 1}SP`} display={`Spring ${Number(year) - 1}-${year}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <Title order={3}> 🍁 Fall {year} </Title>
+                              <ClassSearch term={`${year + 1}FA`} display={`Fall ${Number(year)}-${year + 1}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <Title order={3}> ❄️ IAP {year + 1} </Title>
+                              <ClassSearch term={`${year + 1}JA`} display={`IAP ${Number(year)}-${year + 1}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <Title order={3}> 🌹 Spring {year + 1} </Title>
+                              <ClassSearch term={`${year + 1}SP`} display={`Spring ${Number(year)}-${year + 1}`} form={form as unknown as UseFormReturnType<FormValues>} />
                             </React.Fragment>
                           )
                         })
