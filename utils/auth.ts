@@ -1,6 +1,5 @@
 
 // @ts-nocheck
-import AuditLog from '@/models/AuditLog'
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
 import type {
@@ -99,7 +98,7 @@ export const config = {
                         const classYearAffiliations = res.item.affiliations.filter((affiliation: any) => Object.keys(affiliation).includes('classYear'))
                         const classOf = (classYearAffiliations.length > 0 && classYearAffiliations[0].classYear !== 'G' && classYearAffiliations[0].classYear !== 'U') ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliations[0].classYear) : null
 
-                        const res = await User.findOneAndUpdate(
+                        await User.findOneAndUpdate(
                             {
                                 email: profile?.email
                             },
@@ -120,19 +119,19 @@ export const config = {
                             }
                         )
 
-                        // Log any new users created
-                        if (res.upserted) {
-                            const user = await User.findOne({ email: profile?.email })
-                            if (!user) {
-                                throw new Error('User not found')
-                            }
-                            await AuditLog.create({
-                                actor: user._id,
-                                descriptimon: `User ${user.name} (${user.email}) signed up.`,
-                                type: 'JoinPlatform'
-                            })
+                        // // Log any new users created
+                        // if (res.upserted) {
+                        //     const user = await User.findOne({ email: profile?.email }).lean()
+                        //     if (!user) {
+                        //         throw new Error('User not found')
+                        //     }
+                        //     await AuditLog.create({
+                        //         actor: mongoose.Types.ObjectId(user._id),
+                        //         descriptimon: `User ${user.name} (${user.email}) signed up.`,
+                        //         type: 'JoinPlatform'
+                        //     })
 
-                        }
+                        // }
 
                         // await User.findOrCreate({
                         //   sub: profile?.id

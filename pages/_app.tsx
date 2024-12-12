@@ -179,7 +179,7 @@ function ContentFetcher (props: AppProps) {
     return <NotLoggedIn />
   }
 
-  if (userProfile === undefined) {
+  if (!userProfile) {
     return (
       <Container style={{ height: '100%', padding: '5rem' }}>
         <Center style={{ height: '90%' }}>
@@ -190,7 +190,7 @@ function ContentFetcher (props: AppProps) {
   }
 
   return (
-    !userProfile.banned || userProfile.verfied === false
+    !userProfile.banned || userProfile.verified === false
       ? <>
         {(userProfile?.trustLevel !== undefined && userProfile?.trustLevel > 0)
           ? <Component {...pageProps} />

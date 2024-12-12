@@ -369,8 +369,11 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
   if (session) {
     if (session.user && session.user?.email) {
       const user = await User.findOne({ email: session.user.email }).populate('classesTaken').lean()
-      const reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean()
       const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean()
+      let reviews = []
+      if (user) {
+        const reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean()
+      }
 
       return {
         props: {
