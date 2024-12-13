@@ -159,7 +159,7 @@ export const config = {
                     } else {
                         throw new Error(res.errorDescription)
                     }
-                    throw new Error(res.errorDescription)
+                    // console.log('res111111')
                 })
             } catch (error: unknown) {
                 console.log(error)
