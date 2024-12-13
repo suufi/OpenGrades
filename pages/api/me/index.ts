@@ -42,7 +42,7 @@ export default async function handler (
       break
     case 'PUT':
       try {
-        if (await User.exists({ email: session.user?.id })) {
+        if (await User.exists({ email: session.user?.id.toLowerCase() })) {
           const schema = z.object({
             kerb: z.string(),
             name: z.string(),
@@ -57,14 +57,14 @@ export default async function handler (
 
           const data = schema.parse(body)
 
-          await User.findOneAndUpdate({ email: session.user?.id }, {
+          await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
             classOf: data.classOf,
             classesTaken: data.flatClasses,
             identityFlags: data.identityFlags,
             trustLevel: 1
           })
 
-          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id }).populate('classesTaken').lean() })
+          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
         } else {
           throw new Error("User doesn't have ID.")
         }
