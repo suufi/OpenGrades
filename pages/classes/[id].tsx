@@ -139,8 +139,9 @@ function ClassReviewComment ({ classReview, author, reported, trustLevel }: Clas
       <Group>
         <Avatar alt={author.name} radius="xl" />
         <div>
-          {/* <Text size="sm" className={styles.text} onClick={() => deanon()}>{showName ? author.hiddenName : author.name}</Text> */}
-          <Text size="sm" className={styles.text}>{author.name}</Text>
+          {
+            trustLevel && trustLevel >= 2 ? <Text size="sm" className={styles.text} onClick={() => deanon()}>{showName ? author.hiddenName : author.name}</Text> : <Text size="sm" className={styles.text}>{author.name}</Text>
+          }
           <Text size="xs" c="dimmed">
             {moment(classReview.createdAt).tz('America/New_York').format('MMMM DD, YYYY hh:mm a')}
           </Text>
