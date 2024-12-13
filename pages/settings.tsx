@@ -66,7 +66,9 @@ AS - Aerospace Studies
 MS - Military Science
 NS - Naval Science
 STS - Science, Technology, and Society
-SWE - Engineering School-Wide Electives`
+SWE - Engineering School-Wide Electives
+SP - Special Programs
+`
 
 const departments = courseCatalog.split('\n').map(line => {
   const regex = /(.+?) - (.+)/g
