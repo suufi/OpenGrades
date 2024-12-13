@@ -627,7 +627,12 @@ export const getServerSideProps = (async (context) => {
       const user = await User.findOne({ email: session.user.email })
       myReview = await ClassReview.findOne({ class: id, user: user._id }).populate('class').lean()
 
-      const reviewsData: IClassReview[] = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean()
+      let reviewsData: IClassReview[] = []
+      if (user.trustLevel < 2) {
+        reviewsData = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean()
+      } else {
+        reviewsData = await ClassReview.find({ class: id }).populate('author').lean()
+      }
       const gradePointsData = await ClassReview.find({ class: id }).select(['letterGrade', 'numericGrade', 'verified']).lean()
       let reports: IReport[] = []
 
