@@ -258,7 +258,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
     backgroundComments: z.string(),
     numericGrade: z.number().min(0).max(100),
     letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P', 'DR']),
-    methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other'])
+    methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other', ''])
   }).partial({
     conditions: true,
     numericGrade: true,
