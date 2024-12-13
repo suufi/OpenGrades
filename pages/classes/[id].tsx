@@ -171,6 +171,7 @@ function ClassReviewComment ({ classReview, author, reported, trustLevel }: Clas
       {/* <Divider p='sm' /> */}
       <Group justify='flex-end'>
         <HideContent classId={classReview.class.toString()} hidden={hidden} classReview={classReview} callback={(val: boolean) => { setHidden(val) }} />
+        {trustLevel && trustLevel >= 2 && (<ReportField classReview={classReview} callback={(val: boolean) => { setHidden(val) }} />)}
         {/* {trustLevel && trustLevel >= 2 && <DeleteContent classReview={id} />} */}
         <ReportField classReview={classReview} callback={() => { }} />
       </Group>
