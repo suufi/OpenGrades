@@ -19,7 +19,7 @@ export default async function handler (
         case 'GET':
             try {
                 if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.id }).populate('classesTaken').lean()
+                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
 
                     return res.status(200).json({ success: true, data: { flags: user.flags } })
                 } else {
