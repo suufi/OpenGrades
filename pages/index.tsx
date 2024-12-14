@@ -8,6 +8,7 @@ import Head from 'next/head'
 //   Session,
 // } from "@auth/core/types"
 import ClassSearch from '@/components/ClassSearch'
+import GradeReportModal from '@/components/GradeReportModal'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
@@ -196,6 +197,60 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     )
   }
 
+  const [modalOpened, setModalOpened] = useState(false)
+
+  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }) => {
+    const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
+
+    setContentLoading(true)
+    try {
+      const response = await fetch('/api/me/classes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classesTaken: flatClasses,
+        }),
+      })
+
+      const body = await response.json()
+
+      if (response.ok) {
+        showNotification({
+          title: 'Classes added!',
+          message: 'Your classes have been added successfully.',
+          color: 'green',
+        })
+
+        // Merge parsed classes into form's state
+        form.setValues((prevValues) => ({
+          ...prevValues,
+          classes: {
+            ...prevValues.classes,
+            ...classes,
+          },
+        }))
+      } else {
+        showNotification({
+          title: 'Error adding classes',
+          message: body.message,
+          color: 'red',
+        })
+      }
+    } catch (error) {
+      showNotification({
+        title: 'Error!',
+        message: 'Failed to add classes.',
+        color: 'red',
+      })
+    } finally {
+      setContentLoading(false)
+      router.replace(router.asPath) // Refresh data
+    }
+  }
+
+
 
   return (
     <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
@@ -294,6 +349,9 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 <Button type="submit" disabled={
                   form.getTransformedValues().flatClasses?.length === 0
                 }> Submit </Button>
+                <Divider variant='dotted' label={"Or paste your grade report"} />
+                <Button variant='outline' onClick={() => setModalOpened(true)}> Add Classes from Grade Report </Button>
+                <GradeReportModal opened={modalOpened} onClose={() => setModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
               </Stack>
             </form>
           </Card>
