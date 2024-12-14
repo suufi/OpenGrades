@@ -36,7 +36,12 @@ export default async function handler (
                 }
 
                 const content = await ClassReview.findById(req.query.reviewId).populate(['class', 'author']).lean()
-                return res.status(200).json({ success: true, data: content })
+
+                const upvotes = await ReviewVote.countDocuments({ classReview: content._id, vote: 1 })
+                const downvotes = await ReviewVote.countDocuments({ classReview: content._id, vote: -1 })
+
+                return res.status(200).json({ success: true, data: { ...content, upvotes, downvotes } })
+
             } catch (error: unknown) {
                 if (error instanceof Error) {
                     return res.status(400).json({ success: false, message: error.toString() })

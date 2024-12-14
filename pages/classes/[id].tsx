@@ -28,8 +28,9 @@ import { IClass, IClassReview, IContentSubmission, IParams, IReport, IUser, Lett
 import GradeChart from '../../components/GradeChart'
 
 
-import { IconAlertCircle } from '@tabler/icons'
+import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle } from '@tabler/icons'
 import moment from 'moment-timezone'
+import mongoose from 'mongoose'
 import { Session, getServerSession } from 'next-auth'
 import Link from 'next/link'
 import authOptions from "pages/api/auth/[...nextauth]"
@@ -52,6 +53,11 @@ interface ClassReviewCommentProps {
   },
   reported: boolean,
   trustLevel: number,
+
+  userVote: number | null // null for no vote, 1 for upvote, -1 for downvote
+  upvotes: number
+  downvotes: number
+  onVoteChange: (vote: number) => void // Function to change the vote
 }
 
 interface ContentSubmissionForm extends Omit<IContentSubmission, 'class' | 'author' | 'approved' | 'createdAt' | 'updatedAt'> { }
@@ -112,9 +118,50 @@ function HideContent ({ classId, classReview, contentSubmission, callback, hidde
   )
 }
 
-function ClassReviewComment ({ classReview, author, reported, trustLevel }: ClassReviewCommentProps) {
+function ClassReviewComment ({ classReview,
+  author,
+  reported,
+  trustLevel,
+  userVote,
+  upvotes,
+  downvotes,
+  onVoteChange,
+}: ClassReviewCommentProps) {
   const [showName, setShowName] = useState(false)
   const [hidden, setHidden] = useState(!classReview.display)
+
+  const [previousVote, setPreviousVote] = useState(userVote) // Track previous vote state
+
+  const handleVote = async (vote: number) => {
+    let newVote = vote
+
+    // If the user clicks on the already selected vote, unvote (reset to null)
+    if (previousVote === vote) {
+      newVote = 0
+    }
+
+    // Send the vote request to the API to register or update the vote
+    const response = await fetch(`/api/classes/${classReview.class.toString()}/reviews/${classReview._id}/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ vote: newVote }),
+    })
+
+    const data = await response.json()
+    if (response.ok && data.success) {
+      onVoteChange(newVote)  // Update the vote state in the parent
+      setPreviousVote(newVote)  // Update the previous vote state
+    } else {
+      showNotification({
+        title: 'Error',
+        message: data.message || 'An error occurred while casting your vote.',
+        color: 'red',
+      })
+    }
+  }
+
 
   async function deanon () {
     console.log("Denaonymizing user")
@@ -174,6 +221,24 @@ function ClassReviewComment ({ classReview, author, reported, trustLevel }: Clas
       <Group justify='flex-end'>
         {trustLevel && trustLevel >= 2 && <HideContent classId={classReview.class.toString()} hidden={hidden} classReview={classReview} callback={(val: boolean) => { setHidden(val) }} />}
         {(trustLevel && trustLevel >= 2) ? <ReportField classReview={classReview} callback={(val: boolean) => { setHidden(val) }} /> : <ReportField classReview={classReview} callback={() => { }} />}
+        <Group gap="xs">
+          <ActionIcon
+            onClick={() => handleVote(1)}
+            variant="transparent"
+            color={userVote === 1 ? 'green' : 'gray'}
+          >
+            <IconArrowUpCircle size={20} />
+          </ActionIcon>
+          <Text>{upvotes - downvotes}</Text>
+          <ActionIcon
+            onClick={() => handleVote(-1)}
+            variant="transparent"
+            color={userVote === -1 ? 'red' : 'gray'}
+          >
+            <IconArrowDownCircle size={20} />
+          </ActionIcon>
+        </Group>
+
         {/* {trustLevel && trustLevel >= 2 && <DeleteContent classReview={id} />} */}
       </Group>
     </Paper>
@@ -522,6 +587,42 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
     router.replace(router.asPath)
   }
 
+  const [reviews, setReviews] = useState(classReviewsProp)
+
+  const handleVoteChange = (reviewId: string, newVote: number, previousVote: number) => {
+    setReviews((prevReviews) => {
+      return prevReviews.map((review) => {
+        if (review._id === reviewId) {
+          // Handle upvote or downvote logic based on previous vote
+          let newUpvotes = review.upvotes
+          let newDownvotes = review.downvotes
+
+          // Adjust upvotes and downvotes depending on the vote change
+          if (previousVote === 1) {
+            newUpvotes--  // Decrement previous upvote
+          } else if (previousVote === -1) {
+            newDownvotes--  // Decrement previous downvote
+          }
+
+          // Now apply the new vote
+          if (newVote === 1) {
+            newUpvotes++  // Increment upvote
+          } else if (newVote === -1) {
+            newDownvotes++  // Increment downvote
+          }
+
+          return {
+            ...review,
+            upvotes: newUpvotes,
+            downvotes: newDownvotes,
+            userVote: newVote,  // Update user vote
+          }
+        }
+        return review
+      })
+    })
+  }
+
   const deleteClass = async () => {
     await fetch(`/api/classes/${classProp._id}`, {
       method: 'DELETE'
@@ -605,9 +706,19 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         <Title order={3}> Reviews <AddReview classData={classProp} refreshData={refreshData} editData={myReview} /> </Title>
 
         {
-          classReviewsProp.length > 0
-            ? (classReviewsProp.map((classReview: IClassReview, index: number) =>
-              <ClassReviewComment key={classReview?._id} classReview={classReview} author={{ name: `Anonymous Student #${index + 1}`, hiddenName: classReview.author ? classReview.author.name : `Anonymous Student #${index + 1}` }} reported={reportsProp.some((report: IReport) => report.classReview?._id === classReview._id && !report.resolved)} trustLevel={userProp.trustLevel} />
+          reviews.length > 0
+            ? (reviews.map((classReview: IClassReview, index: number) =>
+              <ClassReviewComment
+                key={classReview?._id}
+                classReview={classReview}
+                author={{ name: `Anonymous Student #${index + 1}`, hiddenName: classReview.author ? classReview.author.name : `Anonymous Student #${index + 1}` }}
+                reported={reportsProp.some((report: IReport) => report.classReview?._id === classReview._id && !report.resolved)}
+                trustLevel={userProp.trustLevel}
+                userVote={classReview.userVote}
+                upvotes={classReview.upvotes}
+                downvotes={classReview.downvotes}
+                onVoteChange={(vote) => handleVoteChange(classReview._id, vote, classReview.userVote)}
+              />
             ))
             : (<Box>  No class reviews yet. Please check back later or add one if you have taken this class. Thank you! </Box>)
         }
@@ -641,11 +752,101 @@ export const getServerSideProps = (async (context) => {
       myReview = await ClassReview.findOne({ class: id, user: user._id }).populate('class').lean()
 
       let reviewsData: IClassReview[] = []
+      // if (user.trustLevel < 2) {
+      //   reviewsData = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean()
+      // } else {
+      //   reviewsData = await ClassReview.find({ class: id }).populate('author').lean()
+      // }
+
+      // // Get the user's vote (if any) on each review
+      // const reviewVotes = await ReviewVote.find({ user: user._id }).lean()
+      // const reviewVotesMap = reviewVotes.reduce((map, vote) => {
+      //   map[vote.classReview.toString()] = vote.vote
+      //   return map
+      // }, {})
+
+      // reviewsData = reviewsData.map((review) => ({
+      //   ...review,
+      //   userVote: reviewVotesMap[review._id.toString()] || null, // User's vote: 1, -1, or null
+      //   upvotes: review.upvotes || 0,
+      //   downvotes: review.downvotes || 0,
+      // }))
+
       if (user.trustLevel < 2) {
-        reviewsData = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean()
+        // Fetch reviews with limited data based on trust level
+        reviewsData = await ClassReview.aggregate([
+          { $match: { class: new mongoose.Types.ObjectId(id) } },
+          {
+            $lookup: {
+              from: 'reviewvotes',
+              localField: '_id',
+              foreignField: 'classReview',
+              as: 'votes'
+            }
+          },
+          {
+            $addFields: {
+              upvotes: { $size: { $filter: { input: '$votes', as: 'vote', cond: { $eq: ['$$vote.vote', 1] } } } },
+              downvotes: { $size: { $filter: { input: '$votes', as: 'vote', cond: { $eq: ['$$vote.vote', -1] } } } }
+            }
+          },
+          {
+            $lookup: {
+              from: 'reviewvotes',
+              let: { reviewId: '$_id', userId: new mongoose.Types.ObjectId(user._id) },
+              pipeline: [
+                { $match: { $expr: { $and: [{ $eq: ['$classReview', '$$reviewId'] }, { $eq: ['$user', '$$userId'] }] } } },
+                { $project: { vote: 1 } }
+              ],
+              as: 'userVote'
+            }
+          },
+          {
+            $addFields: {
+              userVote: { $ifNull: [{ $arrayElemAt: ['$userVote.vote', 0] }, null] }
+            }
+          },
+          { $project: { 'votes': 0 } }
+        ])
       } else {
-        reviewsData = await ClassReview.find({ class: id }).populate('author').lean()
+        // Fetch full review data with votes
+        reviewsData = await ClassReview.aggregate([
+          { $match: { class: new mongoose.Types.ObjectId(id) } },
+          {
+            $lookup: {
+              from: 'reviewvotes',
+              localField: '_id',
+              foreignField: 'classReview',
+              as: 'votes'
+            }
+          },
+          {
+            $addFields: {
+              upvotes: { $size: { $filter: { input: '$votes', as: 'vote', cond: { $eq: ['$$vote.vote', 1] } } } },
+              downvotes: { $size: { $filter: { input: '$votes', as: 'vote', cond: { $eq: ['$$vote.vote', -1] } } } }
+            }
+          },
+          {
+            $lookup: {
+              from: 'reviewvotes',
+              let: { reviewId: '$_id', userId: new mongoose.Types.ObjectId(user._id) },
+              pipeline: [
+                { $match: { $expr: { $and: [{ $eq: ['$classReview', '$$reviewId'] }, { $eq: ['$user', '$$userId'] }] } } },
+                { $project: { vote: 1 } }
+              ],
+              as: 'userVote'
+            }
+          },
+          {
+            $addFields: {
+              userVote: { $ifNull: [{ $arrayElemAt: ['$userVote.vote', 0] }, null] }
+            }
+          },
+          { $project: { 'votes': 0 } }
+        ])
       }
+
+
       const gradePointsData = await ClassReview.find({ class: id }).select(['letterGrade', 'numericGrade', 'verified']).lean()
       let reports: IReport[] = []
 
