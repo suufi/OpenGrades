@@ -1,9 +1,9 @@
 // @ts-nocheck
+import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import mongoConnection from '../../../../../utils/mongoConnection'
 
-import Class from '../../../../../models/Class'
-import ClassReview from '../../../../../models/ClassReview'
+import Class from '@/models/Class'
+import ClassReview from '@/models/ClassReview'
 
 import { auth } from '@/utils/auth'
 
