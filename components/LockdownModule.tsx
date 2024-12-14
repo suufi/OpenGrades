@@ -1,5 +1,5 @@
 
-import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Text, TextInput, Title } from '@mantine/core'
+import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Text, Textarea, TextInput, Title } from '@mantine/core'
 import { useForm, UseFormReturnType, zodResolver } from '@mantine/form'
 import { showNotification } from '@mantine/notifications'
 import { useSession } from 'next-auth/react'
@@ -8,8 +8,9 @@ import React, { useContext, useEffect, useState } from 'react'
 import { z } from 'zod'
 import { UserContext } from '../components/UserContextProvider'
 // import Class from '../models/Class'
-import { useMediaQuery } from '@mantine/hooks'
-import { IdentityFlags } from '../types'
+import { useDebouncedState, useMediaQuery } from '@mantine/hooks'
+import Link from 'next/link'
+import { IClass, IdentityFlags } from '../types'
 import ClassSearch from './ClassSearch'
 
 type State = {
@@ -28,7 +29,7 @@ type UserProfile = {
   classOf?: number,
   affiliation?: string,
   flags?: IdentityFlags[],
-  classes: string[],
+  classes: string[] | { [key: string]: string[] },
   flatClasses?: string[]
 }
 
@@ -42,6 +43,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const [formLoading, setFormLoading] = useState(false)
   const { userProfile, setUserProfile } = useContext(UserContext)
   const isMobile = useMediaQuery(`(max-width: ${em(750)})`)
+  const [gradeReport, setGradeReport] = useDebouncedState<string>('', 1000)
+
 
   const schema = z.object({
     kerb: z.string(),
@@ -55,8 +58,6 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     identityFlags: true,
     classes: true
   })
-  console.log('userProfile', userProfile)
-  console.log('auth', status)
   const form = useForm<UserProfile>({
     initialValues: {
       kerb: status === 'authenticated' ? userProfile?.kerb : '',
@@ -64,7 +65,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       classOf: status === 'authenticated' ? (userProfile?.classOf) : new Date().getFullYear(),
       affiliation: status === 'authenticated' ? userProfile?.affiliation : '',
       flags: [],
-      classes: []
+      classes: {}
     },
     // mode: 'uncontrolled',
     validateInputOnBlur: true,
@@ -84,7 +85,20 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       classOf: userProfile?.classOf,
       affiliation: userProfile?.affiliation,
       flags: userProfile?.flags || [],
-      classes: userProfile?.classesTaken as unknown as string[] || []
+      classes: Array.isArray(userProfile?.classesTaken)
+        ? userProfile?.classesTaken.reduce(
+          (acc: { [key: string]: string[] }, c: IClass) => {
+            const key = `${c.term}`
+            if (acc[key]) {
+              acc[key].push(c._id)
+            } else {
+              acc[key] = [c._id]
+            }
+            return acc
+          },
+          {} as { [key: string]: string[] }
+        )
+        : {},
     })
     form.reset()
   }, [userProfile])
@@ -130,6 +144,60 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
+
+  useEffect(() => {
+    if (!gradeReport) return
+    setFormLoading(true)
+
+    fetch('/api/me/grade-report-upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        gradeReport,
+      }),
+    })
+      .then(async (res) => {
+        const body = await res.json()
+        if (res.ok) {
+          console.log(body)
+
+          // Extract academic years
+          const newAcademicYearsTaken = [
+            ...new Set((body.data as IClass[]).map((c: IClass) => `${c.academicYear - 1}-${c.academicYear}`)),
+          ]
+          setAcademicYearsTaken(newAcademicYearsTaken)
+
+          // Create a map of term -> classes
+          const newClasses = (body.data as IClass[]).reduce((acc: { [key: string]: string[] }, c: IClass) => {
+            const key = `${c.term}`
+            if (acc[key]) {
+              acc[key].push(c._id)
+            } else {
+              acc[key] = [c._id]
+            }
+            return acc
+          }, {})
+
+          form.setValues((prevValues) => ({
+            ...prevValues,
+            classes: {
+              ...prevValues.classes,
+              ...newClasses,
+            },
+          }))
+        } else {
+          console.error(body)
+        }
+        setFormLoading(false)
+      })
+      .catch((err) => {
+        console.error(err)
+        setFormLoading(false)
+      })
+  }, [gradeReport])
+
 
   return (status === 'authenticated')
     ? (
@@ -198,6 +266,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
               <Stepper.Step label="Class History" description="Add classes you've taken">
                 <Stack>
                   <Text> To maintain the platform, we depend on students providing reviews for classes they&apos;ve taken in the past. In the semesters fields below, please input the classes you&apos;ve taken (or dropped). You don&apos;t have to review every class, but please try to review as many as you can. By listing a class below, we may reach out to you to request a class review if there is interest in a class but little to no reviews. </Text>
+                  <Text> You can manually search for classes below or copy and paste your <Link href='https://student.mit.edu/cgi-bin/shrwsgrd.sh'>grade report</Link> (entire page) from the MIT Registrar. </Text>
+                  <Textarea variant='filled' defaultValue={gradeReport} onChange={(e) => setGradeReport(e.target.value)} label="Grade Report" placeholder="Copy and paste your grade report here" />
                   <Stack>
                     <MultiSelect placeholder="Select the academic years for which you attempted a class for" label="Academic year(s) you've taken classes" data={academicYears} value={academicYearsTaken} onChange={setAcademicYearsTaken} />
                     {

@@ -31,9 +31,7 @@ export default function ClassSearch ({ form, display, term }: { form: UseFormRet
 
             // Fetch all classes for the given term
             const response = await fetch(`/api/classes?term=${term}&all=true`)
-            console.log(response)
             const { data } = await response.json()
-            console.log(data)
 
             setState({
                 data: data.map((classEntry: IClass) => {
@@ -59,11 +57,17 @@ export default function ClassSearch ({ form, display, term }: { form: UseFormRet
 
     useEffect(() => {
         fetchData()
-        form.setValues({
-            classes: { [term]: [] }
-        })
-        console.log(form.getTransformedValues())
+        // Merge fetched classes with existing form values
+        form.setValues((prevValues) => ({
+            ...prevValues,
+            classes: {
+                ...prevValues.classes,
+                [term]: prevValues.classes[term] || [],
+            },
+        }))
     }, [term])
+
+
 
     useEffect(() => {
         if (status === 'initial') fetchData()
@@ -95,6 +99,7 @@ export default function ClassSearch ({ form, display, term }: { form: UseFormRet
                 limit={20}
                 {...form.getInputProps(`classes.${term}`)}
                 value={form.values.classes[term]}
+                defaultValue={form.values.classes[term]}
 
                 rightSection={
                     status === 'error' && (
