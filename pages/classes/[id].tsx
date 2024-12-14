@@ -568,9 +568,23 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         {classProp.instructors.join(', ')} - {classProp.term}
       </Title>
 
+      <Space h="sm" />
+
+      {
+        classProp.units.includes('P/D/F') && <Badge color='blue' variant='filled'> P/D/F </Badge>
+      }
+
+      {
+        !classProp.offered && <Badge color='red' variant='filled'> Not Offered </Badge>
+      }
+
+      {
+        !classProp.display && <Badge color='orange' variant='filled'> Hidden </Badge>
+      }
+
       <Space h="lg" />
       <Card withBorder shadow="sm" p='lg' >
-        {classProp.aliases && classProp.aliases.length > 0 && <><Text size='sm' c='dimmed'> {classProp.aliases.join(', ')} </Text><br /></>}
+        {classProp.aliases && classProp.aliases.length > 0 && <><Text size='sm' c='dimmed'> Alias{classProp.aliases.length > 1 ? 'es' : ''}: {classProp.aliases.join(', ')} </Text><br /></>}
         <Text>
           {classProp.description}
         </Text>
