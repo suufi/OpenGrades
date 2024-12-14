@@ -273,14 +273,13 @@ function App ({ pageProps, Component }: AppProps) {
 }
 
 export default function AppWrapper ({ Component, pageProps }: AppProps) {
-  console.log('component is', Component)
-  console.log('pageProps is', pageProps)
   return <>
     <Head>
       <title>MIT OpenGrades</title>
       <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: light)" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: dark)" />
+      <meta name="google-site-verification" content="fXojmVQpuE4vWKn_PgHDimVPychoR4hwhUTnGM7TJuo" />
       <link id="theme-link" rel="stylesheet" href="css/themes/lara-dark-blue/theme.css" />
       <link id="theme-link" rel="stylesheet" href="css/themes/lara-light-blue/theme.css" />
 
