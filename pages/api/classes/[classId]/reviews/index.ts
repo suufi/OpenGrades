@@ -1,18 +1,19 @@
 // @ts-nocheck
 
+import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import Class from '../../../../../models/Class'
-import ClassReview from '../../../../../models/ClassReview'
-import mongoConnection from '../../../../../utils/mongoConnection'
 
 import { z } from 'zod'
 
 import { auth } from '@/utils/auth'
 
+import AuditLog from '@/models/AuditLog'
+import Class from '@/models/Class'
+import ClassReview from '@/models/ClassReview'
+import Karma from '@/models/Karma'
+import User from '@/models/User'
+
 import mongoose from 'mongoose'
-import AuditLog from '../../../../../models/AuditLog'
-import Karma from '../../../../../models/Karma'
-import User from '../../../../../models/User'
 
 type Data = {
   success: boolean,
