@@ -65,7 +65,7 @@ const parseTerm = (term) => {
         case 'Spring':
             return 'SP'
         case 'January':
-            return 'IAP'
+            return 'JA'
         default:
             return 'UNKNOWN'
     }
