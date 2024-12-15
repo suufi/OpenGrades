@@ -168,7 +168,11 @@ const Settings = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel,
   const { data: session } = useSession()
 
   if (!session.user || session.user.trustLevel < 2) {
-    return <Error statusCode={403} />
+    return <Container>
+      <Title>
+        You're not supposed to be here!
+      </Title>
+    </Container>
   }
 
   // change theme when page is loaded
