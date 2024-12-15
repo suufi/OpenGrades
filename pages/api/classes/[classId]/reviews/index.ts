@@ -80,9 +80,9 @@ export default async function handler (
           recommendationLevel: z.number().min(1).max(5),
           classComments: z.string(),
           backgroundComments: z.string(),
-          numericGrade: z.number().min(0).max(100),
+          numericGrade: z.number().min(0).max(100).nullable(),
           letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P']),
-          methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other'])
+          methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other']).nullable()
         })
 
         const data = schema.parse(body)
@@ -149,9 +149,9 @@ export default async function handler (
           recommendationLevel: z.number().min(1).max(5),
           classComments: z.string(),
           backgroundComments: z.string(),
-          numericGrade: z.number().min(0).max(100),
-          letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P', 'DR']),
-          methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other'])
+          numericGrade: z.number().min(0).max(100).nullable(),
+          letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P']),
+          methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other']).nullable()
         })
 
         const data = schema.parse(body)

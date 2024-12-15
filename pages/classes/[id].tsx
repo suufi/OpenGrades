@@ -320,14 +320,23 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
     recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { invalid_type_error: 'Please select a recommendation level.' }),
     classComments: z.string().min(5, 'Please type some more words.'),
     backgroundComments: z.string(),
-    numericGrade: z.number().min(0).max(100),
+    numericGrade: z.number().min(0).max(100).nullable(),
     letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P', 'DR']),
-    methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other', ''])
+    methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other']).nullable()
   }).partial({
     conditions: true,
     numericGrade: true,
     backgroundComments: true,
     methodOfGradeCalculation: true
+  }).refine((data) => {
+    // If numericGrade is provided, methodOfGradeCalculation must not be null
+    if (data.numericGrade !== null && data.numericGrade !== undefined && data.methodOfGradeCalculation === null) {
+      return false
+    }
+    return true
+  }, {
+    message: "Method of grade calculation is required when numeric grade is provided.",
+    path: ['methodOfGradeCalculation'],
   })
 
   const form = useForm({
@@ -350,8 +359,8 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
         classComments: '',
         backgroundComments: '',
         recommendationLevel: '',
-        numericGrade: NaN,
-        methodOfGradeCalculation: '',
+        numericGrade: null,
+        methodOfGradeCalculation: null,
         letterGrade: '' as LetterGrade
       },
 
@@ -418,6 +427,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
                     label="Numeric Grade"
                     description="Enter your calculated grade (to the hundredths place, if applicable)"
                     decimalScale={2}
+                    onChange={(value) => form.setFieldValue('numericGrade', value ?? null)}
                     {...form.getInputProps('numericGrade')}
                   />
                   <Select key="methodOfGradeCalculation" {...form.getInputProps('methodOfGradeCalculation')} placeholder="Select method of grade calculation" description={'This helps us verify data accuracy and the need for more spreadsheets.'} label="Method of Numeric Grade Calculation" data={['Self', 'MIT OpenGrades Spreadsheet', 'Canvas', 'Other']} />

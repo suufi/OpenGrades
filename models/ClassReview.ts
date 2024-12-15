@@ -77,7 +77,6 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   },
   methodOfGradeCalculation: {
     type: String,
-    required: true
   },
   display: {
     type: Boolean,
