@@ -88,7 +88,29 @@ export default async function handler (
           sortQuery[sortField] = sortOrder === 'asc' ? 1 : -1
         }
 
-        let classes = await Class.find(query).sort(sortQuery).lean()
+        // Sort by the number of users who have taken the class
+        let classes = await Class.aggregate([
+          { $match: query }, // Match query filters
+          {
+            $lookup: {
+              from: 'users', // Adjust collection name as necessary
+              localField: '_id',
+              foreignField: 'classesTaken',
+              as: 'users',
+            },
+          },
+          {
+            $addFields: {
+              userCount: { $size: '$users' },
+            },
+          },
+          {
+            $sort: {
+              userCount: -1,
+              ...sortQuery, // Additional sort conditions
+            },
+          },
+        ])
 
         // Apply fuzzy searching if needed
         if (search) {

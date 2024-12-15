@@ -5,19 +5,19 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { Badge, Box, Card, Center, Checkbox, Collapse, Container, Divider, Grid, Group, List, Loader, LoadingOverlay, MultiSelect, Pagination, Space, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
+import { Badge, Box, Card, Center, Checkbox, Collapse, Container, Divider, Flex, Grid, Group, List, Loader, LoadingOverlay, MultiSelect, Pagination, Space, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
 
 
 import { IClass } from '../types'
 
 import { useDebouncedValue, useDisclosure, useHotkeys } from '@mantine/hooks'
 
-import { IconSearch } from '@tabler/icons'
+import { IconSearch, IconUserCircle } from '@tabler/icons'
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
 
-const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered }: IClass & { classReviewCount: number }) => {
+const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, userCount }: IClass & { classReviewCount: number, userCount: number }) => {
   const router = useRouter()
   return (
     <Tooltip w={300} withArrow multiline label={description || 'No description provided.'}>
@@ -29,9 +29,20 @@ const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, alias
         <Space h="sm" />
         <Text c="dimmed" size="sm"> {`${Number(term.substring(0, 4)) - 1}-${term}`} - {instructors.join(', ')} {(aliases && aliases.length > 0) && `- AKA ${aliases?.join(', ')}`} </Text>
         <Space h="sm" />
-        <Group>
-          {classReviewCount && <Badge size='sm' variant="filled">{classReviewCount} {classReviewCount === 1 ? 'Response' : 'Responses'}</Badge>}
-          {!offered && <Badge variant='filled' color='red' size='sm'> Not Offered </Badge>}
+        <Group justify={(classReviewCount || !offered) ? 'space-between' : 'flex-end'}>
+          {
+            (classReviewCount || !offered) && (
+              <Flex align='left'>
+                {classReviewCount && <Badge size='sm' variant="filled">{classReviewCount} {classReviewCount === 1 ? 'Response' : 'Responses'}</Badge>}
+                {!offered && <Badge variant='filled' color='red' size='sm'> Not Offered </Badge>}
+              </Flex>
+            )
+          }
+          <Flex justify={'flex-end'} align={'center'}>
+            <IconUserCircle fontWeight={300} color='gray' />
+            <Space w={2} />
+            <Text c='dimmed'>{userCount} </Text>
+          </Flex>
         </Group>
       </UnstyledButton>
     </Tooltip>
@@ -370,7 +381,7 @@ const Classes: NextPage = () => {
           <Masonry gutter={'0.5rem'}>
             {
               classes.map((classEntry: IClass) => (
-                <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} {...classEntry} />
+                <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} userCount={classEntry.userCount} {...classEntry} />
               ))
             }
           </Masonry>
