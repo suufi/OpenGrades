@@ -173,7 +173,7 @@ function ClassReviewComment ({ classReview,
         },
         body: JSON.stringify({
           type: 'DeanonymizeReview',
-          description: `Deanonymized ${author.hiddenName}'s review for ${classReview.class.toString()}`
+          description: `Deanonymized ${author}'s review for ${classReview.class.toString()}`
         })
       })
     }
