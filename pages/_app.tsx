@@ -17,8 +17,10 @@ import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import LockdownModule from '../components/LockdownModule'
 import { UserContext, UserContextProvider } from '../components/UserContextProvider'
 
+import '@mantine/charts/styles.css'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
+
 
 import 'primeicons/primeicons.css'
 import 'primereact/resources/primereact.min.css' // core css

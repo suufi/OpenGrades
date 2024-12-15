@@ -29,4 +29,4 @@ export { default } from "next-auth/middleware"
 //   }
 // })
 
-export const config = { matcher: ['/classes', '/settings', '/leaderboard', '/auditlogs', '/reports'] }
+export const config = { matcher: ['/classes', '/classes(.*)', '/settings', '/leaderboard', '/auditlogs', '/reports'] }

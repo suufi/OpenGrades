@@ -5,23 +5,28 @@ import React, { useContext, useEffect, useState } from 'react'
 import InferNextPropsType from 'infer-next-props-type'
 import Head from 'next/head'
 
-import { Badge, Button, Checkbox, Container, Grid, Group, List, MultiSelect, Select, Stack, Table, Text, TextInput, Title, useMantineColorScheme } from '@mantine/core'
+import { Badge, Button, Center, Checkbox, Container, Grid, Group, List, MultiSelect, Select, Stack, Table, Text, TextInput, Title, useMantineColorScheme } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 
-import mongoConnection from '../utils/mongoConnection'
+import mongoConnection from '@/utils/mongoConnection'
 
-import Class from '../models/Class'
-import { IClass } from '../types'
+import Class from '@/models/Class'
+import User from '@/models/User'
+import { IClass, IUser } from '../types'
 
 import { FilterMatchMode, FilterOperator, PrimeReactContext, PrimeReactProvider } from 'primereact/api'
 import { Column } from 'primereact/column'
 import { DataTable } from 'primereact/datatable'
 
+import { DonutChart } from '@mantine/charts'
 import { Calendar } from '@mantine/dates'
 import { openConfirmModal } from '@mantine/modals'
+import { getServerSession } from 'next-auth'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { EyeOff, Search } from 'tabler-icons-react'
 // import { ClassManagementTable } from '../components/ClassManagementTable'
+import { authOptions } from '@/pages/api/auth/[...nextauth]'
 
 
 const courseCatalog = `1 - Civil and Environmental Engineering
@@ -155,11 +160,16 @@ function DepartmentalTermGroupings () {
   )
 }
 
-const Settings = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>) => {
+const Settings = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
   const { colorScheme } = useMantineColorScheme()
   const { changeTheme } = useContext(PrimeReactContext)
 
   const router = useRouter()
+  const { data: session } = useSession()
+
+  if (!session.user || session.user.trustLevel < 2) {
+    return <Error statusCode={403} />
+  }
 
   // change theme when page is loaded
   useEffect(() => {
@@ -515,6 +525,13 @@ const Settings = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>
     )
   }
 
+  const colors = ["indigo", "yellow", "cyan", "violet", "blue", "orange", "teal", "red", "green", "gray"]
+  // const mappings = Object.entries(summaryByClassYear).map(([classYear, count], index) => ({
+  //   value: count,
+  //   color: `${colors[index]}.${index}`,
+  //   name: classYear
+  // }))
+
   return (
     <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
       <Head>
@@ -528,6 +545,43 @@ const Settings = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>
         <Title>
           Settings
         </Title>
+
+        <Title order={3}> User Management </Title>
+
+        <Center>
+          {
+            summaryByLevel && (
+              <DonutChart chartLabel={"Users by Level"} withLabelsLine labelsType="value" withLabels data={summaryByLevel.sort((a, b) => a._id - b._id).map(({ _id, count }, index) => (
+                {
+                  value: count,
+                  color: `${colors[index]}.${index}`,
+                  name: _id
+                }
+              ))} />
+            )
+          }
+
+          {
+            summaryByClassYear && (
+              <DonutChart chartLabel={"Users by Year"} withLabelsLine labelsType="value" withLabels data={summaryByClassYear.sort((a, b) => a._id - b._id).map(({ _id, count }, index) => (
+                {
+                  value: count,
+                  color: `${colors.reverse()[index]}.${index}`,
+                  name: _id
+                }
+              ))} />
+            )
+          }
+
+          {
+            activeUsers && (
+              <DonutChart chartLabel={"Active Users"} withLabels data={[
+                { value: activeUsers, color: 'blue.7', name: 'Active Users' },
+                { value: totalUsers - activeUsers, color: 'red.7', name: 'Inactive Users' }
+              ]} />
+            )
+          }
+        </Center>
 
         <DataTable
           // className={StyleClasses.table}
@@ -602,22 +656,74 @@ const Settings = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>
   )
 }
 
-export async function getServerSideProps () {
+export async function getServerSideProps (context) {
   await mongoConnection()
 
   const classesProp: IClass[] = await Class.find({}).lean() as IClass[]
+  const users: IUser[] = await User.find({}).lean() as IUser[]
+
+  const totalUsers = await User.countDocuments()
+  // const summaryByClassYear = users.reduce((acc, user) => {
+  //   const classYear = user.classYear || 'Unknown'
+  //   acc[classYear] = (acc[classYear] || 0) + 1
+  //   return acc
+  // }, {})
+  // rewrite the above using mongo aggregation, every user has a classYear and a trustLevel in their document
+  // make a dictionary that has first value as the year and the second value as the # of users in that year
+  const summaryByClassYear = await User.aggregate([
+    {
+      $match: {
+        trustLevel: { $gt: 0 },
+        verified: true
+      }
+    },
+    {
+      $group: {
+        _id: "$classOf",
+        count: { $sum: 1 }
+      }
+    }
+  ])
+
+  const summaryByLevel = await User.aggregate([
+    {
+      $match: {
+        trustLevel: { $gt: 0 },
+        verified: true
+      }
+    },
+    {
+      $group: {
+        _id: "$year",
+        count: { $sum: 1 }
+      }
+    }
+  ])
+
+  const activeUsers = await User.countDocuments({
+    trustLevel: { $gt: 0 }
+  })
 
   return {
     props: {
-      classesProp: JSON.parse(JSON.stringify(classesProp))
+      session: JSON.parse(JSON.stringify(await getServerSession(
+        context.req,
+        context.res,
+        authOptions
+      ))),
+      classesProp: JSON.parse(JSON.stringify(classesProp)),
+      totalUsers,
+      summaryByClassYear,
+      summaryByLevel,
+      activeUsers
     }
   }
 }
 
-const SettingsWrapper = ({ classesProp }: InferNextPropsType<typeof getServerSideProps>) => {
+const SettingsWrapper = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
   return (
     <PrimeReactProvider>
-      <Settings classesProp={classesProp} />
+      <Settings classesProp={classesProp} totalUsers={totalUsers} summaryByClassYear={summaryByClassYear} summaryByLevel={summaryByLevel} activeUsers={activeUsers} />
     </PrimeReactProvider>
   )
 }
