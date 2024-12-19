@@ -56,22 +56,41 @@ interface ClassesProps {
 
 // const Classes: NextPage<ClassesProps> = ({ classesProp, classReviewCountsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
 const Classes: NextPage = () => {
+  const router = useRouter()
 
-  const [searchTerm, setSearchTerm] = useState('')
+  let initialState = {
+    searchTerm: '',
+    offeredFilter: true,
+    reviewsOnlyFilter: false,
+    academicYearFilter: [],
+    departmentFilter: [],
+    termFilter: [],
+    currentPage: 1,
+  }
+
+  if (typeof window !== 'undefined') {
+    const saved = sessionStorage.getItem('classesPageState')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      initialState = { ...initialState, ...parsed }
+    }
+  }
+
+
+  const [searchTerm, setSearchTerm] = useState(initialState.searchTerm)
   const [debounced] = useDebouncedValue(searchTerm, 500, { leading: true })
   const [classes, setClasses] = useState([]) // Initialize with empty array
   const [academicYears, setAcademicYears] = useState([])
   const [allDepartments, setAllDepartments] = useState([])
 
-
   // turn all of the above into useState variables
-  const [offeredFilter, setOfferedFilter] = useState(true)
-  const [reviewsOnlyFilter, setReviewsOnlyFilter] = useState(false)
-  const [academicYearFilter, setAcademicYearFilter] = useState<string[]>([])
-  const [departmentFilter, setDepartmentFilter] = useState<string[]>([])
-  const [termFilter, setTermFilter] = useState<string[]>([])
+  const [offeredFilter, setOfferedFilter] = useState(initialState.offeredFilter)
+  const [reviewsOnlyFilter, setReviewsOnlyFilter] = useState(initialState.reviewsOnlyFilter)
+  const [academicYearFilter, setAcademicYearFilter] = useState<string[]>(initialState.academicYearFilter)
+  const [departmentFilter, setDepartmentFilter] = useState<string[]>(initialState.departmentFilter)
+  const [termFilter, setTermFilter] = useState<string[]>(initialState.termFilter)
 
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(initialState.currentPage)
   const [totalPages, setTotalPages] = useState(1)
   const [totalClasses, setTotalClasses] = useState(0)
 
@@ -80,95 +99,42 @@ const Classes: NextPage = () => {
   const [helpOpened, setHelpOpened] = useState(false)
   const [filtersOpened, { toggle: toggleFilterView }] = useDisclosure(false)
 
+  // Update sessionStorage whenever state changes
+  useEffect(() => {
+    const state = {
+      searchTerm,
+      offeredFilter,
+      reviewsOnlyFilter,
+      academicYearFilter,
+      departmentFilter,
+      termFilter,
+      currentPage,
+    }
+    sessionStorage.setItem('classesPageState', JSON.stringify(state))
+  }, [searchTerm, offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, currentPage])
 
-  // const options = {
-  //   shouldSort: true,
-  //   threshold: 0.3,
-  //   keys: [
-  //     'subjectNumber',
-  //     'subjectTitle',
-  //     'aliases'
-  //   ]
-  // }
-
-  // const classesFuse = new Fuse(classesProp, options)
-
-  // const minisearch = new Minisearch({
-  //   idField: '_id',
-  //   fields: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors'],
-  //   storeFields: ['subjectNumber', 'subjectTitle', 'aliases', 'instructors', 'term', 'academicYear', 'display', 'description', 'department', 'units', 'offered']
-  // })
-
-  // minisearch.addAll(classesProp)
 
   // useEffect(() => {
-  //   setLoading(true)
-  //   const updatedFilters: Record<string, string | boolean | number> = {
-  //     offered: true
+  //   if (router.query.searchTerm) {
+  //     setSearchTerm(router.query.search as string)
   //   }
-  //   const debouncedParsed = debounced.split(' ')
-  //   debouncedParsed.forEach(term => {
-  //     if (term.startsWith('@') && term.includes(':')) {
-  //       // If the term starts with an "@", split it on the first colon and add it to the filters object
-  //       const terms = term.split(':')
-  //       const key = terms[0] || ''
-  //       let value: string | boolean | number = terms[1] || ''
-  //       if (['false', 'true'].includes(terms[1].toLowerCase())) {
-  //         value = terms[1] === 'true'
-  //         console.log(`i just set ${terms[1]} to ${value}`)
-  //       } else if (/^\d+$/.test(terms[1])) {
-  //         value = parseInt(terms[1])
-  //       }
-  //       console.log(key, value, key.length > 1, value.toString().length >= 1)
-  //       if (key.length > 1 && value.toString().length >= 1) {
-  //         updatedFilters[key.substring(1)] = value // remove the "@" from the key
-  //       }
-  //     } else {
-  //       // If the term does not start with an "@", it is a search phrase
-  //       // Add it to the searchPhrases array in the filters object
-  //       if (updatedFilters.searchPhrases) {
-  //         updatedFilters.searchPhrases += ` ${term}`
-  //       } else {
-  //         updatedFilters.searchPhrases = term
-  //       }
-  //     }
-  //   })
-  //   setFilters({
-  //     ...updatedFilters
-  //   })
+  // }, [router.query.searchTerm])
 
-  //   let results = classesProp
-
-  //   if (updatedFilters.searchPhrases && updatedFilters.searchPhrases !== '') {
-  //     console.log('updatedFilters.searchPhrases', updatedFilters.searchPhrases)
-  //     results = classesFuse.search(updatedFilters.searchPhrases).map(match => match.item)
-  //     console.log(updatedFilters.searchPhrases, results)
+  // useEffect(() => {
+  //   if (searchTerm) {
+  //     router.push({
+  //       pathname: router.pathname,
+  //       query: { ...router.query, searchTerm },
+  //     }, undefined, { shallow: true })
+  //   } else {
+  //     const { searchTerm, ...rest } = router.query
+  //     router.push({
+  //       pathname: router.pathname,
+  //       query: rest,
+  //     }, undefined, { shallow: true })
   //   }
+  // }, [searchTerm])
 
-  //   console.log('results before filtering', results)
-
-  //   // results = classes.filter((c: IClass) =>
-  //   //   Object.entries(filters).every(([key, value]) => key !== 'searchPhrases' && c[key] === value)
-  //   // )
-  //   console.groupCollapsed()
-
-  //   results = results.filter((classEntry: IClass) => {
-  //     return Object.entries(filters).filter(([key]) => key !== 'searchPhrases').every(([key, value]) => {
-  //       console.log('checking class', classEntry)
-  //       console.log('\tfilter check:', classEntry[key], value)
-  //       console.log('\tincluding class:', classEntry[key] === value ? '✅' : '❌')
-  //       return classEntry[key] === value
-  //     })
-  //   })
-  //   console.groupEnd()
-
-  //   console.log('filters applied', Object.entries(filters))
-  //   console.log('classes remaining', results)
-
-  //   setClasses(results)
-
-  //   setLoading(false)
-  // }, [debounced])
 
   // useEffect(() => {
   //   setLoading(true)
