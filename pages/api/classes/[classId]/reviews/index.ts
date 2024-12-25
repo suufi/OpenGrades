@@ -93,6 +93,12 @@ export default async function handler (
           return res.status(409).json({ success: false, message: 'Class review already exists.' })
         }
 
+        await User.findByIdAndUpdate(author._id, {
+          $push: {
+            classesTaken: new mongoose.Types.ObjectId(req.query.classId as string)
+          }
+        })
+
         await ClassReview.create({
           class: new mongoose.Types.ObjectId(req.query.classId as string),
           overallRating: data.overallRating,
