@@ -92,6 +92,7 @@ export interface IUser {
     trustLevel: number
     classesTaken: IClass[]
     flags: IdentityFlags[]
+    referredBy: IUser
 }
 
 export interface IClassReview {

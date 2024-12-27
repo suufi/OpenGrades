@@ -15,11 +15,11 @@ import User from '@/models/User'
 import classes from '@/styles/Home.module.css'
 import { IClass, IClassReview, IUser } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
-import { Accordion, ActionIcon, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, ThemeIcon, Title } from '@mantine/core'
+import { Accordion, ActionIcon, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import { useDisclosure } from '@mantine/hooks'
+import { useDebouncedState, useDisclosure } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
-import { IconCircleCheck, IconCircleX } from '@tabler/icons'
+import { IconCheck, IconCircleCheck, IconCircleX } from '@tabler/icons'
 import { GetServerSideProps } from 'next'
 import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth/next'
@@ -48,7 +48,7 @@ interface FormValues {
   flatClasses?: string[]
 }
 
-const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp }) => {
+const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp, referralsProp }) => {
 
   const academicYears = [...new Set(userProp.classesTaken.map((classTaken: IClass) => classTaken.academicYear))]
   const allAcademicYears = academicYearsProp.map((academicYear: number) => ({ value: academicYear.toString(), label: `${academicYear - 1} - ${academicYear}` }))
@@ -58,6 +58,27 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const [selectedTerm, setSelectedTerm] = useState<string | null>('FA')
   const [contentLoading, setContentLoading] = useState<boolean>(false)
   const [flagExplanation, setFlagExplanation] = useState<boolean>(false)
+  const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
+  const [referredByState, setReferredByState] = useState<State>({ data: '', status: 'initial' })
+
+
+  async function verifyReferralKerb (kerb: string) {
+    const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
+    const body = await res.json()
+    if (res.ok && body.data) {
+      setReferredByState({ data: body.data, status: 'success' })
+      return body.data
+    } else {
+      setReferredByState({ data: body.message || 'That kerb is not registered on OpenGrades. Maybe you can refer them?', status: 'error' })
+      return false
+    }
+  }
+
+  useEffect(() => {
+    if (referredBy.length === 0) return
+    verifyReferralKerb(referredBy)
+  }, [referredBy])
+
 
   const form = useForm<FormValues>({
     initialValues: {
@@ -169,6 +190,36 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
       } else {
         showNotification({
           title: 'Error updating flags',
+          message: body.message,
+          color: 'red'
+        })
+      }
+    })
+
+    router.replace(router.asPath)
+  }
+
+  async function updateReferral (kerb: string) {
+    await fetch('/api/me/referral', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        referredBy: kerb
+      })
+    }).then(async (res) => {
+      const body = await res.json()
+
+      if (res.ok) {
+        showNotification({
+          title: 'Referral updated!',
+          message: 'Your referral has been updated.',
+          color: 'purple'
+        })
+      } else {
+        showNotification({
+          title: 'Error updating referral',
           message: body.message,
           color: 'red'
         })
@@ -365,6 +416,9 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             <Text className={classes.text}>
               You have written {reviewsProp.length} reviews.
             </Text>
+            <Text className={classes.text}>
+              You have {referralsProp} referrals.
+            </Text>
             <Divider my='md' />
             <MultiSelect value={userProp.flags} onChange={(selected) => {
               updateFlags(selected)
@@ -401,6 +455,24 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 <List.Item> <Text c='dimmed' fz='sm'>International: any student who does not hold United States citizenship or permanent residency, regardless of where they live or attend school.⁠ </Text> </List.Item>
               </List>
             </Collapse>
+            <Divider my='md' />
+          </Card>
+
+          <Card style={{ marginTop: 'var(--mantine-spacing-lg)' }}>
+            <Title order={3}> 🤝 Referral </Title>
+            <Space h="sm" />
+            {userProp.referredBy && <Text className={classes.text}> Referred by: {userProp.referredBy.kerb} </Text>}
+            {
+              !userProp.referredBy && (
+                <>
+                  <Text className={classes.text}> If you were referred by someone, please enter their kerb here. </Text>
+                  <Stack gap="xs">
+                    <TextInput defaultValue={referredBy} disabled={referredByState.status == 'loading'} onChange={(e) => setReferredBy(e.target.value)} error={referredByState.status == 'error' && referredByState.data} rightSectionPointerEvents='none' rightSection={referredByState.status == 'success' && <IconCheck color='green' />} label="OpenGrades Referral" placeholder='kerb' />
+                    <Button onClick={() => updateReferral(referredBy)} disabled={referredByState.status != 'success'}> Update Referral </Button>
+                  </Stack>
+                </>
+              )
+            }
           </Card>
         </Grid.Col>
       </Grid>
@@ -426,19 +498,26 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
   console.log("user", session?.user)
   if (session) {
     if (session.user && session.user?.email) {
-      const user = await User.findOne({ email: session.user.email }).populate('classesTaken').lean()
+      const user = await User.findOne({ email: session.user.email }).populate([
+        { path: 'classesTaken' },
+        {
+          path: 'referredBy', select: 'kerb'
+        }
+      ]).lean()
       const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean()
       let reviews = []
       if (user) {
         reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean()
       }
+      const referralCount = await User.countDocuments({ referredBy: user._id })
 
       return {
         props: {
           session: JSON.parse(JSON.stringify(session)),
           userProp: JSON.parse(JSON.stringify(user)),
           reviewsProp: JSON.parse(JSON.stringify(reviews)),
-          academicYearsProp: JSON.parse(JSON.stringify(academicYears))
+          academicYearsProp: JSON.parse(JSON.stringify(academicYears)),
+          referralsProp: referralCount
         }
       }
     }

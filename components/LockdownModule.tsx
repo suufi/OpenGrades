@@ -9,12 +9,13 @@ import { z } from 'zod'
 import { UserContext } from '../components/UserContextProvider'
 // import Class from '../models/Class'
 import { useDebouncedState, useMediaQuery } from '@mantine/hooks'
+import { IconCheck } from '@tabler/icons'
 import Link from 'next/link'
 import { IClass, IdentityFlags } from '../types'
 import ClassSearch from './ClassSearch'
 
 type State = {
-  data: { value: string; label: string }[]
+  data: string
   status: 'initial' | 'loading' | 'error' | 'success'
 }
 
@@ -30,13 +31,16 @@ type UserProfile = {
   affiliation?: string,
   flags?: IdentityFlags[],
   classes: string[] | { [key: string]: string[] },
-  flatClasses?: string[]
+  flatClasses?: string[],
+  referredBy?: string
 }
 
 function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const { status, update } = useSession()
   const router = useRouter()
   const [active, setActive] = useState(0)
+  const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
+  const [referredByState, setReferredByState] = useState<State>({ data: '', status: 'initial' })
   const [academicYearsTaken, setAcademicYearsTaken] = useState<string[]>([])
   const nextStep = () => setActive((current) => (current < 3 ? current + 1 : current))
   const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current))
@@ -45,6 +49,23 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const isMobile = useMediaQuery(`(max-width: ${em(750)})`)
   const [gradeReport, setGradeReport] = useDebouncedState<string>('', 1000)
 
+  async function verifyReferralKerb (kerb: string) {
+    const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
+    const body = await res.json()
+    if (res.ok && body.data) {
+      setReferredByState({ data: body.data, status: 'success' })
+      return body.data
+    } else {
+      setReferredByState({ data: body.message || 'That kerb is not registered on OpenGrades. Maybe you can refer them?', status: 'error' })
+      return false
+    }
+  }
+
+  useEffect(() => {
+    if (referredBy.length === 0) return
+    verifyReferralKerb(referredBy)
+  }, [referredBy])
+
 
   const schema = z.object({
     kerb: z.string(),
@@ -52,7 +73,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     classOf: z.number().min(2000).max(new Date().getFullYear() + 7),
     identityFlags: z.nativeEnum(IdentityFlags).array(),
     affiliation: z.string(),
-    classes: z.record(z.array(z.string()))
+    classes: z.record(z.array(z.string())),
+    referredBy: z.string().optional()
   }).partial({
     flags: true,
     identityFlags: true,
@@ -64,6 +86,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       name: status === 'authenticated' ? userProfile?.name : '',
       classOf: status === 'authenticated' ? (userProfile?.classOf) : new Date().getFullYear(),
       affiliation: status === 'authenticated' ? userProfile?.affiliation : '',
+      referredBy: '',
       flags: [],
       classes: {}
     },
@@ -112,7 +135,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        ...values
+        ...values,
+        referredBy: referredByState.status === 'success' ? referredBy : undefined
       })
     }).then(async (res) => {
       const body = await res.json()
@@ -231,6 +255,9 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                 </Group>
                 <Space h='md' />
                 <Select {...form.getInputProps('affiliation')} label="Affiliation" disabled data={['staff', 'student', 'affiliate']} />
+                <Space h={'md'} />
+                <Text c='dimmed' fz='sm'> Were you referred by a friend? Type their kerb below. They won't know anything that you post, don't worry. </Text>
+                <TextInput defaultValue={referredBy} disabled={referredByState.status == 'loading'} onChange={(e) => setReferredBy(e.target.value)} error={referredByState.status == 'error' && referredByState.data} rightSectionPointerEvents='none' rightSection={referredByState.status == 'success' && <IconCheck color='green' />} label="OpenGrades Referral" placeholder='kerb' />
                 {/* <Select {...form.getInputProps('department')} label="Department(s)" disabled data={['']}/> */}
                 {/* <Space h="md" /> */}
                 <Divider m={'md'} />

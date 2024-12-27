@@ -56,6 +56,11 @@ const UserSchema = new mongoose.Schema<IUser>({
   trustLevel: {
     type: Number,
     default: 0
+  },
+  referredBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
   }
 }, { timestamps: true })
 

@@ -5,6 +5,7 @@ import { IdentityFlags } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
 
 import { auth } from '@/utils/auth'
+import mongoose from 'mongoose'
 import { z } from 'zod'
 
 type Data = {
@@ -49,7 +50,8 @@ export default async function handler (
             classOf: z.number(),
             affiliation: z.string(),
             identityFlags: z.array(z.nativeEnum(IdentityFlags)),
-            flatClasses: z.array(z.string())
+            flatClasses: z.array(z.string()),
+            referredBy: z.string().optional()
           }).partial({
             identityFlags: true,
             flatClasses: true
@@ -57,10 +59,13 @@ export default async function handler (
 
           const data = schema.parse(body)
 
+          const referredByUser = data.referredBy ? await User.exists({ kerb: data.referredBy }) : false
+
           await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
             classOf: data.classOf,
             classesTaken: data.flatClasses,
             identityFlags: data.identityFlags,
+            referredBy: referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined,
             trustLevel: 1
           })
 
