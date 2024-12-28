@@ -822,7 +822,7 @@ export const getServerSideProps = (async (context) => {
               userVote: { $ifNull: [{ $arrayElemAt: ['$userVote.vote', 0] }, null] }
             }
           },
-          { $project: { 'votes': 0 } }
+          { $project: { 'votes': 0, 'author': 0, 'numericGrade': 0, 'letterGrade': 0 } }
         ])
       } else {
         // Fetch full review data with votes
