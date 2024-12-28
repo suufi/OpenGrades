@@ -3,7 +3,7 @@ import { AppProps } from 'next/app'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { ReactNode, useContext } from 'react'
+import React, { ReactNode, useContext, useEffect } from 'react'
 
 import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Text, ThemeIcon, Tooltip, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
@@ -26,6 +26,7 @@ import 'primeicons/primeicons.css'
 import 'primereact/resources/primereact.min.css' // core css
 
 import ErrorBoundary from '@/components/ErrorBoundary'
+import Script from 'next/script'
 import NotLoggedIn from '../components/NotLoggedIn'
 import mainClasses from '../styles/Main.module.css'
 
@@ -287,6 +288,13 @@ function App ({ pageProps, Component }: AppProps) {
 }
 
 export default function AppWrapper ({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    window.dataLayer = window.dataLayer || []
+    function gtag () { dataLayer.push(arguments) }
+    gtag('js', new Date())
+    gtag('config', 'G-2EWKT6ED8T')
+  }, [])
+
   return <>
     <Head>
       <title>MIT OpenGrades</title>
@@ -319,6 +327,7 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
               {/* <App {...pageProps} /> */}
               <link rel="canonical" href="https://opengrades.mit.edu" />
               <App pageProps={pageProps} Component={Component} />
+              <Script src='https://www.googletagmanager.com/gtag/js?id=G-2EWKT6ED8T' strategy='afterInteractive' />
             </ModalsProvider>
           </MantineProvider>
         </UserContextProvider>
