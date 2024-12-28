@@ -282,6 +282,13 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: light)" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: dark)" />
       <meta name="google-site-verification" content="fXojmVQpuE4vWKn_PgHDimVPychoR4hwhUTnGM7TJuo" />
+      <meta name="description" content="MIT OpenGrades is a platform for students to share their experiences with classes at MIT." />
+      <meta name="keywords" content="MIT, OpenGrades, Course Reviews, Course Ratings, MIT Course Reviews, MIT Course Ratings" />
+
+      <meta name="og:title" content="MIT OpenGrades" />
+      <meta name="og:description" content="MIT OpenGrades is a platform for students to share their experiences with classes at MIT." />
+      <meta name="og:url" content="https://opengrades.mit.edu" />
+
       <link id="theme-link" rel="stylesheet" href="css/themes/lara-dark-blue/theme.css" />
       <link id="theme-link" rel="stylesheet" href="css/themes/lara-light-blue/theme.css" />
 
@@ -298,6 +305,7 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
             <Notifications />
             <ModalsProvider>
               {/* <App {...pageProps} /> */}
+              <link rel="canonical" href="https://opengrades.mit.edu" />
               <App pageProps={pageProps} Component={Component} />
             </ModalsProvider>
           </MantineProvider>
