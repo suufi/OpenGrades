@@ -509,7 +509,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
   if (session) {
     if (session.user && session.user?.email) {
       const user = await User.findOne({ email: session.user.email }).populate([
-        { path: 'classesTaken' },
+        { path: 'classesTaken', select: '-description' },
         {
           path: 'referredBy', select: 'kerb'
         }
