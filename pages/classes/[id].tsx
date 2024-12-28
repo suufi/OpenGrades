@@ -791,7 +791,7 @@ export const getServerSideProps = (async (context) => {
       if (user.trustLevel < 2) {
         // Fetch reviews with limited data based on trust level
         reviewsData = await ClassReview.aggregate([
-          { $match: { class: new mongoose.Types.ObjectId(id) } },
+          { $match: { class: new mongoose.Types.ObjectId(id), display: true } },
           {
             $lookup: {
               from: 'reviewvotes',
