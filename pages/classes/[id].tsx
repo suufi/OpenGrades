@@ -391,7 +391,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
       if (res.ok) {
         showNotification({
           title: 'Success!',
-          message: `Posted your review for ${classData.subjectNumber}`
+          message: `${editData ? 'Edited' : 'Posted'} your review for ${classData.subjectNumber}`
         })
         refreshData()
         setOpened(false)
@@ -467,7 +467,11 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
 
       </Modal>
 
-      <Button style={{ verticalAlign: 'text-bottom' }} variant='outline' radius='xl' size='sm' onClick={() => setOpened(true)}> {editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'} </Button>
+      {/* <Button style={{ verticalAlign: 'text-bottom' }} variant='outline' radius='xl' size='sm' onClick={() => setOpened(true)}> {editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'} </Button> */}
+
+      <Button variant='light' style={{ width: '100%' }} onClick={() => setOpened(true)} color={editData ? 'violet' : 'green'}>
+        {editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'}
+      </Button>
     </>
   )
 }
@@ -713,7 +717,9 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
           <AddContent classData={classProp} refreshData={refreshData} />
         </Group>
 
-        <Title order={3}> Reviews <AddReview classData={classProp} refreshData={refreshData} editData={myReview} /> </Title>
+        <Title order={3}> Reviews </Title>
+
+        <AddReview classData={classProp} refreshData={refreshData} editData={myReview} />
 
         {
           reviews.length > 0
@@ -730,7 +736,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
                 onVoteChange={(vote) => handleVoteChange(classReview._id, vote, classReview.userVote)}
               />
             ))
-            : (<Box>  No class reviews yet. Please check back later or add one if you have taken this class. Thank you! </Box>)
+            : (<Box>  No class reviews yet. Please check back later or be the first one if you have taken this class. Thank you! </Box>)
         }
       </Stack>
     </Container>
