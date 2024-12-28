@@ -4,14 +4,22 @@ import User from '../../../models/User'
 import { IdentityFlags } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
 
+import ClassReview from '@/models/ClassReview'
 import { auth } from '@/utils/auth'
-import mongoose from 'mongoose'
 import { z } from 'zod'
 
 type Data = {
   success: boolean,
   data?: object,
   message?: string
+}
+
+function normalizeGrade (grade: string) {
+  if (['A', 'B', 'C', 'D', 'F'].includes(grade[0])) {
+    return grade[0]
+  }
+
+  return grade
 }
 
 export default async function handler (
@@ -43,7 +51,9 @@ export default async function handler (
       break
     case 'PUT':
       try {
-        if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+        const user = await User.exists({ email: session.user?.id.toLowerCase() })
+
+        if (user) {
           const schema = z.object({
             kerb: z.string(),
             name: z.string(),
@@ -51,7 +61,13 @@ export default async function handler (
             affiliation: z.string(),
             identityFlags: z.array(z.nativeEnum(IdentityFlags)),
             flatClasses: z.array(z.string()),
-            referredBy: z.string().optional()
+            referredBy: z.string().optional(),
+            partialReviews: z.array(z.object({
+              class: z.string(),
+              letterGrade: z.string(),
+              dropped: z.boolean(),
+              firstYear: z.boolean()
+            })).optional()
           }).partial({
             identityFlags: true,
             flatClasses: true
@@ -68,6 +84,26 @@ export default async function handler (
             referredBy: referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined,
             trustLevel: 1
           })
+
+          if (data.partialReviews) {
+            const reviewsToMake = []
+            const existingReviews = await ClassReview.find({ author: user._id }).lean()
+            for (const review of data.partialReviews) {
+              if (existingReviews.some((r) => r.class === review.class)) {
+                continue
+              }
+              reviewsToMake.push({
+                class: review.class,
+                author: user._id,
+                letterGrade: normalizeGrade(review.letterGrade),
+                dropped: review.dropped,
+                display: false,
+                firstYear: review.firstYear,
+                partial: true,
+              })
+            }
+            await ClassReview.create(reviewsToMake)
+          }
 
           return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
         } else {

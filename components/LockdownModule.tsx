@@ -1,5 +1,5 @@
 
-import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Text, Textarea, TextInput, Title } from '@mantine/core'
+import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Switch, Text, Textarea, TextInput, Title } from '@mantine/core'
 import { useForm, UseFormReturnType, zodResolver } from '@mantine/form'
 import { showNotification } from '@mantine/notifications'
 import { useSession } from 'next-auth/react'
@@ -48,6 +48,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const { userProfile, setUserProfile } = useContext(UserContext)
   const isMobile = useMediaQuery(`(max-width: ${em(750)})`)
   const [gradeReport, setGradeReport] = useDebouncedState<string>('', 1000)
+  const [partialReviewsEnabled, setPartialReviewsEnabled] = useState(true)
+  const [partialReviewsData, setPartialReviewsData] = useState<{ class: string, letterGrade: string, dropped: boolean, firstYear: boolean }[]>([])
 
   async function verifyReferralKerb (kerb: string) {
     const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
@@ -136,7 +138,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       },
       body: JSON.stringify({
         ...values,
-        referredBy: referredByState.status === 'success' ? referredBy : undefined
+        referredBy: referredByState.status === 'success' ? referredBy : undefined,
+        partialReviews: partialReviewsEnabled ? partialReviewsData : []
       })
     }).then(async (res) => {
       const body = await res.json()
@@ -180,21 +183,36 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       },
       body: JSON.stringify({
         gradeReport,
+        withPartialReviews: partialReviewsEnabled,
       }),
     })
       .then(async (res) => {
         const body = await res.json()
         if (res.ok) {
           console.log(body)
+          const { matchedClasses, partialReviews } = body.data
+          if (partialReviews) {
+            setPartialReviewsData(partialReviews)
+          }
 
           // Extract academic years
           const newAcademicYearsTaken = [
-            ...new Set((body.data as IClass[]).map((c: IClass) => `${c.academicYear - 1}-${c.academicYear}`)),
+            ...new Set((matchedClasses as IClass[]).map((c: IClass) => `${c.academicYear - 1}-${c.academicYear}`)),
           ]
           setAcademicYearsTaken(newAcademicYearsTaken)
 
-          // Create a map of term -> classes
-          const newClasses = (body.data as IClass[]).reduce((acc: { [key: string]: string[] }, c: IClass) => {
+          // Add partial reviews to classes
+          const classesWithPartialReviews = matchedClasses.map((cls: IClass & { partialReviewGrade?: string; isDropped?: boolean }) => {
+            const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
+            if (matchingPR) {
+              cls.partialReviewGrade = matchingPR.letterGrade
+              cls.isDropped = matchingPR.dropped
+            }
+            return cls
+          })
+
+          // Create a new object with the classes grouped by term
+          const newClasses = classesWithPartialReviews.reduce((acc: { [key: string]: string[] }, c: IClass) => {
             const key = `${c.term}`
             if (acc[key]) {
               acc[key].push(c._id)
@@ -220,7 +238,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
         console.error(err)
         setFormLoading(false)
       })
-  }, [gradeReport])
+  }, [gradeReport, partialReviewsEnabled])
 
 
   return (status === 'authenticated')
@@ -295,6 +313,11 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                   <Text> To maintain the platform, we depend on students providing reviews for classes they&apos;ve taken in the past. In the semesters fields below, please input the classes you&apos;ve taken (or dropped). You don&apos;t have to review every class, but please try to review as many as you can. By listing a class below, we may reach out to you to request a class review if there is interest in a class but little to no reviews. </Text>
                   <Text> You can manually search for classes below or copy and paste your <Link href='https://student.mit.edu/cgi-bin/shrwsgrd.sh'>grade report</Link> (entire page) from the MIT Registrar. </Text>
                   <Textarea variant='filled' defaultValue={gradeReport} onChange={(e) => setGradeReport(e.target.value)} label="Grade Report" placeholder="Copy and paste your grade report here" />
+                  <Switch
+                    label="Generate prefilled reviews with your grades from your grade report"
+                    checked={partialReviewsEnabled}
+                    onChange={(event) => setPartialReviewsEnabled(event.currentTarget.checked)}
+                  />
                   <Stack>
                     <MultiSelect placeholder="Select the academic years for which you attempted a class for" label="Academic year(s) you've taken classes" data={academicYears} value={academicYearsTaken} onChange={setAcademicYearsTaken} />
                     {

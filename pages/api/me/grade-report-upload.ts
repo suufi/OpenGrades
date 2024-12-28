@@ -10,17 +10,39 @@ const parseGradeReport = (gradeReport) => {
 
     const sections = gradeReport.split(/\n\n/)
     const parsedClasses = []
+
     let currentTerm = null
     let currentYear = null
 
-    sections.forEach((section) => {
+    sections.forEach((section, index) => {
         const lines = section.split('\n')
 
+        // Skip the first term if it's a summer term
+        if (index === 0 || section.includes('Summer Term')) {
+            return
+        }
+
+        // Check for the line that starts with "Year:"
+        let isYear1 = false
+        const yearLine = lines.find((line) => line.startsWith('Year:'))
+        if (yearLine) {
+            if (yearLine.includes('1 R')) {
+                isYear1 = true
+            }
+        }
+
+
         // Check for the term and year in the section
-        const termLine = lines.find((line) => line.includes('Term') && !line.includes('Units Earned'))
+        const termLine = lines.find(
+            (line) => line.includes('Term') && !line.includes('Units Earned')
+        )
+
         if (termLine) {
             const academicYearMatch = termLine.match(/(\d{4})-(\d{4})/)
-            currentYear = academicYearMatch ? parseInt(academicYearMatch[1]) + 1 : currentYear
+            currentYear = academicYearMatch
+                ? parseInt(academicYearMatch[1]) + 1
+                : currentYear
+
             currentTerm = termLine.includes('Fall')
                 ? 'Fall'
                 : termLine.includes('Spring')
@@ -34,11 +56,22 @@ const parseGradeReport = (gradeReport) => {
 
         // Parse class information
         lines.forEach((line) => {
-            if (!line.includes('Subject Number') && !line.includes('Units Earned') && !line.includes('Term GPA')) {
-                const parts = line.split(/\t+/) // Use tab as the delimiter
+            if (
+                !line.includes('Subject Number') &&
+                !line.includes('Units Earned') &&
+                !line.includes('Term GPA')
+            ) {
+                // use tab or 4 space as delimiter
+                let parts = line.split(/\t+/) // Use tab as the delimiter
+                parts = parts.length === 1 ? line.split(/ {4,}/) : parts
                 if (parts.length >= 5) {
                     const [subjectNumber, subjectTitle, units, level, grade] = parts
-                    if (subjectNumber && !subjectNumber.startsWith('HA') && !['P&', 'S'].includes(grade)) { // Exclude Harvard classes
+                    if (
+                        subjectNumber &&
+                        !subjectNumber.startsWith('H') &&
+                        !['P&', 'S', 'URN'].includes(grade) &&
+                        currentTerm
+                    ) {
                         parsedClasses.push({
                             subjectNumber: subjectNumber.trim(),
                             subjectTitle: subjectTitle?.trim(),
@@ -47,6 +80,7 @@ const parseGradeReport = (gradeReport) => {
                             grade: grade?.trim(),
                             academicYear: currentYear,
                             term: currentTerm,
+                            freshman: isYear1,
                         })
                     }
                 }
@@ -54,7 +88,6 @@ const parseGradeReport = (gradeReport) => {
         })
     })
 
-    console.log(parsedClasses)
     return parsedClasses
 }
 
@@ -83,11 +116,12 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
 
     const session = await auth(req, res)
 
-    // if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
     if (method === 'POST') {
+
         try {
-            const { gradeReport } = body
+            const { gradeReport, withPartialReviews } = body
 
             if (!gradeReport) {
                 return res.status(400).json({ success: false, message: 'Grade report is required.' })
@@ -101,6 +135,7 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
 
             // Match the parsed classes against the MongoDB collection
             const matchedClasses = []
+            const partialReviews = []
 
             for (const cls of parsedClasses) {
                 const matchedClass = await Class.findOne({
@@ -114,10 +149,22 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
 
                 if (matchedClass) {
                     matchedClasses.push(matchedClass)
+                    if (withPartialReviews && ['A', 'B', 'C', 'D', 'F'].includes(cls.grade[0])) {
+                        const partialReview = {
+                            class: matchedClass._id,
+                            letterGrade: cls.grade,
+                            partial: true,
+                            display: false,
+                            firstYear: cls.freshman,
+                            dropped: cls.grade == 'DR'
+                        }
+
+                        partialReviews.push(partialReview)
+                    }
                 }
             }
 
-            return res.status(200).json({ success: true, data: matchedClasses })
+            return res.status(200).json({ success: true, data: { matchedClasses, partialReviews } })
         } catch (error) {
             return res.status(500).json({ success: false, message: error.toString() })
         }

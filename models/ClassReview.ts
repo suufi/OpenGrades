@@ -32,36 +32,29 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   },
   overallRating: {
     type: Number,
-    required: true,
     min: 1,
     max: 7
   },
   firstYear: {
     type: Boolean,
-    required: true
   },
   retaking: {
     type: Boolean,
-    required: true
   },
   droppedClass: {
     type: Boolean,
-    required: true
   },
   hoursPerWeek: {
     type: String,
     enum: ['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'],
-    required: true
   },
   recommendationLevel: {
     type: Number,
-    required: true,
     min: 1,
     max: 5
   },
   classComments: {
     type: String,
-    required: true
   },
   backgroundComments: {
     type: String
@@ -73,7 +66,7 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   },
   letterGrade: {
     type: String,
-    enum: ['A', 'B', 'C', 'D', 'F']
+    enum: ['A', 'B', 'C', 'D', 'F', 'DR']
   },
   methodOfGradeCalculation: {
     type: String,
@@ -83,6 +76,10 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
     default: true
   },
   verified: {
+    type: Boolean,
+    default: false
+  },
+  partial: {
     type: Boolean,
     default: false
   }

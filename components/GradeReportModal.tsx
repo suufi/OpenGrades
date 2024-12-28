@@ -1,4 +1,4 @@
-import { Accordion, Button, Flex, Group, List, LoadingOverlay, Modal, Stack, Text, Textarea } from '@mantine/core'
+import { Accordion, Badge, Button, Flex, Group, List, LoadingOverlay, Modal, Stack, Switch, Text, Textarea } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 import { useState } from 'react'
 
@@ -8,10 +8,12 @@ import Link from 'next/link'
 const GradeReportModal = ({ opened, onClose, onAddClasses }: {
     opened: boolean
     onClose: () => void
-    onAddClasses: (classes: { [key: string]: IClass[] }) => void
+    onAddClasses: (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => void
 }) => {
     const [gradeReport, setGradeReport] = useState('')
     const [loading, setLoading] = useState(false)
+    const [withPartialReviews, setWithPartialReviews] = useState(true)
+    const [partialReviews, setPartialReviews] = useState<{ class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]>([])
     const [parsedClasses, setParsedClasses] = useState<{ [key: string]: IClass[] }>({})
 
     // Fetch and parse the grade report
@@ -22,21 +24,33 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
             const response = await fetch('/api/me/grade-report-upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gradeReport }),
+                body: JSON.stringify({ gradeReport, withPartialReviews }),
             })
 
             const body = await response.json()
             if (response.ok) {
-                const classes = body.data.reduce((acc: { [key: string]: IClass[] }, c: IClass) => {
-                    const key = `${c.academicYear}`
-                    if (acc[key]) {
-                        acc[key].push(c)
-                    } else {
-                        acc[key] = [c]
+                const { matchedClasses, partialReviews } = body.data
+
+                const classesWithReviews = matchedClasses.reduce((acc: Record<string, IClass[]>, cls: IClass & { partialReviewGrade?: string; isDropped?: boolean }) => {
+                    const key = `${cls.academicYear}`
+
+                    const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
+
+                    if (matchingPR) {
+                        cls.partialReviewGrade = matchingPR.letterGrade
+                        cls.isDropped = matchingPR.dropped
                     }
+
+                    if (!acc[key]) {
+                        acc[key] = []
+                    }
+                    acc[key].push(cls)
+
                     return acc
                 }, {})
-                setParsedClasses(classes)
+
+                setParsedClasses(classesWithReviews)
+                setPartialReviews(partialReviews)
                 showNotification({ title: 'Success!', message: 'Grade report parsed successfully.', color: 'green' })
             } else {
                 showNotification({ title: 'Error!', message: body.message, color: 'red' })
@@ -50,7 +64,7 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
 
     // Submit the parsed classes
     const handleSubmit = () => {
-        onAddClasses(parsedClasses)
+        onAddClasses(parsedClasses, partialReviews)
         setGradeReport('')
         setParsedClasses({})
         onClose()
@@ -71,7 +85,7 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
     }
 
     return (
-        <Modal opened={opened} onClose={onClose} title="Upload Grade Report">
+        <Modal opened={opened} onClose={onClose} title="Upload Grade Report" size="lg">
             <LoadingOverlay visible={loading} />
             <Stack>
                 <Text variant='muted'>Please paste your <Link href='https://student.mit.edu/cgi-bin/shrwsgrd.sh'>grade report</Link> (entire page) below to add classes to your profile.</Text>
@@ -82,6 +96,7 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
                     value={gradeReport}
                     onChange={(e) => setGradeReport(e.target.value)}
                 />
+                <Switch label="Generate partial reviews w/ grades" checked={withPartialReviews} onChange={() => setWithPartialReviews((v) => !v)} />
                 <Button onClick={handleParseGradeReport} disabled={!gradeReport.trim() || loading}>
                     Parse Grade Report
                 </Button>
@@ -100,13 +115,13 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
                                             <List spacing="xs">
                                                 {classes
                                                     .sort((a, b) => a.term.localeCompare(b.term)) // Sort classes by term
-                                                    .map((classTaken: IClass) => (
+                                                    .map((classTaken: IClass & { partialReviewGrade?: string; isDropped?: boolean }) => (
                                                         <List.Item
                                                             key={classTaken._id}
                                                         >
                                                             <Flex align="center">
                                                                 <Text>
-                                                                    {getEmojiForTerm(classTaken.term)} {classTaken.subjectNumber}: {classTaken.subjectTitle}
+                                                                    {getEmojiForTerm(classTaken.term)} {classTaken.subjectNumber}: {classTaken.subjectTitle} {classTaken && classTaken.partialReviewGrade && <Badge color='violet'>{classTaken.partialReviewGrade} </Badge>}
                                                                 </Text>
                                                             </Flex>
                                                         </List.Item>

@@ -1,10 +1,23 @@
 // @ts-nocheck
+import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import mongoConnection from '../../../utils/mongoConnection'
 
 import { auth } from '@/utils/auth'
 
-import User from '../../../models/User'
+import ClassReview from '@/models/ClassReview'
+import User from '@/models/User'
+import { IClassReview } from '@/types'
+import mongoose from 'mongoose'
+
+function normalizeGrade (grade: string) {
+    if (['A', 'B', 'C', 'D', 'F'].includes(grade[0])) {
+        return grade[0]
+    }
+
+    return grade
+}
+
+
 export default async function handler (
     req: NextApiRequest,
     res: NextApiResponse
@@ -34,7 +47,8 @@ export default async function handler (
             break
         case 'POST':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                const user = await User.exists({ email: session.user?.id.toLowerCase() })
+                if (user) {
 
                     await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
                         $addToSet: {
@@ -43,6 +57,29 @@ export default async function handler (
                             }
                         }
                     })
+
+                    if (body.partialReviews) {
+                        const reviewsToMake = []
+                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean()
+                        const classesWithExistingReviews = existingReviews.map((r: IClassReview) => r.class.toString())
+
+                        for (const review of body.partialReviews) {
+                            // Check if the review already exists, if so, skip it
+                            if (classesWithExistingReviews.includes(review.class)) {
+                                continue
+                            }
+                            reviewsToMake.push({
+                                class: review.class,
+                                author: user._id,
+                                letterGrade: normalizeGrade(review.letterGrade),
+                                dropped: review.dropped,
+                                display: false,
+                                firstYear: review.firstYear,
+                                partial: true,
+                            })
+                        }
+                        await ClassReview.create(reviewsToMake)
+                    }
 
                     return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
                 } else {

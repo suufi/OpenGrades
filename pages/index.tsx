@@ -19,7 +19,7 @@ import { Accordion, ActionIcon, Anchor, Button, Card, Collapse, Container, Divid
 import { useForm } from '@mantine/form'
 import { useDebouncedState, useDisclosure } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
-import { IconCheck, IconCircleCheck, IconCircleX } from '@tabler/icons'
+import { IconCheck, IconCircleCheck, IconCircleX, IconQuestionMark } from '@tabler/icons'
 import { GetServerSideProps } from 'next'
 import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth/next'
@@ -250,7 +250,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   const [modalOpened, setModalOpened] = useState(false)
 
-  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }) => {
+  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
     const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
 
     setContentLoading(true)
@@ -262,6 +262,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         },
         body: JSON.stringify({
           classesTaken: flatClasses,
+          partialReviews
         }),
       })
 
@@ -351,13 +352,22 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                               if (a.term > b.term) { return 1 }
                               return 0
                             }).map((classTaken: IClass) => {
-                              const reviewForClass = reviewsProp.find((review: IClassReview) => review.class._id === classTaken._id)
+                              const reviewForClass = reviewsProp.find((review: IClassReview) => (review.class._id === classTaken._id))
+
+                              const icon = reviewForClass ? reviewForClass?.partial ?
+                                <ThemeIcon color='yellow' size={24} radius='xl'>
+                                  <IconQuestionMark size='1rem' />
+                                </ThemeIcon>
+                                : <ThemeIcon color="green" size={24} radius="xl">
+                                  <IconCircleCheck size="1rem" />
+                                </ThemeIcon> : null
+
 
                               return (
                                 <List.Item
                                   // className={classes.linkedText}
                                   key={classTaken._id}
-                                  icon={reviewForClass && <ThemeIcon color="green" size={24} radius="xl"> <IconCircleCheck size="1rem" /> </ThemeIcon>}
+                                  icon={icon}
                                 >
                                   <Flex align={'center'}>
                                     <Text className={classes.linkedText} onClick={() => router.push(`/classes/${classTaken._id}`)}>
@@ -414,7 +424,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               You have taken {userProp.classesTaken.length} classes.
             </Text>
             <Text className={classes.text}>
-              You have written {reviewsProp.length} reviews.
+              You have {reviewsProp.length} reviews, {reviewsProp.filter((review) => review.partial).length} of which are partial.
             </Text>
             <Text className={classes.text}>
               You have {referralsProp} referrals.

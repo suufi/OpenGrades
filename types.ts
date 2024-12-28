@@ -114,7 +114,8 @@ export interface IClassReview {
     numericGrade: number
     letterGrade: LetterGrade
     methodOfGradeCalculation: string
-    verified: boolean
+    verified: boolean,
+    partial: boolean
 }
 
 export interface IClassGrade {
