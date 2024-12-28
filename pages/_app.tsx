@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { ReactNode, useContext } from 'react'
 
-import { AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Text, ThemeIcon, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
-import { useDisclosure, useHotkeys } from '@mantine/hooks'
+import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Text, ThemeIcon, Tooltip, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
+import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
-import { Books, ChevronRight, FireHydrant, History, Home, Logout, Mail, Road, Settings, Shield } from 'tabler-icons-react'
+import { Books, ChevronRight, FireHydrant, History, Home, Logout, Mail, Moon, Road, Settings, Shield, Sun } from 'tabler-icons-react'
 
 // import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
@@ -224,8 +224,9 @@ function App ({ pageProps, Component }: AppProps) {
   // const toggleColorScheme = (value?: ColorScheme) =>
   //   setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'))
 
-  const { colorScheme } = useMantineColorScheme()
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const theme = useMantineTheme()
+  const isMounted = useMounted()
 
   return (
     <>
@@ -249,7 +250,7 @@ function App ({ pageProps, Component }: AppProps) {
           <p> Footer </p>
         </AppShell.Footer> */}
         <AppShell.Header p="md">
-          <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', justifyContent: 'space-between' }}>
             {/* <MediaQuery largerThan="sm" styles={{ display: 'none' }}> */}
             <Burger
               opened={opened}
@@ -260,10 +261,21 @@ function App ({ pageProps, Component }: AppProps) {
               mr="xl"
             />
             {/* </MediaQuery> */}
+            <Group justify='space-between' style={{ width: '100%' }}>
+              <Text fw={'bold'} size={'xl'} variant="gradient" gradient={{ from: 'orange', to: 'yellow', deg: 45 }}>
+                MIT OpenGrades
+              </Text>
 
-            <Text fw={'bold'} size={'xl'} variant="gradient" gradient={{ from: 'orange', to: 'yellow', deg: 45 }}>
-              MIT OpenGrades
-            </Text>
+              {/* <Button onClick={toggleColorScheme} variant='transparent' color='gray' size='sm'> */}
+              {/* {colorScheme === 'dark' ? <Sun /> : <Moon />} */}
+              {/* </Button> */}
+
+              <Tooltip label="Alt J" position="left" withArrow>
+                <ActionIcon onClick={toggleColorScheme} variant='transparent' color='gray' size='sm'>
+                  {isMounted ? colorScheme === 'dark' ? <Sun /> : <Moon /> : <Loader />}
+                </ActionIcon>
+              </Tooltip>
+            </Group>
           </div>
         </AppShell.Header>
         <AppShell.Main className={mainClasses.mainContainer}>
