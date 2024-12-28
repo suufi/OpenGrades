@@ -68,7 +68,7 @@ const parseGradeReport = (gradeReport) => {
                     const [subjectNumber, subjectTitle, units, level, grade] = parts
                     if (
                         subjectNumber &&
-                        !subjectNumber.startsWith('H') &&
+                        !subjectNumber.startsWith('HA') &&
                         !['P&', 'S', 'URN'].includes(grade) &&
                         currentTerm
                     ) {
