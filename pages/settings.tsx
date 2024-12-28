@@ -26,7 +26,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { EyeOff, Search } from 'tabler-icons-react'
 // import { ClassManagementTable } from '../components/ClassManagementTable'
-import { authOptions } from '@/pages/api/auth/[...nextauth]'
+import authOptions from '@/pages/api/auth/[...nextauth]'
 
 
 const courseCatalog = `1 - Civil and Environmental Engineering
