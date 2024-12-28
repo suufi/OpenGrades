@@ -92,7 +92,7 @@ const GradeChart = ({ data }: GradeChartProps) => {
     return Object.fromEntries(Object.entries(reportedGradeCutoffs).filter(([, boundaries]) => !boundaries.includes(-1)))
   }
 
-  const gradePoints = data.filter((entry) => entry.letterGrade !== "DR").map((entry) => ({ numericGrade: entry.numericGrade, letterGrade: entry.letterGrade, verified: entry.verified }))
+  const gradePoints = data.filter((entry) => entry.letterGrade !== "DR" && entry?.numericGrade).map((entry) => ({ numericGrade: entry.numericGrade, letterGrade: entry.letterGrade, verified: entry.verified }))
   // const gradePoints = [{
   //   numericGrade: 80,
   //   letterGrade: 'A',

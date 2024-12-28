@@ -1,7 +1,7 @@
 
 // @ts-nocheck
 
-import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Checkbox, Container, Divider, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, em } from '@mantine/core'
+import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, em } from '@mantine/core'
 import { useForm, zodResolver } from '@mantine/form'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
@@ -28,6 +28,7 @@ import { IClass, IClassReview, IContentSubmission, IParams, IReport, IUser, Lett
 import GradeChart from '../../components/GradeChart'
 
 
+import { DonutChart } from '@mantine/charts'
 import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle } from '@tabler/icons'
 import moment from 'moment-timezone'
 import mongoose from 'mongoose'
@@ -43,6 +44,14 @@ const RecommendationLevels: Record<number, string> = {
   3: 'Recommend with reservations',
   4: 'Likely to recommend',
   5: 'Recommend with enthusiasm'
+}
+
+const letterGradeColors = {
+  A: '#40C057',
+  B: '#15AABF',
+  C: '#4C6EF5',
+  D: '#BE4BDB',
+  F: '#FA5252'
 }
 
 interface ClassReviewCommentProps {
@@ -706,8 +715,41 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
 
       <Space h="lg" />
       <Stack>
+        {
+          gradePointsProp.length > 0 ?
 
-        <GradeChart data={gradePointsProp.map(({ numericGrade, letterGrade, verified }: IClassReview) => ({ numericGrade, letterGrade, verified }))} />
+            <Grid>
+              <Grid.Col span={{ xs: 12, md: 3 }}>
+                <Title order={3}> Grade Distribution </Title>
+                {/* <Card withBorder shadow="sm" p='lg'> */}
+                <Center>
+                  <DonutChart
+                    size={120}
+                    labelsType='value'
+                    withLabels
+                    withTooltip
+                    data={gradePointsProp.reduce((acc, { letterGrade }) => {
+                      const existing = acc.find((entry) => entry.name === letterGrade)
+                      if (existing) {
+                        existing.value++
+                      } else {
+                        acc.push({ name: letterGrade, value: 1, color: letterGradeColors[letterGrade] })
+                      }
+                      return acc
+                    }, [] as { name: string, value: number, color: string }[]
+                    )}
+                  />
+                </Center>
+                {/* </Card> */}
+              </Grid.Col>
+              <Grid.Col span={{ xs: 12, md: 9 }}>
+                <GradeChart data={gradePointsProp.map(({ numericGrade, letterGrade, verified }: IClassReview) => ({ numericGrade, letterGrade, verified }))} />
+              </Grid.Col>
+            </Grid>
+            : <Text> No grade data available for this class. A minimum of 4 reviews is required to display grade data. </Text>
+        }
+
+
 
         <Title order={3}> Content Submissions </Title>
         <Group>
