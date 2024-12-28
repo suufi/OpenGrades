@@ -316,7 +316,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
   const schema = z.object({
     overallRating: z.number().min(1).max(7),
     conditions: z.array(z.enum(['firstYear', 'dropped', 'retaking'])),
-    hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-30 hours'], { invalid_type_error: 'Please select a number of hours for this class.' }),
+    hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'], { invalid_type_error: 'Please select a number of hours for this class.' }),
     recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { invalid_type_error: 'Please select a recommendation level.' }),
     classComments: z.string().min(5, 'Please type some more words.'),
     backgroundComments: z.string(),
@@ -449,7 +449,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
                     <Checkbox value="dropped" label="Dropped Class" />
                     <Checkbox value="retaking" label="Retaking" />
                   </Checkbox.Group>
-                  <Select key="hoursPerWeek" required withAsterisk {...form.getInputProps('hoursPerWeek')} placeholder="Select the number of hours" label="Hours/week spent on classwork outside of lecture/recitation " data={['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-30 hours']} />
+                  <Select key="hoursPerWeek" required withAsterisk {...form.getInputProps('hoursPerWeek')} placeholder="Select the number of hours" label="Hours/week spent on classwork outside of lecture/recitation " data={['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours']} />
                   <Select key="recommendationLevel" required withAsterisk {...form.getInputProps('recommendationLevel')} placeholder="Select a recommendation level" label="How likely are you to recommend this class? " data={[{ value: '1', label: 'Definitely not recommend' }, { value: '2', label: 'Unlikely to recommend' }, { value: '3', label: 'Recommend with reservations' }, { value: '4', label: 'Likely to recommend' }, { value: '5', label: 'Recommend with enthusiasm' }]} />
                   <Textarea withAsterisk {...form.getInputProps('classComments')} label="Class Comments" required placeholder="Workload, grading fairness, specific instructors, recommendations for future students, organization, reason for dropping (if applicable), and other details you think are worth noting about the class." autosize minRows={3} />
                   <Textarea withAsterisk {...form.getInputProps('backgroundComments')} label="Background Comments" required placeholder="Have you had exposure to this content before (including in high school)? Do you think your identity, background, or previous exposure influenced your performance and/or overall rating of this class in some way? If so, please elaborate." autosize minRows={3} />

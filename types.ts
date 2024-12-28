@@ -57,7 +57,7 @@ export enum TimeRange {
     '18-20 hours' = '18-20 hours',
     '21-23 hours' = '21-23 hours',
     '24-26 hours' = '24-26 hours',
-    '37-30 hours' = '37-30 hours',
+    '37-40 hours' = '37-40 hours',
     'Unknown' = 'Unknown'
 }
 

@@ -50,7 +50,7 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   },
   hoursPerWeek: {
     type: String,
-    enum: ['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-30 hours'],
+    enum: ['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'],
     required: true
   },
   recommendationLevel: {
