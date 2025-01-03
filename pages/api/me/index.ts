@@ -88,8 +88,11 @@ export default async function handler (
           if (data.partialReviews) {
             const reviewsToMake = []
             const existingReviews = await ClassReview.find({ author: user._id }).lean()
+            const classesWithExistingReviews = existingReviews.map((r: IClassReview) => r.class.toString())
+
             for (const review of data.partialReviews) {
-              if (existingReviews.some((r) => r.class === review.class)) {
+              // Check if the review already exists, if so, skip it
+              if (classesWithExistingReviews.includes(review.class)) {
                 continue
               }
               reviewsToMake.push({
