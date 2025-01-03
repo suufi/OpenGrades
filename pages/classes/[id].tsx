@@ -324,7 +324,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
 
   const schema = z.object({
     overallRating: z.number().min(1).max(7),
-    conditions: z.array(z.enum(['firstYear', 'dropped', 'retaking']).nullable()),
+    conditions: z.array(z.enum(['firstYear', 'dropped', 'retaking'])),
     hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'], { invalid_type_error: 'Please select a number of hours for this class.' }),
     recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { invalid_type_error: 'Please select a recommendation level.' }),
     classComments: z.string().min(5, 'Please type some more words.'),
@@ -352,7 +352,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
     initialValues: editData
       ? {
         overallRating: editData.overallRating,
-        conditions: [editData.firstYear && 'firstYear', editData.droppedClass && 'dropped', editData.retaking && 'retaking'].filter((entry) => entry !== false),
+        conditions: [editData.firstYear ? 'firstYear' : false, editData.droppedClass ? 'dropped' : false, editData.retaking ? 'retaking' : false].filter((entry) => entry !== false),
         hoursPerWeek: editData.hoursPerWeek as TimeRange,
         classComments: editData.classComments,
         backgroundComments: editData.backgroundComments,
