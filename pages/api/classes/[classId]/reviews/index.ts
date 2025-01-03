@@ -181,7 +181,9 @@ export default async function handler (
           backgroundComments: data.backgroundComments,
           numericGrade: data.numericGrade,
           letterGrade: data.letterGrade,
-          methodOfGradeCalculation: data.methodOfGradeCalculation
+          methodOfGradeCalculation: data.methodOfGradeCalculation,
+          display: data.partial ? true : false,
+          partial: false
         })
 
         return res.status(200).json({
