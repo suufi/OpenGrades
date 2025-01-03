@@ -357,8 +357,8 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
         classComments: editData.classComments,
         backgroundComments: editData.backgroundComments,
         recommendationLevel: String(editData.recommendationLevel),
-        numericGrade: editData.numericGrade,
-        methodOfGradeCalculation: editData.methodOfGradeCalculation,
+        numericGrade: editData.numericGrade || null,
+        methodOfGradeCalculation: editData.methodOfGradeCalculation || null,
         letterGrade: editData.letterGrade
       }
       : {
