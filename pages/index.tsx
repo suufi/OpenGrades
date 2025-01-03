@@ -15,9 +15,9 @@ import User from '@/models/User'
 import classes from '@/styles/Index.module.css'
 import { IClass, IClassReview, IUser } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
-import { Accordion, ActionIcon, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title } from '@mantine/core'
+import { Accordion, ActionIcon, Alert, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title, Transition } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import { useDebouncedState, useDisclosure } from '@mantine/hooks'
+import { useDebouncedState, useDisclosure, useLocalStorage, useMounted } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
 import { IconCheck, IconCircleCheck, IconCircleX, IconQuestionMark } from '@tabler/icons'
 import { GetServerSideProps } from 'next'
@@ -26,6 +26,14 @@ import { getServerSession } from 'next-auth/next'
 import { useRouter } from 'next/router'
 import authOptions from "pages/api/auth/[...nextauth]"
 import { useEffect, useState } from 'react'
+import { News } from 'tabler-icons-react'
+
+const scaleY = {
+  in: { opacity: 1, transform: 'scaleY(1)' },
+  out: { opacity: 0, transform: 'scaleY(0)' },
+  common: { transformOrigin: 'top' },
+  transitionProperty: 'transform, opacity',
+}
 
 function getEmojiForTerm (term: string) {
   term = term.substring(4)
@@ -60,6 +68,12 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const [flagExplanation, setFlagExplanation] = useState<boolean>(false)
   const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
   const [referredByState, setReferredByState] = useState<State>({ data: '', status: 'initial' })
+
+  const [newsOpen, setNewsOpen] = useLocalStorage({
+    key: 'newsOpen.1-2-2025',
+    defaultValue: true,
+    getInitialValueInEffect: true
+  })
 
 
   async function verifyReferralKerb (kerb: string) {
@@ -302,7 +316,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     }
   }
 
-
+  const isMounted = useMounted()
 
   return (
     <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
@@ -321,6 +335,29 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
       <Grid>
         <Grid.Col span={{ md: 6 }}>
+          {
+            isMounted &&
+            <>
+              <Transition
+                duration={500}
+                timingFunction="ease"
+                transition={scaleY}
+                mounted={newsOpen}
+              >
+                {
+                  (transitionStyle) => (
+                    <>
+                      <Alert variant='light' color='blue' title='New features' withCloseButton icon={<News size={24} />} onClose={() => setNewsOpen(false)} style={{ ...transitionStyle }}>
+                        Happy New Year! You can now upload your classes with your grade report (copy and paste) on the right and have it partially generate class reviews on your behalf! You can use this feature even if you've already added classes manually. 🎉
+                      </Alert>
+                      <Space h="lg" />
+                    </>
+                  )
+                }
+              </Transition>
+            </>
+          }
+
           <Card>
             <LoadingOverlay visible={contentLoading} />
             <Title order={3}> 📚 Classes Taken </Title>
