@@ -165,12 +165,12 @@ export default async function handler (
         const data = schema.parse(body)
 
         const author = await User.findOne({ email: session.user?.email })
-
-        if (!(await ClassReview.exists({ class: req.query.classId, author: author._id }))) {
+        const existingReview = await ClassReview.findOne({ class: req.query.classId, author: author._id }).lean()
+        if (!existingReview) {
           return res.status(404).json({ success: false, message: 'Class review does not exist.' })
         }
 
-        await ClassReview.updateOne({ class: req.query.classId, author: author._id }, {
+        let changes = {
           overallRating: data.overallRating,
           firstYear: data.firstYear,
           retaking: data.retaking,
@@ -182,9 +182,14 @@ export default async function handler (
           numericGrade: data.numericGrade,
           letterGrade: data.letterGrade,
           methodOfGradeCalculation: data.methodOfGradeCalculation,
-          display: data.partial ? true : false,
           partial: false
-        })
+        }
+
+        if (existingReview.partial && !existingReview.display) {
+          changes.display = true
+        }
+
+        await ClassReview.updateOne({ class: req.query.classId, author: author._id }, changes)
 
         return res.status(200).json({
           success: true
