@@ -81,7 +81,7 @@ export default async function handler (
           classComments: z.string(),
           backgroundComments: z.string(),
           numericGrade: z.number().min(0).max(100).nullable(),
-          letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P']),
+          letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P', 'DR']),
           methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other']).nullable()
         })
 
@@ -158,7 +158,7 @@ export default async function handler (
           classComments: z.string(),
           backgroundComments: z.string(),
           numericGrade: z.number().min(0).max(100).nullable(),
-          letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P']),
+          letterGrade: z.enum(['A', 'B', 'C', 'D', 'F', 'P', 'DR']),
           methodOfGradeCalculation: z.enum(['Canvas', 'MIT OpenGrades Spreadsheet', 'Self', 'Other']).nullable()
         })
 
