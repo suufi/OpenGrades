@@ -149,7 +149,11 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
 
                 if (matchedClass) {
                     matchedClasses.push(matchedClass)
-                    if (withPartialReviews && ['A', 'B', 'C', 'D', 'F'].includes(cls.grade[0])) {
+                    if (withPartialReviews && ['A', 'B', 'C', 'D', 'F', 'P'].includes(cls.grade[0])) {
+                        // only include P grades if the class is P/D/F
+                        if (cls.grade === 'P' && !matchedClass.units.includes('P/D/F')) {
+                            continue
+                        }
                         const partialReview = {
                             class: matchedClass._id,
                             letterGrade: cls.grade,

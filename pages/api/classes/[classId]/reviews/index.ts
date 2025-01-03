@@ -68,9 +68,11 @@ export default async function handler (
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        if (!(await Class.exists({ _id: req.query.classId }))) {
+        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean()
+        if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
+
         const schema = z.object({
           overallRating: z.number().min(1).max(7),
           firstYear: z.boolean(),
@@ -88,7 +90,9 @@ export default async function handler (
         const data = schema.parse(body)
 
         const author = await User.findOne({ email: session.user?.email })
-
+        if (!reviewedClass.units.includes('P/D/F') && data.letterGrade === 'P') {
+          return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
+        }
         if (await ClassReview.exists({ class: req.query.classId, author: author._id })) {
           return res.status(409).json({ success: false, message: 'Class review already exists.' })
         }
@@ -144,7 +148,8 @@ export default async function handler (
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        if (!(await Class.exists({ _id: req.query.classId }))) {
+        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean()
+        if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
 
@@ -168,6 +173,10 @@ export default async function handler (
         const existingReview = await ClassReview.findOne({ class: req.query.classId, author: author._id }).lean()
         if (!existingReview) {
           return res.status(404).json({ success: false, message: 'Class review does not exist.' })
+        }
+
+        if (!reviewedClass.units.includes('P/D/F') && data.letterGrade === 'P') {
+          return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
 
         let changes = {

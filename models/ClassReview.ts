@@ -66,7 +66,7 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   },
   letterGrade: {
     type: String,
-    enum: ['A', 'B', 'C', 'D', 'F', 'DR']
+    enum: ['A', 'B', 'C', 'D', 'F', 'DR', 'P']
   },
   methodOfGradeCalculation: {
     type: String,
