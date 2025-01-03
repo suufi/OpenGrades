@@ -65,6 +65,17 @@
     transform: translateX(-100%);
 }
 
+.upperPointLabel {
+    top: calc(var(--mantine-spacing-lg) * -2.5);
+    position: absolute;
+    width: 100%;
+    font-size: var(--mantine-font-size-sm);
+    margin-left: calc(var(--mantine-spacing-lg) * -1);
+    text-align: center;
+    margin-top: var(--mantine-spacing-md);
+    color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-white));
+}
+
 /*   pointLabel: {
     position: 'absolute',
     bottom: -theme.spacing.xl,
@@ -77,10 +88,10 @@
 
 .pointLabel {
     position: absolute;
-    bottom: -var(--mantine-spacing-xl);
+    bottom: calc(var(--mantine-spacing-xl) * -1);
     width: 100%;
     font-size: var(--mantine-font-size-sm);
-    margin-left: -var(--mantine-spacing-xs);
+    margin-left: calc(var(--mantine-spacing-lg) * -1);
     text-align: center;
     margin-top: var(--mantine-spacing-md);
     color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-white));

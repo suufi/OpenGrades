@@ -172,7 +172,7 @@ const GradeChart = ({ data }: GradeChartProps) => {
                 className={point.numericGrade === 100 ? classes.lastPoint : point.numericGrade === 0 ? classes.firstPoint : classes.point}
               />
               {
-                keyPoints.includes(point.numericGrade) && <Text className={classes.pointLabel}>
+                keyPoints.includes(point.numericGrade) && <Text className={regions.map(region => region.end).includes(point.numericGrade) ? classes.upperPointLabel : classes.pointLabel}>
                   {point.numericGrade}
                 </Text>
               }
