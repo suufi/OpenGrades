@@ -70,7 +70,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const [referredByState, setReferredByState] = useState<State>({ data: '', status: 'initial' })
 
   const [newsOpen, setNewsOpen] = useLocalStorage({
-    key: 'newsOpen.1-2-2025',
+    key: 'newsOpen.1-3-2025',
     defaultValue: true,
     getInitialValueInEffect: true
   })
@@ -347,8 +347,17 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 {
                   (transitionStyle) => (
                     <>
-                      <Alert variant='light' color='blue' title='New features' withCloseButton icon={<News size={24} />} onClose={() => setNewsOpen(false)} style={{ ...transitionStyle }}>
-                        Happy New Year! You can now upload your classes with your grade report (copy and paste) on the right and have it partially generate class reviews on your behalf! You can use this feature even if you've already added classes manually. 🎉
+                      <Alert variant='light' color='blue' title='Bulletin' withCloseButton icon={<News size={24} />} onClose={() => setNewsOpen(false)} style={{ ...transitionStyle }}>
+                        <Title order={6}> January 3, 2025 </Title>
+                        <Text className={classes.text} c='gray'>
+                          🪳 <b>Bug fix:</b> DR and P grading are now functional.
+                          💚 <b>New:</b> Auto-save on background and class comments -- return to the page and your comments will still be there!
+                        </Text>
+                        <Space h="md" />
+                        <Title order={6}> January 2, 2025 </Title>
+                        <Text className={classes.text} c='gray'>
+                          Happy New Year! You can now upload your classes with your grade report (copy and paste) on the right and have it partially generate class reviews on your behalf! You can use this feature even if you've already added classes manually. 🎉
+                        </Text>
                       </Alert>
                       <Space h="lg" />
                     </>
