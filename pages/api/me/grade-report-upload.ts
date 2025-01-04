@@ -155,7 +155,7 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
                             continue
                         }
                         // do not include ASE grades
-                        if (class.grade === 'P&') {
+                        if (cls.grade === 'P&') {
                             continue
                         }
                         const partialReview = {
