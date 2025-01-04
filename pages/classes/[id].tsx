@@ -3,7 +3,7 @@
 
 import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, em } from '@mantine/core'
 import { useForm, zodResolver } from '@mantine/form'
-import { useHotkeys, useMediaQuery } from '@mantine/hooks'
+import { useHotkeys, useLocalStorage, useMediaQuery } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
 import type { InferGetServerSidePropsType, NextPage } from 'next'
 // import {  } from 'next'
@@ -316,6 +316,13 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
   const [opened, setOpened] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [error, setError] = useState('')
+  const [sessionForm, setSessionForm] = useLocalStorage({
+    key: `classReviewForm-${classData._id}`,
+    defaultValue: {
+    },
+    serialize: JSON.stringify,
+    deserialize: JSON.parse
+  })
 
   const [active, setActive] = useState(0)
   const nextStep = () => setActive((current) => (current < 3 ? current + 1 : current))
@@ -354,8 +361,8 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
         overallRating: editData.overallRating,
         conditions: [editData.firstYear ? 'firstYear' : false, editData.droppedClass ? 'dropped' : false, editData.retaking ? 'retaking' : false].filter((entry) => entry !== false),
         hoursPerWeek: editData.hoursPerWeek as TimeRange,
-        classComments: editData.classComments,
-        backgroundComments: editData.backgroundComments,
+        classComments: editData.classComments || sessionForm.classComments,
+        backgroundComments: editData.backgroundComments || sessionForm.backgroundComments,
         recommendationLevel: String(editData.recommendationLevel),
         numericGrade: editData.numericGrade || null,
         methodOfGradeCalculation: editData.methodOfGradeCalculation || null,
@@ -365,8 +372,8 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
         overallRating: 0,
         conditions: [],
         hoursPerWeek: 'Unknown' as TimeRange,
-        classComments: '',
-        backgroundComments: '',
+        classComments: sessionForm.classComments || '',
+        backgroundComments: sessionForm.backgroundComments || '',
         recommendationLevel: '',
         numericGrade: null,
         methodOfGradeCalculation: null,
@@ -383,6 +390,14 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
       retaking: (values.conditions as string[]).includes('retaking'),
       droppedClass: (values.conditions as string[]).includes('dropped')
     })
+  })
+
+  form.watch('classComments', ({ value }) => {
+    setSessionForm({ ...sessionForm, classComments: value })
+  })
+
+  form.watch('backgroundComments', ({ value }) => {
+    setSessionForm({ ...sessionForm, backgroundComments: value })
   })
 
   const postReview = async (values: ClassReviewForm) => {
