@@ -154,6 +154,10 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
                         if (cls.grade === 'P' && !matchedClass.units.includes('P/D/F')) {
                             continue
                         }
+                        // do not include ASE grades
+                        if (class.grade === 'P&') {
+                            continue
+                        }
                         const partialReview = {
                             class: matchedClass._id,
                             letterGrade: cls.grade,
