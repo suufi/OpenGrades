@@ -208,6 +208,30 @@ const Classes: NextPage = () => {
   // }, [offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
 
   useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await fetch('/api/classes/filters')
+        const result = await response.json()
+
+        if (result.success) {
+          setAcademicYears(result.data.years.map((year: number) => ({
+            value: year.toString(),
+            label: `${year - 1}-${year}`,
+          })))
+
+          setAllDepartments(result.data.departments.map((dept: string) => ({
+            value: dept,
+            label: dept,
+          })))
+        }
+      } catch (error) {
+        console.error('Error fetching filters:', error)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+
     const fetchClasses = async () => {
       setLoading(true)
       try {
@@ -240,18 +264,6 @@ const Classes: NextPage = () => {
           setTotalClasses(result.meta.totalClasses)
           setTotalPages(result.meta.totalPages)
 
-          // Extract academic years and departments for filtering
-          const years = [...new Set(result.data.map((c) => c.academicYear))].map((year) => ({
-            value: year.toString(),
-            label: `${year - 1}-${year}`,
-          }))
-          setAcademicYears(years)
-
-          const departments = [...new Set(result.data.map((c) => c.department))].map((dept) => ({
-            value: dept,
-            label: dept,
-          }))
-          setAllDepartments(departments)
         }
 
       } catch (error) {

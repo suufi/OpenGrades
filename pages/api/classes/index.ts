@@ -164,9 +164,11 @@ export default async function handler (
 
         // Paginate the filtered classes
         const paginatedClasses = classes.slice(skip, skip + limitNumber)
+        const classIdsOnThisPage = paginatedClasses.map((c) => c._id)
 
         // Get the review count for each class in the current page
         const reviewCounts = await ClassReview.aggregate([
+          { $match: { partial: false, class: { $in: classIdsOnThisPage } } },
           { $group: { _id: '$class', count: { $sum: 1 } } }
         ])
 
