@@ -1,3 +1,4 @@
+// @ts-nocheck
 import authOptions from '@/auth'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'

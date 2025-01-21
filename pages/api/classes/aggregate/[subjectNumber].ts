@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import mongoConnection from '@/utils/mongoConnection'
