@@ -9,7 +9,7 @@ import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeS
 import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
-import { Books, ChevronRight, FireHydrant, History, Home, Logout, Mail, Moon, Road, Settings, Shield, Sun } from 'tabler-icons-react'
+import { Books, ChevronRight, FireHydrant, History, Home, Key, Logout, Mail, Moon, Road, Settings, Shield, Star, Sun } from 'tabler-icons-react'
 
 // import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
@@ -99,7 +99,11 @@ function NavigationLinks () {
         {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Projects by SIPB" />}
         <MainLink label="Hydrant" icon={<FireHydrant />} color="orange" href="https://hydrant.mit.edu/" target="_blank" active={false} />
         <MainLink label="CourseRoad" icon={<Road />} color="blue" href="https://courseroad.mit.edu/" target="_blank" active={false} />
-        <MainLink label="DormDigest" icon={<Mail />} color="green" href="https://dormdigest.mit.edu/" target="_blank" active={false} />
+        <MainLink label="DormSoup" icon={<Mail />} color="green" href="https://dormsoup.mit.edu/" target="_blank" active={false} />
+        {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Links" />}
+        <MainLink label="Feedback" icon={<Star />} color="cyan" href="https://forms.gle/pyj7zY45AVnjX2Nc8" target="_blank" active={false} />
+        <MainLink label="Affiliate Access" icon={<Key />} color="cyan" href="https://forms.gle/8iandxQpc6abmQtZA" target="_blank" active={false} />
+
       </>
     )
     : (
