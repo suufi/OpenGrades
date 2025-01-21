@@ -3,10 +3,11 @@
 
 import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, em } from '@mantine/core'
 import { useForm, zodResolver } from '@mantine/form'
-import { useHotkeys, useLocalStorage, useMediaQuery } from '@mantine/hooks'
+import { useLocalStorage, useMediaQuery } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
 import type { InferGetServerSidePropsType, NextPage } from 'next'
 // import {  } from 'next'
+import { Spotlight, SpotlightActionData } from '@mantine/spotlight'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -29,7 +30,7 @@ import GradeChart from '../../components/GradeChart'
 
 
 import { DonutChart } from '@mantine/charts'
-import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle } from '@tabler/icons'
+import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle, IconGraph, IconTrash } from '@tabler/icons'
 import moment from 'moment-timezone'
 import mongoose from 'mongoose'
 import { Session, getServerSession } from 'next-auth'
@@ -327,6 +328,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
   const [active, setActive] = useState(0)
   const nextStep = () => setActive((current) => (current < 3 ? current + 1 : current))
   const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current))
+  const router = useRouter()
   const isMobile = useMediaQuery(`(max-width: ${em(750)})`)
 
   const schema = z.object({
@@ -681,14 +683,27 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
     })
   }
 
-  useHotkeys([
-    ['shift+X+K', () => {
-      const confirmation = confirm(`Are you sure you want to delete ${classProp.subjectNumber}?`)
-      if (confirmation) {
-        deleteClass()
-      }
-    }]
-  ])
+  const actions: SpotlightActionData[] = [
+    {
+      id: 'aggregate',
+      label: 'View Aggregated Data',
+      description: 'View the aggregated data for this class',
+      onClick: () => {
+        router.push(`/classes/aggregate/${classProp.subjectNumber}`)
+      },
+      leftSection: <IconGraph size={20} />,
+    }
+  ]
+
+  if (userProp.trustLevel && userProp.trustLevel >= 2) {
+    actions.push({
+      id: 'delete',
+      label: 'Delete Class',
+      description: 'Delete this class from the database',
+      onClick: deleteClass,
+      leftSection: (<IconTrash size={20} />)
+    })
+  }
 
   return (
     <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
@@ -727,6 +742,12 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
           {classProp.description}
         </Text>
       </Card>
+
+      <Group justify='end'>
+        <Button variant='transparent' onClick={() => router.push(`/classes/aggregate/${classProp.subjectNumber}`)}>
+          See Aggregated Data
+        </Button>
+      </Group>
 
       <Space h="lg" />
       <Stack>
@@ -796,7 +817,9 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
             : (<Box>  No class reviews yet. Please check back later or be the first one if you have taken this class. Thank you! </Box>)
         }
       </Stack>
-    </Container>
+
+      <Spotlight actions={actions} shortcut="mod + K" />
+    </Container >
   )
 }
 

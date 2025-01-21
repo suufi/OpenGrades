@@ -20,6 +20,7 @@ import { UserContext, UserContextProvider } from '../components/UserContextProvi
 import '@mantine/charts/styles.css'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
+import '@mantine/spotlight/styles.css'
 
 
 import 'primeicons/primeicons.css'

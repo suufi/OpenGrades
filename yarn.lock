@@ -503,6 +503,13 @@
   dependencies:
     "@mantine/store" "7.12.2"
 
+"@mantine/spotlight@^7.16.1":
+  version "7.16.1"
+  resolved "https://registry.yarnpkg.com/@mantine/spotlight/-/spotlight-7.16.1.tgz#ebef48349443c71d64c873994ad28da70fa22c88"
+  integrity sha512-Lb1bc8Gfhm7fUCU+odebukeUyDsMvLSWrBKJjCg+IXQojUaxUAMXHPhrvmHqhOqDaRTUZw1zusodW+kKnFjoPg==
+  dependencies:
+    "@mantine/store" "7.16.1"
+
 "@mantine/ssr@6.0.22":
   version "6.0.22"
   resolved "https://registry.yarnpkg.com/@mantine/ssr/-/ssr-6.0.22.tgz#90b9ec8fb0879ae5fbd4faab69bcd50f72a6dc73"
@@ -515,6 +522,11 @@
   version "7.12.2"
   resolved "https://registry.yarnpkg.com/@mantine/store/-/store-7.12.2.tgz#da576a63d860d44525bd18c9dd3977b6d2840011"
   integrity sha512-NqL31sO/KcAETEWP/CiXrQOQNoE4168vZsxyXacQHGBueVMJa64WIDQtKLHrCnFRMws3vsXF02/OO4bH4XGcMQ==
+
+"@mantine/store@7.16.1":
+  version "7.16.1"
+  resolved "https://registry.yarnpkg.com/@mantine/store/-/store-7.16.1.tgz#5bfac11854a26a1c7565fef9450b178327617a38"
+  integrity sha512-EZjNzsLPWXB5MgBDa5FUEg5vbN+uo3hctSgplC7kkimjW7K3qfMiszwTt8cQgb7RRn7xH5sfC3U0Cm8X9h4kmA==
 
 "@mantine/styles@6.0.22":
   version "6.0.22"
