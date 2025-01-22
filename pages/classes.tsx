@@ -228,6 +228,8 @@ const Classes: NextPage = () => {
         console.error('Error fetching filters:', error)
       }
     }
+
+    fetchFilters()
   }, [])
 
   useEffect(() => {
