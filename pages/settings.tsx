@@ -340,7 +340,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
           title: 'Success!',
           message: `Created ${body.data.newClasses} classes. Updated ${body.data.updatedClasses} classes.`
         })
-        setClasses(body.data.classes)
+        loadLazyData()
         resetFilters()
       } else {
         showNotification({

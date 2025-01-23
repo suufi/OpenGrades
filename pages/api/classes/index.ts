@@ -388,7 +388,6 @@ export default async function handler (
           const existingClass = await Class.findOne({ subjectNumber, term: body.term }).lean()
 
           if (existingClass) {
-            console.log('found existing class', existingClass)
             return existingClass.description
           }
 
@@ -586,7 +585,6 @@ export default async function handler (
           data: {
             newClasses: bulkAddResult.insertedCount,
             updatedClasses: bulkWriteUpdate.modifiedCount + bulkWriteCrossListedUpdate.modifiedCount,
-            classes: await Class.find().lean()
           }
         })
       } catch (error: unknown) {
