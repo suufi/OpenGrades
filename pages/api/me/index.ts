@@ -1,4 +1,5 @@
 // @ts-nocheck
+import '@/models/Class'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import User from '../../../models/User'
 import { IdentityFlags } from '../../../types'
