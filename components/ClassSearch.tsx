@@ -30,7 +30,7 @@ export default function ClassSearch ({ form, display, term }: { form: UseFormRet
             })
 
             // Fetch all classes for the given term
-            const response = await fetch(`/api/classes?term=${term}&all=true`)
+            const response = await fetch(`/api/classes?term=${term}&all=true&reviewable=true`)
             const { data } = await response.json()
 
             setState({

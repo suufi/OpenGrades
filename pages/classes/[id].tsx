@@ -495,8 +495,10 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
 
       {/* <Button style={{ verticalAlign: 'text-bottom' }} variant='outline' radius='xl' size='sm' onClick={() => setOpened(true)}> {editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'} </Button> */}
 
-      <Button variant='light' style={{ width: '100%' }} onClick={() => setOpened(true)} color={editData ? 'violet' : 'green'}>
-        {editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'}
+      <Button variant='light' style={{ width: '100%' }} onClick={() => setOpened(true)} color={editData ? 'violet' : 'green'} disabled={!classData.reviewable}>
+        {
+          !classData.reviewable ? 'Course reviews are disabled for this class.' : editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'
+        }
       </Button>
     </>
   )

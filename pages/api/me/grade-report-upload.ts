@@ -145,6 +145,7 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
                     ],
                     academicYear: cls.academicYear,
                     term: cls.academicYear.toString() + parseTerm(cls.term),
+                    reviewable: true
                 })
 
                 if (matchedClass) {

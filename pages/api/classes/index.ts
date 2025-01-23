@@ -50,6 +50,7 @@ export default async function handler (
           limit = '20',
           search = '',
           offered = 'true',
+          reviewable = 'false',
           departments = '',
           academicYears = '',
           term = '',
@@ -64,6 +65,10 @@ export default async function handler (
 
         if (offered === 'true') {
           query.offered = true
+        }
+
+        if (reviewable === 'true') {
+          query.reviewable = true
         }
 
         if (reviewsOnly === 'true') {
@@ -262,6 +267,7 @@ export default async function handler (
               description: apiClassEntry.description,
               offered: apiClassEntry.offered,
               display: apiClassEntry.offered,
+              reviewable: body.reviewable,
               instructors: decode(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
             })
           })

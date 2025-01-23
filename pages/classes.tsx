@@ -16,7 +16,7 @@ import { IconSearch, IconUserCircle } from '@tabler/icons'
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
-
+const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: IClass & { classReviewCount: number, userCount: number, withDescription: boolean, searchTerm: string, highlight: object }) => {
 const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, userCount }: IClass & { classReviewCount: number, userCount: number }) => {
   const router = useRouter()
   return (
@@ -29,11 +29,12 @@ const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, alias
         <Space h="sm" />
         <Text c="dimmed" size="sm"> {`${Number(term.substring(0, 4)) - 1}-${term}`} - {instructors.join(', ')} {(aliases && aliases.length > 0) && `- AKA ${aliases?.join(', ')}`} </Text>
         <Space h="sm" />
-        <Group justify={(classReviewCount || !offered) ? 'space-between' : 'flex-end'}>
+        <Group justify={(classReviewCount || !offered || !reviewable) ? 'space-between' : 'flex-end'}>
           {
-            (classReviewCount || !offered) && (
+            (classReviewCount || !offered || !reviewable) && (
               <Flex align='left'>
                 {classReviewCount && <Badge size='sm' variant="filled">{classReviewCount} {classReviewCount === 1 ? 'Response' : 'Responses'}</Badge>}
+                {(!reviewable && offered) && <Badge variant='filled' color='red' size='sm'> Not Reviewable </Badge>}
                 {!offered && <Badge variant='filled' color='red' size='sm'> Not Offered </Badge>}
               </Flex>
             )
@@ -61,6 +62,7 @@ const Classes: NextPage = () => {
   let initialState = {
     searchTerm: '',
     offeredFilter: true,
+    reviewableFilter: false,
     reviewsOnlyFilter: false,
     academicYearFilter: [],
     departmentFilter: [],
@@ -85,6 +87,7 @@ const Classes: NextPage = () => {
 
   // turn all of the above into useState variables
   const [offeredFilter, setOfferedFilter] = useState(initialState.offeredFilter)
+  const [reviewableFilter, setReviewable] = useState(initialState.reviewableFilter)
   const [reviewsOnlyFilter, setReviewsOnlyFilter] = useState(initialState.reviewsOnlyFilter)
   const [academicYearFilter, setAcademicYearFilter] = useState<string[]>(initialState.academicYearFilter)
   const [departmentFilter, setDepartmentFilter] = useState<string[]>(initialState.departmentFilter)
@@ -104,6 +107,7 @@ const Classes: NextPage = () => {
     const state = {
       searchTerm,
       offeredFilter,
+      reviewableFilter,
       reviewsOnlyFilter,
       academicYearFilter,
       departmentFilter,
@@ -111,7 +115,7 @@ const Classes: NextPage = () => {
       currentPage,
     }
     sessionStorage.setItem('classesPageState', JSON.stringify(state))
-  }, [searchTerm, offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, currentPage])
+  }, [searchTerm, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, currentPage])
 
 
   // useEffect(() => {
@@ -243,6 +247,7 @@ const Classes: NextPage = () => {
           limit: itemsPerPage.toString(),
           search: debounced,
           offered: offeredFilter.toString(),
+          reviewable: reviewableFilter.toString(),
           reviewsOnly: reviewsOnlyFilter.toString(),
         })
 
@@ -280,7 +285,7 @@ const Classes: NextPage = () => {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [debounced, offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
+  }, [debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, sort])
 
   useHotkeys([
     ['mod+\\', () => {
@@ -330,6 +335,8 @@ const Classes: NextPage = () => {
         <Grid grow>
           <Grid.Col span={3}>
             <Checkbox label="Offered classes only" checked={offeredFilter} onChange={(e) => setOfferedFilter(e.target.checked)} />
+            <Space h="sm" />
+            <Checkbox label="Reviewable classes only" checked={reviewableFilter} onChange={(e) => setReviewable(e.target.checked)} />
             <Space h="sm" />
             <Checkbox label="Show only classes with reviews" checked={reviewsOnlyFilter} onChange={(e) => setReviewsOnlyFilter(e.target.checked)} />
           </Grid.Col>

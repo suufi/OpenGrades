@@ -268,6 +268,7 @@ const Settings = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel,
   // const [classes, setClasses] = useState(classesProp)
   const [term, setTerm] = useState('')
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([])
+  const [reviewable, setReviewable] = useState(false)
   const [loadingButton, setLoadingButton] = useState(false)
   const [globalFilterValue, setGlobalFilterValue] = useState('')
   const [selectedClasses, setSelectedClasses] = useState([])
@@ -330,14 +331,15 @@ const Settings = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel,
       },
       body: JSON.stringify({
         term,
-        selectedDepartments
+        selectedDepartments,
+        reviewable
       })
     }).then(async (res) => {
       const body = await res.json()
       if (res.ok) {
         showNotification({
           title: 'Success!',
-          message: `Created ${body.data.newClasses} classes`
+          message: `Created ${body.data.newClasses} classes. Updated ${body.data.updatedClasses} classes.`
         })
         setClasses(body.data.classes)
         resetFilters()
@@ -490,12 +492,15 @@ const Settings = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel,
             <Button variant='filled' color='red' disabled={selectedClasses.length === 0} loading={loadingButton} onClick={openDeleteModal}> Delete Selected Classes </Button>
             <Button variant='filled' color='violet' disabled={selectedClasses.length === 0} loading={loadingButton} onClick={openHideModal}> Hide Selected Classes </Button>
           </Group>
-          <Grid gutter={6} align={'flex-end'} justify='center'>
+          <Grid gutter={6} align={'flex-end'} justify='space-between'>
             <Grid.Col span={{ md: 3, xs: 4 }}>
               <TextInput label="Term" placeholder="2022FA" value={term} onChange={(event) => setTerm(event.target.value)} />
             </Grid.Col>
-            <Grid.Col span={{ md: 6, xs: 4 }}>
+            <Grid.Col span={{ md: 9, xs: 4 }}>
               <MultiSelect data={departments} label="Departments" value={selectedDepartments} onChange={(val) => setSelectedDepartments(val)} />
+            </Grid.Col>
+            <Grid.Col span={{ md: 5, xs: 4 }}>
+              <Switch label="Reviewable" checked={reviewable} onChange={(event) => setReviewable(event.target.checked)} />
             </Grid.Col>
             <Grid.Col span={{ md: 2, xs: 12 }}>
               <Button onClick={() => fetchClasses()} disabled={term === '' || selectedDepartments.length === 0} loading={loadingButton}> Fetch Classes </Button>

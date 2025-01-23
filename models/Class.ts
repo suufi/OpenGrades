@@ -39,6 +39,10 @@ const ClassSchema = new mongoose.Schema<IClass>({
     type: Boolean,
     default: true
   },
+  reviewable: {
+    type: Boolean,
+    default: true
+  },
   offered: {
     type: Boolean,
     required: true

@@ -73,6 +73,7 @@ export interface IClass {
     description: string
     department: string
     units: string
+    reviewable: boolean
     offered: boolean
     createdAt?: Date
     updatedAt?: Date
