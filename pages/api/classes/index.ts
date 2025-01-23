@@ -110,7 +110,7 @@ export default async function handler (
           query.term = term
         }
 
-        const cleanSearch = (search as string).replace(/[^a-zA-Z0-9 ]/g, '')
+        const cleanSearch = (search as string).replace(/[^a-zA-Z0-9.]/g, '')
 
         // Prepare for sorting
         let sortQuery = {}
@@ -138,10 +138,39 @@ export default async function handler (
         if (cleanSearch) {
 
           let esQuery = {
-            multi_match: {
-              query: cleanSearch,
-              fields: ['subjectNumber^3', 'subjectTitle^3', 'aliases^3', 'instructors', 'description'],
-              type: 'phrase_prefix'
+            bool: {
+              should: [
+                {
+                  term: {
+                    "subjectNumber": {
+                      value: cleanSearch,
+                      boost: 3
+                    }
+                  }
+                },
+                {
+                  term: {
+                    "aliases": {
+                      value: cleanSearch,
+                      boost: 3
+                    }
+                  }
+                },
+                {
+                  multi_match: {
+                    query: cleanSearch,
+                    fields: [
+                      'subjectNumber^3',
+                      'subjectTitle^3',
+                      'aliases^3',
+                      'instructors',
+                      'description'
+                    ],
+                    type: 'phrase_prefix'
+                  }
+                }
+              ],
+              minimum_should_match: 1
             }
           }
 
