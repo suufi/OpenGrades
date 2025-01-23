@@ -20,6 +20,9 @@ const ClassSchema = new mongoose.Schema<IClass>({
     type: String,
     required: true
   },
+  crossListedDepartments: [{
+    type: String
+  }],
   instructors: [{
     type: String,
     required: true

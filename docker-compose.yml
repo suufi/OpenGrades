@@ -17,6 +17,7 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
+      ELASTIC_SEARCH_URI: ${ELASTIC_SEARCH_URI}
     volumes:
       - ./public:/app/public
 

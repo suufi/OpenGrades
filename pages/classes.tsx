@@ -5,20 +5,103 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { Badge, Box, Card, Center, Checkbox, Collapse, Container, Divider, Flex, Grid, Group, List, Loader, LoadingOverlay, MultiSelect, Pagination, Space, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
+import { Alert, Badge, Box, Card, Center, Checkbox, Code, Collapse, Container, Divider, Flex, Grid, Group, List, Loader, LoadingOverlay, Mark, MultiSelect, Pagination, Select, Space, Stack, Switch, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
 
 
 import { IClass } from '../types'
 
-import { useDebouncedValue, useDisclosure, useHotkeys } from '@mantine/hooks'
+import { useDebouncedValue, useDisclosure, useHotkeys, useToggle } from '@mantine/hooks'
 
-import { IconSearch, IconUserCircle } from '@tabler/icons'
+import { IconGridPattern, IconList, IconSearch, IconUserCircle } from '@tabler/icons'
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
 const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: IClass & { classReviewCount: number, userCount: number, withDescription: boolean, searchTerm: string, highlight: object }) => {
-const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, userCount }: IClass & { classReviewCount: number, userCount: number }) => {
   const router = useRouter()
+
+  let formattedDescription = (
+    <Text c="dimmed" size="sm"> {description} </Text>
+  )
+
+  let formattedInstructors = (
+    <> {instructors.join(', ')} </>
+  )
+
+  const regex = /("[^"]+"|[^,| ]+)/g
+
+  // if (searchTerm) {
+  // const searchPhrases = searchTerm.match(regex).map((phrase) => phrase.replace(/"/g, ''))
+  // If the search term is in quotes, search for the whole phrase
+  // If it's split with | or , then search for any of the terms
+  // Otherwise, search for all the terms
+  // formattedDescription = <Text c="dimmed" size="sm"> {
+  //   description.split(new RegExp(`(${searchPhrases.join('|')})`, 'gi')).map((part, index) => {
+  //     if (searchPhrases.includes(part.toLowerCase())) {
+  //       return <Mark key={index}>{part}</Mark>
+  //     }
+  //     return part
+  //   })
+  // } </Text>
+
+  // formattedInstructors = <> {
+  //   instructors.join(', ').split(new RegExp(`(${searchPhrases.join('|')})`, 'gi')).map((part, index) => {
+  //     if (searchPhrases.includes(part.toLowerCase())) {
+  //       return <Mark key={index}>{part}</Mark>
+  //     }
+  //     return part
+  //   })
+  // } </>
+  // }
+
+  if (highlight) {
+    // parse each highlighted field and only replace the matching parts in the original text with <Mark>
+
+    function replaceHighlight (fullText: string, snippet: string) {
+      const snippetSansMark = snippet.replace(/<\/?mark>/g, '')
+      const i = fullText.toLowerCase().indexOf(snippetSansMark.toLowerCase())
+      if (i < 0) return fullText
+
+      const before = fullText.slice(0, i)
+      const after = fullText.slice(i + snippetSansMark.length)
+      const markedParts = snippet.split(/(<mark>.*?<\/mark>)/g).map((part, idx) => {
+        if (part.startsWith('<mark>') && part.endsWith('</mark>')) {
+          return <Mark key={idx}>{part.replace(/^<mark>|<\/mark>$/g, '')}</Mark>
+        }
+        return part
+      })
+
+      return (
+        <>
+          {before}
+          {markedParts}
+          {after}
+        </>
+      )
+    }
+
+    Object.entries(highlight).forEach(([field, snippets]) => {
+      if (!Array.isArray(snippets)) return
+      // For simplicity, just use the first snippet
+      const snippet = snippets[0]
+      if (field === 'description' && description) {
+        formattedDescription = (
+          <Text c="dimmed" size="sm">
+            {replaceHighlight(description, snippet)}
+          </Text>
+        )
+      }
+      if (field === 'instructors' && instructors?.length) {
+        const joined = instructors.join(', ')
+        formattedInstructors = (
+          <>
+            {replaceHighlight(joined, snippet)}
+          </>
+        )
+      }
+    })
+  }
+
+
   return (
     <Tooltip w={300} withArrow multiline label={description || 'No description provided.'}>
       <UnstyledButton onClick={() => router.push(`/classes/${_id}`)} className={ClassesPageClasses.ClassButton}>
@@ -27,13 +110,16 @@ const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, alias
         </Title>
         <Text c='dimmed' size='xs'> ({units.trim()}) </Text>
         <Space h="sm" />
-        <Text c="dimmed" size="sm"> {`${Number(term.substring(0, 4)) - 1}-${term}`} - {instructors.join(', ')} {(aliases && aliases.length > 0) && `- AKA ${aliases?.join(', ')}`} </Text>
+        <Text c="dimmed" size="sm"> {`${Number(term.substring(0, 4)) - 1}-${term}`} - {formattedInstructors} {(aliases && aliases.length > 0) && `- AKA ${aliases?.join(', ')}`} </Text>
+        <Space h="sm" />
+        {withDescription && formattedDescription}
+
         <Space h="sm" />
         <Group justify={(classReviewCount || !offered || !reviewable) ? 'space-between' : 'flex-end'}>
           {
             (classReviewCount || !offered || !reviewable) && (
               <Flex align='left'>
-                {classReviewCount && <Badge size='sm' variant="filled">{classReviewCount} {classReviewCount === 1 ? 'Response' : 'Responses'}</Badge>}
+                {!!classReviewCount && (<Badge size='sm' variant="filled">{classReviewCount} {classReviewCount === 1 ? 'Response' : 'Responses'}</Badge>)}
                 {(!reviewable && offered) && <Badge variant='filled' color='red' size='sm'> Not Reviewable </Badge>}
                 {!offered && <Badge variant='filled' color='red' size='sm'> Not Offered </Badge>}
               </Flex>
@@ -50,12 +136,12 @@ const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, alias
   )
 }
 
+
 interface ClassesProps {
   classesProp: IClass[]
   classReviewCountsProp: { _id: string, count: number }[]
 }
 
-// const Classes: NextPage<ClassesProps> = ({ classesProp, classReviewCountsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
 const Classes: NextPage = () => {
   const router = useRouter()
 
@@ -81,11 +167,10 @@ const Classes: NextPage = () => {
 
   const [searchTerm, setSearchTerm] = useState(initialState.searchTerm)
   const [debounced] = useDebouncedValue(searchTerm, 500, { leading: true })
-  const [classes, setClasses] = useState([]) // Initialize with empty array
+  const [classes, setClasses] = useState([])
   const [academicYears, setAcademicYears] = useState([])
   const [allDepartments, setAllDepartments] = useState([])
 
-  // turn all of the above into useState variables
   const [offeredFilter, setOfferedFilter] = useState(initialState.offeredFilter)
   const [reviewableFilter, setReviewable] = useState(initialState.reviewableFilter)
   const [reviewsOnlyFilter, setReviewsOnlyFilter] = useState(initialState.reviewsOnlyFilter)
@@ -96,11 +181,15 @@ const Classes: NextPage = () => {
   const [currentPage, setCurrentPage] = useState(initialState.currentPage)
   const [totalPages, setTotalPages] = useState(1)
   const [totalClasses, setTotalClasses] = useState(0)
+  const [timeForResults, setTimeForResults] = useState(0)
 
   const itemsPerPage = 21 // Set the number of items per page
   const [loading, setLoading] = useState(true)
   const [helpOpened, setHelpOpened] = useState(false)
   const [filtersOpened, { toggle: toggleFilterView }] = useDisclosure(false)
+  const [filters, setFilters] = useState({})
+  const [sort, setSort] = useState('relevance')
+  const [viewMode, setViewMode] = useToggle(['grid', 'list'])
 
   // Update sessionStorage whenever state changes
   useEffect(() => {
@@ -237,11 +326,11 @@ const Classes: NextPage = () => {
   }, [])
 
   useEffect(() => {
+    const controller = new AbortController()
 
     const fetchClasses = async () => {
       setLoading(true)
       try {
-        // Construct the query parameters
         const queryParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: itemsPerPage.toString(),
@@ -249,39 +338,52 @@ const Classes: NextPage = () => {
           offered: offeredFilter.toString(),
           reviewable: reviewableFilter.toString(),
           reviewsOnly: reviewsOnlyFilter.toString(),
+          useDescription: viewMode === 'list' ? 'true' : 'false',
+          sortField: sort,
         })
 
         if (academicYearFilter.length > 0) {
           queryParams.append('academicYears', academicYearFilter.join(','))
         }
-
         if (departmentFilter.length > 0) {
           queryParams.append('departments', departmentFilter.join(','))
         }
-
         if (termFilter.length > 0) {
           queryParams.append('terms', termFilter.join(','))
         }
 
-        const response = await fetch(`/api/classes?${queryParams.toString()}`)
+        const startTime = performance.now()
+        const response = await fetch(`/api/classes?${queryParams}`, {
+          signal: controller.signal
+        })
         const result = await response.json()
+        const endTime = performance.now()
+
+        setTimeForResults(endTime - startTime)
 
         if (result.success) {
           setClasses(result.data)
           setTotalClasses(result.meta.totalClasses)
           setTotalPages(result.meta.totalPages)
-
+          setLoading(false)
         }
-
       } catch (error) {
-        console.error('Error fetching classes:', error)
-      } finally {
-        setLoading(false)
+        if (error.name !== 'AbortError') {
+          console.error('Error fetching classes:', error)
+        }
       }
     }
 
     fetchClasses()
-  }, [currentPage, debounced, offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
+
+    return () => {
+      controller.abort()
+    }
+  }, [
+    currentPage, debounced, offeredFilter, reviewableFilter,
+    reviewsOnlyFilter, academicYearFilter, departmentFilter,
+    termFilter, sort
+  ])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -300,9 +402,17 @@ const Classes: NextPage = () => {
         <meta name="description" content="Generated by create next app" />
         <link rel="icon" href="/static/images/favicon.ico" />
       </Head>
+      <Alert color="blue" title="New: Advanced searching!" style={{ marginBottom: 'var(--mantine-spacing-lg)' }}>
 
+        <Text>Here are a few quick tips for using our new ElasticSearch-powered search:
+          <List>
+            <List.Item>Use quotes to find exact phrases, such as <Code>"computer science"</Code>.</List.Item>
+            <List.Item>Use wildcards to broaden your matches, like <Code>bio*</Code> for any words starting with "bio".</List.Item>
+          </List>
+        </Text>
+      </Alert>
       <Title>
-        Classes
+        Class Query
       </Title>
       <Collapse in={helpOpened}>
         <Card>
@@ -322,14 +432,23 @@ const Classes: NextPage = () => {
         leftSection={<IconSearch size={18} stroke={1.5} />}
         radius="xl"
         size="md"
-        rightSection=
-        {loading && <Loader size='sm' />}
+        rightSection={loading && <Loader size='sm' />}
         placeholder="Search classes"
-        value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
         rightSectionWidth={42}
       />
 
-      <Divider my="md" label={`Advanced Search ${filtersOpened ? '▲' : '▼'}`} labelPosition="center" onClick={toggleFilterView} />
+      <Divider
+        my="md"
+        label={`Advanced Search (${Object.entries({ offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter })
+          .filter(([_, value]) =>
+            Array.isArray(value) ? value.length > 0 : !!value
+          ).length
+          } selected) ${filtersOpened ? '▲' : '▼'}`}
+        labelPosition="center"
+        onClick={toggleFilterView}
+      />
 
       <Collapse in={filtersOpened}>
         <Grid grow>
@@ -356,23 +475,56 @@ const Classes: NextPage = () => {
       </Collapse>
 
       {/* <Space h="md" /> */}
-      {/* <Text> <b> Filters: </b> {Object.entries(filters).length > 0 ? Object.entries(filters).filter(([key]) => key !== 'searchPhrases').map(([key, value]) => (<Badge key={key}> {`${key}: ${value.toString()}`} </Badge>)) : (<> None </>)} </Text> */}
+      {/* <Text> <b> Filters: </b> {Object.entries(filters).length > 0 ? Object.entries(filters).filter(([key]) => key !== 'searchPhrases').map(([key, value]) => (<Badge key={key}> {`${ key }: ${ value.toString() }`} </Badge>)) : (<> None </>)} </Text> */}
       <Space h="lg" />
       {
-        !loading && <Text> Found {totalClasses.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} result{totalClasses === 1 ? '' : 's'}. </Text>
+        !loading &&
+        <Flex justify="space-between" align={'center'}>
+
+          <Text c='gray'> Found {totalClasses.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} result{totalClasses === 1 ? '' : 's'}. ({Math.round(timeForResults)} ms) </Text>
+
+          <Group>
+            <Select size='md' placeholder="Sort by" data={[
+              { label: 'Relevance', value: 'relevance' },
+              { label: 'Alphabetical', value: 'alphabetical' },
+              { label: 'Reviews', value: 'reviews' },
+              { label: 'Users', value: 'users' },
+            ]} size='sm' defaultValue={sort} onChange={(value) => setSort(value)} clearable={false} allowDeselect={false} />
+            <Switch
+              size='lg'
+              color='purple'
+              onLabel={<IconGridPattern size={16} />}
+              offLabel={<IconList size={16} />}
+              checked={viewMode == 'grid'}
+              onChange={(e) => setViewMode(e.target.checked ? 'grid' : 'list')}
+            />
+          </Group>
+        </Flex>
       }
       <Space h="md" />
       <Box pos="relative">
         <LoadingOverlay visible={loading && classes.length > 0} />
-        <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 1500: 2, 1200: 3 }}>
-          <Masonry gutter={'0.5rem'}>
-            {
-              classes.map((classEntry: IClass) => (
-                <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} userCount={classEntry.userCount} {...classEntry} />
-              ))
-            }
-          </Masonry>
-        </ResponsiveMasonry>
+        {
+          viewMode === 'grid' ? (
+
+            <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 1500: 2, 1200: 3 }}>
+              <Masonry gutter={'0.5rem'}>
+                {
+                  classes.map((classEntry: IClass) => (
+                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} {...classEntry} />
+                  ))
+                }
+              </Masonry>
+            </ResponsiveMasonry>) : (
+            <Stack spacing="md">
+              {
+                classes.map((classEntry: IClass) => (
+                  <ClassButton key={classEntry._id} classReviewCount={classEntry.classReviewCount || 0} withDescription searchTerm={searchTerm} highlight={classEntry.highlight} {...classEntry} />
+                ))
+              }
+            </Stack>
+          )
+        }
       </Box>
       <Space h="md" />
       {/* align Pagination to center */}

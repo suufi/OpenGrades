@@ -350,14 +350,14 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                       <Alert variant='light' color='blue' title='Bulletin' withCloseButton icon={<News size={24} />} onClose={() => setNewsOpen(false)} style={{ ...transitionStyle }}>
                         <Title order={6}> January 20, 2025 </Title>
                         <Text className={classes.text} c='gray'>
-                          ⚙️ Slightly* improved performance on the class search page and improved filtering.
-                          📊 Aggregated page for class information across multiple terms.
+                          ⚙️ Slightly* improved performance on the class search page and improved filtering. <br />
+                          📊 Aggregated page for class information across multiple terms. <br />
                           ⌨ Using Spotlight search for class pages for actions.
                         </Text>
                         <Space h="md" />
                         <Title order={6}> January 3, 2025 </Title>
                         <Text className={classes.text} c='gray'>
-                          🪳 <b>Bug fix:</b> DR and P grading are now functional.
+                          🪳 <b>Bug fix:</b> DR and P grading are now functional. <br />
                           💚 <b>New:</b> Auto-save on background and class comments -- return to the page and your comments will still be there!
                         </Text>
                       </Alert>

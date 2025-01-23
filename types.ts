@@ -18,15 +18,17 @@ declare module 'next-auth' {
 declare global {
     namespace NodeJS {
         interface ProcessEnv {
+            MONGODB_CONNECTION_URI: string
             MIT_OIDC_WELLKNOWN: string
             MIT_OIDC_CLIENT_ID: string
             MIT_OIDC_CLIENT_SECRET: string
+            MIT_OIDC_AUTHORIZATION_ENDPOINT: string
+            MIT_OIDC_ISSUER: string
             NEXTAUTH_SECRET: string
-            MONGODB_CONNECTION_URI: string
             MIT_API_CLIENT_ID: string
             MIT_API_CLIENT_SECRET: string
-            MIT_API_CLIENT_ID_2: string
-            MIT_API_CLIENT_SECRET_2: string
+            AUTH_TRUST_HOST: boolean
+            ELASTIC_SEARCH_URI: string
         }
     }
 }
@@ -72,6 +74,7 @@ export interface IClass {
     display?: boolean
     description: string
     department: string
+    crossListedDepartments: string[]
     units: string
     reviewable: boolean
     offered: boolean
