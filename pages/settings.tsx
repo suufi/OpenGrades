@@ -5,7 +5,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import InferNextPropsType from 'infer-next-props-type'
 import Head from 'next/head'
 
-import { Badge, Button, Center, Checkbox, Container, Grid, Group, List, MultiSelect, Select, Stack, Table, Text, TextInput, Title, useMantineColorScheme } from '@mantine/core'
+import { Badge, Button, Center, Checkbox, Container, Grid, Group, List, MultiSelect, Select, Stack, Switch, Table, Text, TextInput, Title, useMantineColorScheme } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 
 import mongoConnection from '@/utils/mongoConnection'
