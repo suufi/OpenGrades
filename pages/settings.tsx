@@ -667,17 +667,10 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 export async function getServerSideProps (context) {
   await mongoConnection()
 
-  const classesProp: IClass[] = await Class.find({}).lean() as IClass[]
   const users: IUser[] = await User.find({}).lean() as IUser[]
 
   const totalUsers = await User.countDocuments()
-  // const summaryByClassYear = users.reduce((acc, user) => {
-  //   const classYear = user.classYear || 'Unknown'
-  //   acc[classYear] = (acc[classYear] || 0) + 1
-  //   return acc
-  // }, {})
-  // rewrite the above using mongo aggregation, every user has a classYear and a trustLevel in their document
-  // make a dictionary that has first value as the year and the second value as the # of users in that year
+
   const summaryByClassYear = await User.aggregate([
     {
       $match: {
