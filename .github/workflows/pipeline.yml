@@ -47,6 +47,7 @@ jobs:
              "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
              "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}"
              "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}"
+             "ELASTIC_SEARCH_URI=${{ secrets.ELASTIC_SEARCH_URI }}"
 
   deploy:
     name: Deploy Image
@@ -78,6 +79,7 @@ jobs:
           echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
           echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
           echo "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}" >> .env
+          echo "ELASTIC_SEARCH_URI=${{ secrets.ELASTIC_SEARCH_URI }}" >> .env
 
       # Check if .env file is properly created
       - name: Display .env file contents for debugging
