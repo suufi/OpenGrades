@@ -10,7 +10,6 @@ import { showNotification } from '@mantine/notifications'
 
 import mongoConnection from '@/utils/mongoConnection'
 
-import Class from '@/models/Class'
 import User from '@/models/User'
 import { IClass, IUser } from '../types'
 
@@ -160,7 +159,7 @@ function DepartmentalTermGroupings () {
   )
 }
 
-const Settings = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
+const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
   const { colorScheme } = useMantineColorScheme()
   const { changeTheme } = useContext(PrimeReactContext)
 
@@ -720,7 +719,6 @@ export async function getServerSideProps (context) {
         context.res,
         authOptions
       ))),
-      classesProp: JSON.parse(JSON.stringify(classesProp)),
       totalUsers,
       summaryByClassYear,
       summaryByLevel,
@@ -729,10 +727,10 @@ export async function getServerSideProps (context) {
   }
 }
 
-const SettingsWrapper = ({ classesProp, totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
+const SettingsWrapper = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
   return (
     <PrimeReactProvider>
-      <Settings classesProp={classesProp} totalUsers={totalUsers} summaryByClassYear={summaryByClassYear} summaryByLevel={summaryByLevel} activeUsers={activeUsers} />
+      <Settings totalUsers={totalUsers} summaryByClassYear={summaryByClassYear} summaryByLevel={summaryByLevel} activeUsers={activeUsers} />
     </PrimeReactProvider>
   )
 }
