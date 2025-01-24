@@ -3,7 +3,7 @@ import { AppProps } from 'next/app'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { ReactNode, useContext, useEffect } from 'react'
+import { ReactNode, useContext, useEffect } from 'react'
 
 import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Text, ThemeIcon, Tooltip, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
@@ -108,7 +108,10 @@ function NavigationLinks () {
       </>
     )
     : (
-      <React.Fragment />
+      <>
+        <MainLink label="Feedback" icon={<Star />} color="cyan" href="https://forms.gle/pyj7zY45AVnjX2Nc8" target="_blank" active={false} />
+        <MainLink label="Affiliate Access" icon={<Key />} color="cyan" href="https://forms.gle/8iandxQpc6abmQtZA" target="_blank" active={false} />
+      </>
     )
 }
 
