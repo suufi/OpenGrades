@@ -398,12 +398,10 @@ export default async function handler (
             if (response.ok) {
               return res
             }
-            throw new Error(res.errorDescription)
           })
 
-          descriptionCache[cacheKey] = apiFetch.item.description
-          return apiFetch.item.description
-
+          descriptionCache[cacheKey] = apiFetch?.item?.description
+          return apiFetch?.item?.description || description
         }
 
         const allClasses: IClass[] = []
