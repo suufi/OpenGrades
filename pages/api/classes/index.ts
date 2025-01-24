@@ -110,7 +110,7 @@ export default async function handler (
           query.term = term
         }
 
-        const cleanSearch = (search as string).replace(/[^a-zA-Z0-9.]/g, '')
+        const tokens = search.split(/\s+/).filter(Boolean)
 
         // Prepare for sorting
         let sortQuery = {}
@@ -126,7 +126,7 @@ export default async function handler (
               sortQuery[sortField] = sortOrder === 'asc' ? 1 : -1
             }
           } else {
-            if (!cleanSearch) {
+            if (!search) {
               sortQuery.userCount = -1
             }
           }
@@ -135,7 +135,22 @@ export default async function handler (
         let highlights = {}
         let scores = {}
 
-        if (cleanSearch) {
+        if (search) {
+
+          const mustClauses = tokens.map(token => ({
+            multi_match: {
+              query: token,
+              fields: [
+                'subjectNumber^3',
+                'subjectTitle^3',
+                'aliases^3',
+                'instructors',
+                'description'
+              ],
+              type: 'phrase_prefix'
+            }
+          }))
+
 
           let esQuery = {
             bool: {
@@ -143,7 +158,7 @@ export default async function handler (
                 {
                   term: {
                     "subjectNumber": {
-                      value: cleanSearch,
+                      value: search,
                       boost: 3
                     }
                   }
@@ -151,29 +166,20 @@ export default async function handler (
                 {
                   term: {
                     "aliases": {
-                      value: cleanSearch,
+                      value: search,
                       boost: 3
                     }
                   }
                 },
                 {
-                  multi_match: {
-                    query: cleanSearch,
-                    fields: [
-                      'subjectNumber^3',
-                      'subjectTitle^3',
-                      'aliases^3',
-                      'instructors',
-                      'description'
-                    ],
-                    type: 'phrase_prefix'
+                  bool: {
+                    must: mustClauses
                   }
                 }
               ],
               minimum_should_match: 1
             }
           }
-
 
           const searchResults = await client.search({
             index: 'opengrades_prod.classes',
