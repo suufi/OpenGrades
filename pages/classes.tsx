@@ -408,6 +408,7 @@ const Classes: NextPage = () => {
           <List>
             <List.Item>Use quotes to find exact phrases, such as <Code>"computer science"</Code>.</List.Item>
             <List.Item>Use wildcards to broaden your matches, like <Code>bio*</Code> for any words starting with "bio".</List.Item>
+            <List.Item>Flip the switch to see more details about each class.</List.Item>
           </List>
         </Text>
       </Alert>
