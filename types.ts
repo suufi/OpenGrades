@@ -63,6 +63,11 @@ export enum TimeRange {
     'Unknown' = 'Unknown'
 }
 
+export enum SupportStatus {
+    Maintainer = 'Maintainer',
+    Supporter = 'Supporter'
+}
+
 export interface IClass {
     _id?: string
     subjectNumber: string
@@ -96,7 +101,11 @@ export interface IUser {
     trustLevel: number
     classesTaken: IClass[]
     flags: IdentityFlags[]
-    referredBy: IUser
+    referredBy: IUser,
+    avatar: string,
+    supportStatus: SupportStatus,
+    createdAt: Date,
+    updatedAt: Date
 }
 
 export interface IClassReview {
@@ -202,6 +211,14 @@ export interface IReport {
     reason: string
     resolved: boolean
     outcome: string
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface IFAQ {
+    _id?: string
+    question: string
+    answer: string
     createdAt: Date
     updatedAt: Date
 }

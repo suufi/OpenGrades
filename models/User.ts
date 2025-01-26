@@ -61,6 +61,15 @@ const UserSchema = new mongoose.Schema<IUser>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     default: null
+  },
+  avatar: {
+    type: String,
+    default: null
+  },
+  supportStatus: {
+    type: String,
+    enum: ['Maintainer', 'Supporter'],
+    default: null
   }
 }, { timestamps: true })
 

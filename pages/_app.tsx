@@ -9,7 +9,7 @@ import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeS
 import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
-import { Books, ChevronRight, FireHydrant, History, Home, Key, Logout, Mail, Moon, Road, Settings, Shield, Star, Sun } from 'tabler-icons-react'
+import { Books, ChevronRight, FireHydrant, History, Home, InfoCircle, Key, Logout, Mail, Moon, Road, Settings, Shield, Star, Sun } from 'tabler-icons-react'
 
 // import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
@@ -97,6 +97,7 @@ function NavigationLinks () {
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Reports" icon={<Shield />} color="green" href="/reports" active={pathname === '/reports'} />}
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Settings" icon={<Settings />} color="yellow" href="/settings" active={pathname === '/settings'} />}
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Audit Logs" icon={<History />} color="red" href="/auditlogs" active={pathname === '/auditlogs'} />}
+        <MainLink label="About" icon={<InfoCircle />} color="purple" href="/about" active={pathname === '/about'} />
         {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Projects by SIPB" />}
         <MainLink label="Hydrant" icon={<FireHydrant />} color="orange" href="https://hydrant.mit.edu/" target="_blank" active={false} />
         <MainLink label="CourseRoad" icon={<Road />} color="blue" href="https://courseroad.mit.edu/" target="_blank" active={false} />
@@ -109,6 +110,7 @@ function NavigationLinks () {
     )
     : (
       <>
+        <MainLink label="About" icon={<InfoCircle />} color="purple" href="/about" active={pathname === '/about'} />
         <MainLink label="Feedback" icon={<Star />} color="cyan" href="https://forms.gle/pyj7zY45AVnjX2Nc8" target="_blank" active={false} />
         <MainLink label="Affiliate Access" icon={<Key />} color="cyan" href="https://forms.gle/8iandxQpc6abmQtZA" target="_blank" active={false} />
       </>
@@ -185,8 +187,12 @@ function ContentFetcher (props: AppProps) {
 
   const { userProfile } = useContext(UserContext)
   const { status } = useSession()
+  const router = useRouter()
 
   if (status === 'unauthenticated') {
+    if (router.pathname.startsWith('/about')) {
+      return <Component {...pageProps} />
+    }
     return <NotLoggedIn />
   }
 
@@ -205,7 +211,7 @@ function ContentFetcher (props: AppProps) {
       ? <>
         {(userProfile?.trustLevel !== undefined && userProfile?.trustLevel > 0)
           ? <Component {...pageProps} />
-          : <LockdownModule academicYears={availableAcademicYears} />
+          : <LockdownModule academicYears={availableAcademicYears} {...pageProps} />
         }
       </>
       : <>
