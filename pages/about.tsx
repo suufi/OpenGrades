@@ -12,6 +12,15 @@ const extractInitials = (name: string) => {
     return name.split(' ').map((name) => name[0]).join('')
 }
 
+const UserAvatar = ({ user }) => {
+    return (
+        <>
+            <Avatar size='xl' src={user?.avatar} name={user?.initials} color="initials" />
+            <Text>{user.kerb} {user?.year && '\'' + user?.year}</Text>
+        </>
+    )
+}
+
 
 const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ classCount, classReviewCount, userCount, faqs, maintainers, supporters }) => {
 
@@ -83,8 +92,7 @@ const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
                         return (
                             <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3, lg: 2 }}>
                                 <Stack align="center" direction="column">
-                                    <Avatar size='xl' src={maintainer?.avatar} name={maintainer?.initials} color="initials" />
-                                    <Text>{maintainer.kerb} {maintainer?.year && '\'' + maintainer?.year}</Text>
+                                    <UserAvatar user={maintainer} />
                                 </Stack>
                             </Grid.Col>
                         )
@@ -101,8 +109,7 @@ const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
                         return (
                             <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3, lg: 2 }}>
                                 <Stack align="center" direction="column">
-                                    <Avatar size='xl' name={supporter?.initials} color="initials" />
-                                    <Text>{supporter.kerb} {supporter?.year && '\'' + supporter?.year}</Text>
+                                    <UserAvatar user={supporter} />
                                 </Stack>
                             </Grid.Col>
                         )
