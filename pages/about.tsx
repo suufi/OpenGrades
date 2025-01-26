@@ -5,7 +5,7 @@ import ClassReview from "@/models/ClassReview"
 import FAQ from "@/models/FAQ"
 import User from "@/models/User"
 import mongoConnection from "@/utils/mongoConnection"
-import { Accordion, Avatar, Container, Divider, Flex, Grid, NumberFormatter, Skeleton, Space, Stack, Text, Title } from "@mantine/core"
+import { Accordion, Avatar, Container, Divider, Grid, NumberFormatter, Skeleton, Space, Stack, Text, Title } from "@mantine/core"
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from "next"
 
 const extractInitials = (name: string) => {
@@ -51,31 +51,39 @@ const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
 
             <Space h={'lg'} />
 
-            <Flex justify={'space-between'}>
+            <Grid justify="space-around">
+
+                <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3 }}>
+                    <Title order={1} style={{ textAlign: 'center' }}>
+                        {classCount ? <NumberFormatter value={classCount} thousandSeparator /> : <Skeleton />}
+                        <Text> classes </Text>
+                    </Title>
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3 }}>
+
+                    <Title order={1} style={{ textAlign: 'center' }}>
+                        {userCount ? <NumberFormatter value={userCount} thousandSeparator /> : <Skeleton />}
+                        <Text> users </Text>
+                    </Title>
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3 }}>
+                    <Title order={1} style={{ textAlign: 'center' }}>
+                        {classReviewCount ? <NumberFormatter value={classReviewCount[0].partialTrueCount + classReviewCount[0].partialFalseCount} thousandSeparator /> : <Skeleton />}
+                        <Text> total reviews </Text>
+                    </Title>
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3 }}>
+                    <Title order={1} style={{ textAlign: 'center' }}>
+                        {classReviewCount ? <NumberFormatter value={classReviewCount[0].partialFalseCount} thousandSeparator /> : <Skeleton />}
+                        <Text> full reviews </Text>
+                    </Title>
+                </Grid.Col>
 
 
-                <Title order={1} style={{ textAlign: 'center' }}>
-                    {classCount ? <NumberFormatter value={classCount} thousandSeparator /> : <Skeleton />}
-                    <Text> classes </Text>
-                </Title>
-
-                <Title order={1} style={{ textAlign: 'center' }}>
-                    {userCount ? <NumberFormatter value={userCount} thousandSeparator /> : <Skeleton />}
-                    <Text> users </Text>
-                </Title>
-
-                <Title order={1} style={{ textAlign: 'center' }}>
-                    {classReviewCount ? <NumberFormatter value={classReviewCount[0].partialTrueCount + classReviewCount[0].partialFalseCount} thousandSeparator /> : <Skeleton />}
-                    <Text> total reviews </Text>
-                </Title>
-
-                <Title order={1} style={{ textAlign: 'center' }}>
-                    {classReviewCount ? <NumberFormatter value={classReviewCount[0].partialFalseCount} thousandSeparator /> : <Skeleton />}
-                    <Text> full reviews </Text>
-                </Title>
-
-
-            </Flex>
+            </Grid>
 
             <Divider m={'xl'} />
             <Title order={2}> Frequently Asked Questions </Title>
