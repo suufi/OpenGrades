@@ -201,6 +201,11 @@ export default async function handler (
         }
 
         await ClassReview.updateOne({ class: req.query.classId, author: author._id }, changes)
+        await AuditLog.create({
+          actor: author._id,
+          type: 'EditReview',
+          description: existingReview.partial ? `Editing a partial review for ${req.query.classId}` : `Editing a review for ${req.query.classId}`
+        })
 
         return res.status(200).json({
           success: true
