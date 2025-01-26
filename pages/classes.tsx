@@ -29,32 +29,8 @@ const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, alias
 
   const regex = /("[^"]+"|[^,| ]+)/g
 
-  // if (searchTerm) {
-  // const searchPhrases = searchTerm.match(regex).map((phrase) => phrase.replace(/"/g, ''))
-  // If the search term is in quotes, search for the whole phrase
-  // If it's split with | or , then search for any of the terms
-  // Otherwise, search for all the terms
-  // formattedDescription = <Text c="dimmed" size="sm"> {
-  //   description.split(new RegExp(`(${searchPhrases.join('|')})`, 'gi')).map((part, index) => {
-  //     if (searchPhrases.includes(part.toLowerCase())) {
-  //       return <Mark key={index}>{part}</Mark>
-  //     }
-  //     return part
-  //   })
-  // } </Text>
-
-  // formattedInstructors = <> {
-  //   instructors.join(', ').split(new RegExp(`(${searchPhrases.join('|')})`, 'gi')).map((part, index) => {
-  //     if (searchPhrases.includes(part.toLowerCase())) {
-  //       return <Mark key={index}>{part}</Mark>
-  //     }
-  //     return part
-  //   })
-  // } </>
-  // }
 
   if (highlight) {
-    // parse each highlighted field and only replace the matching parts in the original text with <Mark>
 
     function replaceHighlight (fullText: string, snippet: string) {
       const snippetSansMark = snippet.replace(/<\/?mark>/g, '')
@@ -81,6 +57,7 @@ const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, alias
 
     Object.entries(highlight).forEach(([field, snippets]) => {
       if (!Array.isArray(snippets)) return
+
       // For simplicity, just use the first snippet
       const snippet = snippets[0]
       if (field === 'description' && description) {
