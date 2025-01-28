@@ -46,6 +46,7 @@ const courseCatalog = `1 - Civil and Environmental Engineering
 17 - Political Science
 18 - Mathematics
 20 - Biological Engineering
+21 - Humanities
 21A - Anthropology
 CMS - Comparative Media Studies
 21W - Writing
