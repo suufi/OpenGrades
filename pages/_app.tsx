@@ -31,7 +31,6 @@ import 'primeicons/primeicons.css'
 import 'primereact/resources/primereact.min.css' // core css
 
 import mainClasses from '@/styles/Main.module.css'
-import Script from 'next/script'
 
 const availableAcademicYears = [
   '2021-2022',
@@ -344,7 +343,7 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
                 {/* <App {...pageProps} /> */}
                 <link rel="canonical" href="https://opengrades.mit.edu" />
                 <App pageProps={pageProps} Component={Component} />
-                <Script src='https://www.googletagmanager.com/gtag/js?id=G-2EWKT6ED8T' strategy='afterInteractive' />
+                {/* <Script src='https://www.googletagmanager.com/gtag/js?id=G-2EWKT6ED8T' strategy='afterInteractive' /> */}
               </ModalsProvider>
             </MantineProvider>
           </UserContextProvider>
