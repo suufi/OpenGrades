@@ -14,8 +14,12 @@ import { Books, ChevronRight, FireHydrant, History, Home, InfoCircle, Key, Logou
 // import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 
-import LockdownModule from '../components/LockdownModule'
-import { UserContext, UserContextProvider } from '../components/UserContextProvider'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import LockdownModule from '@/components/LockdownModule'
+import NotLoggedIn from '@/components/NotLoggedIn'
+import { UserContext, UserContextProvider } from '@/components/UserContextProvider'
+
+import PlausibleProvider from 'next-plausible'
 
 import '@mantine/charts/styles.css'
 import '@mantine/core/styles.css'
@@ -26,10 +30,8 @@ import '@mantine/spotlight/styles.css'
 import 'primeicons/primeicons.css'
 import 'primereact/resources/primereact.min.css' // core css
 
-import ErrorBoundary from '@/components/ErrorBoundary'
+import mainClasses from '@/styles/Main.module.css'
 import Script from 'next/script'
-import NotLoggedIn from '../components/NotLoggedIn'
-import mainClasses from '../styles/Main.module.css'
 
 const availableAcademicYears = [
   '2021-2022',
@@ -331,21 +333,23 @@ export default function AppWrapper ({ Component, pageProps }: AppProps) {
     </Head>
 
     <ErrorBoundary>
-      <SessionProvider session={pageProps.session}>
-        <UserContextProvider>
-          <MantineProvider
-            theme={theme}
-          >
-            <Notifications />
-            <ModalsProvider>
-              {/* <App {...pageProps} /> */}
-              <link rel="canonical" href="https://opengrades.mit.edu" />
-              <App pageProps={pageProps} Component={Component} />
-              <Script src='https://www.googletagmanager.com/gtag/js?id=G-2EWKT6ED8T' strategy='afterInteractive' />
-            </ModalsProvider>
-          </MantineProvider>
-        </UserContextProvider>
-      </SessionProvider>
+      <PlausibleProvider domain="opengrades.mit.edu" customDomain="https://analytics.mit.edu" trackOutboundLinks selfHosted taggedEvents>
+        <SessionProvider session={pageProps.session}>
+          <UserContextProvider>
+            <MantineProvider
+              theme={theme}
+            >
+              <Notifications />
+              <ModalsProvider>
+                {/* <App {...pageProps} /> */}
+                <link rel="canonical" href="https://opengrades.mit.edu" />
+                <App pageProps={pageProps} Component={Component} />
+                <Script src='https://www.googletagmanager.com/gtag/js?id=G-2EWKT6ED8T' strategy='afterInteractive' />
+              </ModalsProvider>
+            </MantineProvider>
+          </UserContextProvider>
+        </SessionProvider>
+      </PlausibleProvider>
     </ErrorBoundary>
   </>
 }
