@@ -54,6 +54,7 @@ CMS - Comparative Media Studies
 21H - History
 21L - Literature
 21M - Music and Theater Arts
+21T - Theater Arts
 WGS - Women's and Gender Studies
 22 - Nuclear Science and Engineering
 24 - Linguistics and Philosophy
