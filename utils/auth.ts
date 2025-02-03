@@ -1,5 +1,6 @@
 
 // @ts-nocheck
+import CourseOption from '@/models/CourseOption'
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
 import type {
@@ -100,11 +101,23 @@ export const config = {
                             Object.keys(affiliation).includes('classYear')
                         )
 
+                        const courseOptions = classYearAffiliations.length > 0 ? classYearAffiliations[0].courses : []
+
                         // Safely get the first classYear affiliation or null if not present
                         const classYearAffiliation = classYearAffiliations.length > 0
                             ? classYearAffiliations[0]
                             : null
 
+                        // Get courseOption objects for each course that the user is affiliated with
+                        const courseOptionObjects = await courseOptions.map(async (course: any) => {
+                            const courseOption = await CourseOption.findOne({
+                                departmentCode: course.departmentCode,
+                                courseOption: course.courseOption,
+                                courseLevel: classYearAffiliation?.classYear == 'G' ? 'G' : 'U',
+                            }).select('_id')
+
+                            return courseOption
+                        })
                         // Safely compute classOf, handling the absence of classYear
                         const classOf = (classYearAffiliation && classYearAffiliation.classYear !== 'G' && classYearAffiliation.classYear !== 'U')
                             ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliation.classYear)
@@ -123,7 +136,8 @@ export const config = {
                                     affiliation: res.item.affiliations[0]?.type || null,
                                     verified: res.item.affiliations[0]?.type === 'student',
                                     year: classYearAffiliation?.classYear || null,
-                                    classOf
+                                    classOf,
+                                    courseAffiliation: await Promise.all(courseOptionObjects)
                                 }
                             },
                             {

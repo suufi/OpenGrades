@@ -70,7 +70,11 @@ const UserSchema = new mongoose.Schema<IUser>({
     type: String,
     enum: ['Maintainer', 'Supporter'],
     default: null
-  }
+  },
+  courseAffiliation: [{
+    type: Schema.Types.ObjectId,
+    ref: 'CourseOption'
+  }]
 }, { timestamps: true })
 
 export default (mongoose.models.User || mongoose.model('User', UserSchema))

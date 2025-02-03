@@ -104,6 +104,7 @@ export interface IUser {
     referredBy: IUser,
     avatar: string,
     supportStatus: SupportStatus,
+    courseAffiliation: ICourseOption[],
     createdAt: Date,
     updatedAt: Date
 }
@@ -221,4 +222,14 @@ export interface IFAQ {
     answer: string
     createdAt: Date
     updatedAt: Date
+}
+
+export interface ICourseOption {
+    departmentCode: string,
+    departmentName: string,
+    courseDescription: string,
+    courseName: string,
+    courseLevel: string,
+    courseOption: string,
+    active: boolean
 }
