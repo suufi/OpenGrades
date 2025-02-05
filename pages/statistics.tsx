@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ClassReview from "@/models/ClassReview"
 import User from "@/models/User"
 import { IUser } from "@/types"

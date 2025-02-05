@@ -9,7 +9,7 @@ import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, ColorSchemeS
 import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
-import { Books, ChevronRight, FireHydrant, History, Home, InfoCircle, Key, Logout, Mail, Moon, Road, Settings, Shield, Star, Sun } from 'tabler-icons-react'
+import { Books, ChevronRight, FireHydrant, Graph, History, Home, InfoCircle, Key, Logout, Mail, Moon, Road, Settings, Shield, Star, Sun } from 'tabler-icons-react'
 
 // import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
@@ -99,6 +99,7 @@ function NavigationLinks () {
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Settings" icon={<Settings />} color="yellow" href="/settings" active={pathname === '/settings'} />}
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Audit Logs" icon={<History />} color="red" href="/auditlogs" active={pathname === '/auditlogs'} />}
         <MainLink label="About" icon={<InfoCircle />} color="purple" href="/about" active={pathname === '/about'} />
+        <MainLink label="Statistics" icon={<Graph />} color="cyan" href="/statistics" active={pathname === '/statistics'} />
         {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Projects by SIPB" />}
         <MainLink label="Hydrant" icon={<FireHydrant />} color="orange" href="https://hydrant.mit.edu/" target="_blank" active={false} />
         <MainLink label="CourseRoad" icon={<Road />} color="blue" href="https://courseroad.mit.edu/" target="_blank" active={false} />
