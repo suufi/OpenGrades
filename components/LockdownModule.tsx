@@ -311,7 +311,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
               <Stepper.Step label="Class History" description="Add classes you've taken">
                 <Stack>
                   <Text> To maintain the platform, we depend on students providing reviews for classes they&apos;ve taken in the past. In the semesters fields below, please input the classes you&apos;ve taken (or dropped). You don&apos;t have to review every class, but please try to review as many as you can. By listing a class below, we may reach out to you to request a class review if there is interest in a class but little to no reviews. </Text>
-                  <Text> You can manually search for classes below or copy and paste your <Link href='https://student.mit.edu/cgi-bin/shrwsgrd.sh'>grade report</Link> (entire page) from the MIT Registrar. </Text>
+                  <Text> You can manually search for classes below or copy and paste your <Link target="_blank" href='https://student.mit.edu/cgi-bin/shrwsgrd.sh'>grade report</Link> (entire page) from the MIT Registrar. </Text>
                   <Textarea variant='filled' defaultValue={gradeReport} onChange={(e) => setGradeReport(e.target.value)} label="Grade Report" placeholder="Copy and paste your grade report here" />
                   <Switch
                     label="Generate prefilled reviews with your grades from your grade report"

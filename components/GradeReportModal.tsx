@@ -88,7 +88,7 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
         <Modal opened={opened} onClose={onClose} title="Upload Grade Report" size="lg">
             <LoadingOverlay visible={loading} />
             <Stack>
-                <Text variant='muted'>Please paste your <Link href='https://student.mit.edu/cgi-bin/shrwsgrd.sh'>grade report</Link> (entire page) below to add classes to your profile.</Text>
+                <Text variant='muted'>Please paste your <Link target="_blank" href='https://student.mit.edu/cgi-bin/shrwsgrd.sh'>grade report</Link> (entire page) below to add classes to your profile.</Text>
 
                 <Textarea
                     placeholder="Paste your grade report here..."
