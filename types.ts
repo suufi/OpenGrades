@@ -105,8 +105,9 @@ export interface IUser {
     avatar: string,
     supportStatus: SupportStatus,
     courseAffiliation: ICourseOption[],
+    lastGradeReportUpload: Date,
     createdAt: Date,
-    updatedAt: Date
+    updatedAt: Date,
 }
 
 export interface IClassReview {

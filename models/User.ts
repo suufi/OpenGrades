@@ -74,7 +74,11 @@ const UserSchema = new mongoose.Schema<IUser>({
   courseAffiliation: [{
     type: Schema.Types.ObjectId,
     ref: 'CourseOption'
-  }]
+  }],
+  lastGradeReportUpload: {
+    type: Date,
+    default: null
+  }
 }, { timestamps: true })
 
 export default (mongoose.models.User || mongoose.model('User', UserSchema))
