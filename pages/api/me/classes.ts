@@ -80,7 +80,7 @@ export default async function handler (
                         }
                         await ClassReview.create(reviewsToMake)
 
-                        await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: new Date() })
+                        await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: body.partialReviews.length > 0 && new Date() })
                     }
 
                     return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
