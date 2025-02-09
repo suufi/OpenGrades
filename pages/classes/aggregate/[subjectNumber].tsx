@@ -36,7 +36,8 @@ const letterGradeColors = {
 
 interface AggregateProps {
     classesProp: IClass[]
-    reviewsProp: IClassReview[]
+    reviewsProp: IClassReview[],
+    lastGradeReportUpload: boolean,
 }
 
 interface ClassReviewCommentProps {
@@ -113,7 +114,7 @@ function ClassReviewComment ({ classReview,
     )
 }
 
-const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gradePointsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gradePointsProp, lastGradeReportUpload }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
     const router = useRouter()
 
     const [classes, setClasses] = useState(classesProp)
@@ -159,7 +160,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                                     }, [] as { name: string, value: number, color: string }[]
                                     )}
                                 />)
-                            : <Text> No grade points for this class yet. </Text>
+                            : <Text> {lastGradeReportUpload ? "No grade points for this class yet." : "You must upload a grade report with partial reviews in the past four months to display grade data."} </Text>
                     }
 
                     {
@@ -429,11 +430,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         class: { $in: classIds },
     }).populate('class').select('letterGrade').lean()
 
+    const lastGradeReportUpload = user.lastGradeReportUpload && (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) < 1000 * 60 * 60 * 24 * 30 * 4
+
     return {
         props: {
             classesProp: JSON.parse(JSON.stringify(classes)),
             reviewsProp: JSON.parse(JSON.stringify(reviews)),
-            gradePointsProp: JSON.parse(JSON.stringify(shuffleArray((gradePointsData.length > 3 || user.trustLevel >= 2) ? gradePointsData : []))),
+            gradePointsProp: lastGradeReportUpload ? JSON.parse(JSON.stringify(shuffleArray((gradePointsData.length > 3 || user.trustLevel >= 2) ? gradePointsData : []))) : [],
+            lastGradeReportUpload
         }
     }
 }

@@ -622,7 +622,7 @@ const ContentSubmissionCard = ({ classId, contentSubmission, refreshData, report
   </Card>
 }
 
-const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter()
 
   const refreshData = () => {
@@ -784,7 +784,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
                 <GradeChart data={gradePointsProp.map(({ numericGrade, letterGrade, verified }: IClassReview) => ({ numericGrade, letterGrade, verified }))} />
               </Grid.Col>
             </Grid>
-            : <Text> No grade data available for this class. A minimum of 4 reviews is required to display grade data. </Text>
+            : <Text> No grade data available for this class. {lastGradeReportUpload ? "A minimum of 4 reviews is required to display grade data." : "You must upload a grade report with partial reviews in the past four months to display grade data."} </Text>
         }
 
 
@@ -846,7 +846,7 @@ export const getServerSideProps = (async (context) => {
 
   if (session) {
     if (session.user && session.user?.email) {
-      const user = await User.findOne({ email: session.user.email })
+      const user: IUser = await User.findOne({ email: session.user.email })
       myReview = await ClassReview.findOne({ class: id, author: user._id }).populate('class').lean()
 
       let reviewsData: IClassReview[] = []
@@ -955,15 +955,20 @@ export const getServerSideProps = (async (context) => {
 
       console.log('my session', session)
       // console.log('reviewsData', reviewsData)
+
+      // check if last grade report upload was made in last 4 months
+      const lastGradeReportUpload = user.lastGradeReportUpload && (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) < 1000 * 60 * 60 * 24 * 30 * 4
+
       return {
         props: {
           userProp: JSON.parse(JSON.stringify(user)),
           classProp: JSON.parse(JSON.stringify(classData)),
           classReviewsProp: JSON.parse(JSON.stringify(reviewsData)),
           contentSubmissionProp: JSON.parse(JSON.stringify(contentSubmissionData)),
-          gradePointsProp: JSON.parse(JSON.stringify(shuffleArray((gradePointsData.length > 3 || user.trustLevel >= 2) ? gradePointsData : []))),
+          gradePointsProp: lastGradeReportUpload ? JSON.parse(JSON.stringify(shuffleArray((gradePointsData.length > 3 || user.trustLevel >= 2) ? gradePointsData : []))) : [],
           myReview: JSON.parse(JSON.stringify(myReview)),
-          reportsProp: JSON.parse(JSON.stringify(reports))
+          reportsProp: JSON.parse(JSON.stringify(reports)),
+          lastGradeReportUpload
         }
       }
     }
