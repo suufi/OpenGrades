@@ -191,7 +191,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
     const departmentOptions = {
         responsive: true,
         scales: {
-            x: { stacked: true, title: { display: true, text: 'Department' } },
+            x: { stacked: true, ticks: { display: true, autoSkip: false }, title: { display: true, text: "Department" } },
             y: { stacked: true, title: { display: true, text: 'Number of People' } },
         },
         plugins: {
