@@ -1,7 +1,7 @@
 
 // @ts-nocheck
 
-import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, em } from '@mantine/core'
+import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, UnstyledButton, em } from '@mantine/core'
 import { useForm, zodResolver } from '@mantine/form'
 import { useLocalStorage, useMediaQuery } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
@@ -29,6 +29,7 @@ import { IClass, IClassReview, IContentSubmission, IParams, IReport, IUser, Lett
 import GradeChart from '../../components/GradeChart'
 
 
+import GradeReportModal from '@/components/GradeReportModal'
 import { DonutChart } from '@mantine/charts'
 import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle, IconGraph, IconTrash } from '@tabler/icons'
 import moment from 'moment-timezone'
@@ -630,7 +631,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
   }
 
   const [reviews, setReviews] = useState(classReviewsProp)
-
+  const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
   const handleVoteChange = (reviewId: string, newVote: number, previousVote: number) => {
     setReviews((prevReviews) => {
       return prevReviews.map((review) => {
@@ -683,6 +684,47 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         })
       }
     })
+  }
+
+  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
+    const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
+
+    try {
+      const response = await fetch('/api/me/classes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classesTaken: flatClasses,
+          partialReviews
+        }),
+      })
+
+      const body = await response.json()
+
+      if (response.ok) {
+        showNotification({
+          title: 'Classes added!',
+          message: 'Your classes have been added successfully.',
+          color: 'green',
+        })
+      } else {
+        showNotification({
+          title: 'Error adding classes',
+          message: body.message,
+          color: 'red',
+        })
+      }
+    } catch (error) {
+      showNotification({
+        title: 'Error!',
+        message: 'Failed to add classes.',
+        color: 'red',
+      })
+    } finally {
+      router.replace(router.asPath) // Refresh data
+    }
   }
 
   const actions: SpotlightActionData[] = [
@@ -784,8 +826,15 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
                 <GradeChart data={gradePointsProp.map(({ numericGrade, letterGrade, verified }: IClassReview) => ({ numericGrade, letterGrade, verified }))} />
               </Grid.Col>
             </Grid>
-            : <Text> No grade data available for this class. {lastGradeReportUpload ? "A minimum of 4 reviews is required to display grade data." : "You must upload a grade report with partial reviews in the past four months to display grade data."} </Text>
+            : <Text> No grade data available for this class. {
+              lastGradeReportUpload ? "A minimum of 4 reviews is required to display grade data." :
+                <>
+                  You must <UnstyledButton style={{ textDecoration: "underline", color: "blue" }} onClick={() => setGradeReportModalOpened(true)}>upload</UnstyledButton> a grade report with partial reviews in the past four months to display grade data.
+                </>
+            }
+            </Text>
         }
+        <GradeReportModal opened={gradeReportModalOpened} onClose={() => setGradeReportModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
 
 
 

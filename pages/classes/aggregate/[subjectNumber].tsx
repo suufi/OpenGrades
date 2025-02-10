@@ -4,13 +4,14 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { IClass, IClassReview } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
-import { Accordion, Alert, Avatar, Badge, Button, Card, Center, Container, Divider, Flex, Group, Paper, Space, Stack, Switch, Text, Title } from '@mantine/core'
+import { Accordion, Alert, Avatar, Badge, Button, Card, Center, Container, Divider, Flex, Group, Paper, Space, Stack, Switch, Text, Title, UnstyledButton } from '@mantine/core'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
 
+import GradeReportModal from '@/components/GradeReportModal'
 import User from '@/models/User'
 import styles from '@/styles/ClassPage.module.css'
 import { BarChart, DonutChart } from '@mantine/charts'
@@ -119,6 +120,48 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
 
     const [classes, setClasses] = useState(classesProp)
     const [onlyOffered, setOnlyOffered] = useState(true)
+    const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
+
+    const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
+        const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
+
+        try {
+            const response = await fetch('/api/me/classes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    classesTaken: flatClasses,
+                    partialReviews
+                }),
+            })
+
+            const body = await response.json()
+
+            if (response.ok) {
+                showNotification({
+                    title: 'Classes added!',
+                    message: 'Your classes have been added successfully.',
+                    color: 'green',
+                })
+            } else {
+                showNotification({
+                    title: 'Error adding classes',
+                    message: body.message,
+                    color: 'red',
+                })
+            }
+        } catch (error) {
+            showNotification({
+                title: 'Error!',
+                message: 'Failed to add classes.',
+                color: 'red',
+            })
+        } finally {
+            router.replace(router.asPath) // Refresh data
+        }
+    }
 
 
     return (
@@ -160,8 +203,17 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                                     }, [] as { name: string, value: number, color: string }[]
                                     )}
                                 />)
-                            : <Text> {lastGradeReportUpload ? "No grade points for this class yet." : "You must upload a grade report with partial reviews in the past four months to display grade data."} </Text>
+                            : <Text>
+                                {
+                                    lastGradeReportUpload ? "No grade points for this class yet." :
+                                        <>
+
+                                            You must <UnstyledButton style={{ textDecoration: "underline", color: "blue" }} onClick={() => setGradeReportModalOpened(true)}>upload</UnstyledButton> a grade report with partial reviews in the past four months to display grade data.
+                                        </>
+                                }
+                            </Text>
                     }
+                    <GradeReportModal opened={gradeReportModalOpened} onClose={() => setGradeReportModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
 
                     {
                         reviewsProp.length > 0 ?
