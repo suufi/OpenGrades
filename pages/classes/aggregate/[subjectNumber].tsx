@@ -15,6 +15,7 @@ import GradeReportModal from '@/components/GradeReportModal'
 import User from '@/models/User'
 import styles from '@/styles/ClassPage.module.css'
 import { BarChart, DonutChart } from '@mantine/charts'
+import { showNotification } from '@mantine/notifications'
 import moment from 'moment-timezone'
 import { ArrowUpCircle } from 'tabler-icons-react'
 

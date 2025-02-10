@@ -1,12 +1,15 @@
 // @ts-nocheck
+import GradeReportModal from "@/components/GradeReportModal"
 import ClassReview from "@/models/ClassReview"
 import User from "@/models/User"
 import { IUser } from "@/types"
 import mongoConnection from "@/utils/mongoConnection"
-import { Container, Group, SegmentedControl, Space, Text, Title } from "@mantine/core"
+import { Container, Group, SegmentedControl, Space, Text, Title, UnstyledButton } from "@mantine/core"
+import { showNotification } from "@mantine/notifications"
 import { Chart as ChartJS, registerables } from "chart.js"
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from "next"
 import { getServerSession, Session } from "next-auth"
+import { useRouter } from "next/router"
 import authOptions from "pages/api/auth/[...nextauth]"
 import { useState } from "react"
 import { Bar, Line } from "react-chartjs-2"
@@ -91,14 +94,59 @@ const brewerRdYlGn7 = [
 ].reverse()
 
 const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ people, classReviews, access }) => {
+    const router = useRouter()
 
     if (!access) {
+        const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
+        const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
+            const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
+
+            try {
+                const response = await fetch('/api/me/classes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        classesTaken: flatClasses,
+                        partialReviews
+                    }),
+                })
+
+                const body = await response.json()
+
+                if (response.ok) {
+                    showNotification({
+                        title: 'Classes added!',
+                        message: 'Your classes have been added successfully.',
+                        color: 'green',
+                    })
+                } else {
+                    showNotification({
+                        title: 'Error adding classes',
+                        message: body.message,
+                        color: 'red',
+                    })
+                }
+            } catch (error) {
+                showNotification({
+                    title: 'Error!',
+                    message: 'Failed to add classes.',
+                    color: 'red',
+                })
+            } finally {
+                router.replace(router.asPath) // Refresh data
+            }
+        }
+
         return (
             <Container style={{
                 padding: 'var(--mantine-spacing-lg)',
             }} >
                 <Title>Statistics</Title>
-                <Text>You do not have access to this page. Please upload a grade report with partial reviews to view statistics.</Text>
+                <Text>You do not have access to this page. Please <UnstyledButton style={{ textDecoration: "underline", color: "blue" }} onClick={() => setGradeReportModalOpened(true)}>upload</UnstyledButton> a grade report with partial reviews to view statistics.</Text>
+                <GradeReportModal opened={gradeReportModalOpened} onClose={() => setGradeReportModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
+
             </Container>
         )
     }
