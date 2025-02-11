@@ -77,7 +77,7 @@ const parseGradeReport = (gradeReport) => {
                             subjectTitle: subjectTitle?.trim(),
                             units: parseInt(units) || 0,
                             level: level?.trim(),
-                            grade: grade?.trim(),
+                            grade: grade?.trim().replace("OX/", "").replace("I/", ""),
                             academicYear: currentYear,
                             term: currentTerm,
                             freshman: isYear1,
