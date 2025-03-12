@@ -116,7 +116,7 @@ export const config = {
                             }
 
                             // For MEng (course-6) students, they can hold dual status as an undergrad and grad
-                            if (departmentCode !== '6') {
+                            if (course.departmentCode !== '6') {
                                 query['courseLevel'] = classYearAffiliation?.classYear == 'G' ? 'G' : 'U'
                             }
 
