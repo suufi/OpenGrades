@@ -110,11 +110,17 @@ export const config = {
 
                         // Get courseOption objects for each course that the user is affiliated with
                         const courseOptionObjects = await courseOptions.map(async (course: any) => {
-                            const courseOption = await CourseOption.findOne({
+                            const query = {
                                 departmentCode: course.departmentCode,
                                 courseOption: course.courseOption,
-                                courseLevel: classYearAffiliation?.classYear == 'G' ? 'G' : 'U',
-                            }).select('_id')
+                            }
+
+                            // For MEng (course-6) students, they can hold dual status as an undergrad and grad
+                            if (departmentCode !== '6') {
+                                query['courseLevel'] = classYearAffiliation?.classYear == 'G' ? 'G' : 'U'
+                            }
+
+                            const courseOption = await CourseOption.findOne().select('_id')
 
                             return courseOption
                         })
