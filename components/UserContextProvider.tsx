@@ -1,4 +1,3 @@
-import { showNotification } from '@mantine/notifications'
 import { createContext, useEffect, useState } from 'react'
 import { IUser } from '../types'
 
@@ -30,11 +29,12 @@ export function UserContextProvider ({ children }: { children: React.ReactNode }
           // })
           setUserProfile(body.data.user)
         } else {
-          showNotification({
-            color: 'red',
-            title: 'Error',
-            message: body.message
-          })
+          // showNotification({
+          //   color: 'red',
+          //   title: 'Error',
+          //   message: body.message
+          // })
+          console.error(body.message)
         }
       })
     })()
