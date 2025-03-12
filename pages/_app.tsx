@@ -31,6 +31,7 @@ import 'primeicons/primeicons.css'
 import 'primereact/resources/primereact.min.css' // core css
 
 import mainClasses from '@/styles/Main.module.css'
+import { IconQuestionCircle } from '@tabler/icons'
 
 const availableAcademicYears = [
   '2021-2022',
@@ -100,6 +101,7 @@ function NavigationLinks () {
         {userProfile && userProfile.trustLevel > 1 && <MainLink label="Audit Logs" icon={<History />} color="red" href="/auditlogs" active={pathname === '/auditlogs'} />}
         <MainLink label="About" icon={<InfoCircle />} color="purple" href="/about" active={pathname === '/about'} />
         <MainLink label="Statistics" icon={<Graph />} color="cyan" href="/statistics" active={pathname === '/statistics'} />
+        <MainLink label="Who's Taken What?" icon={<IconQuestionCircle />} color="cyan" href="/ofcourse" active={pathname === '/ofcourse'} />
         {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Projects by SIPB" />}
         <MainLink label="Hydrant" icon={<FireHydrant />} color="orange" href="https://hydrant.mit.edu/" target="_blank" active={false} />
         <MainLink label="CourseRoad" icon={<Road />} color="blue" href="https://courseroad.mit.edu/" target="_blank" active={false} />

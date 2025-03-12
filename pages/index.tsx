@@ -70,7 +70,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const [referredByState, setReferredByState] = useState<State>({ data: '', status: 'initial' })
 
   const [newsOpen, setNewsOpen] = useLocalStorage({
-    key: 'newsOpen.1-25-2025',
+    key: 'newsOpen.3-12-2025',
     defaultValue: true,
     getInitialValueInEffect: true
   })
@@ -348,6 +348,11 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   (transitionStyle) => (
                     <>
                       <Alert variant='light' color='blue' title='Bulletin' withCloseButton icon={<News size={24} />} onClose={() => setNewsOpen(false)} style={{ ...transitionStyle }}>
+                        <Title order={6}> March 12, 2025 </Title>
+                        <Text className={classes.text} c='gray'>
+                          👨🏽‍🎓 Who's Taken What page to see what classes other people have taken for each major and term. <br />
+                          📊 Statistics page! See the best and worst rated departments.
+                        </Text>
                         <Title order={6}> January 25, 2025 </Title>
                         <Text className={classes.text} c='gray'>
                           🔎 Searching is significantly faster and now powered by ElasticSearch. Filters and sorting are improved. List view is now available. <br />
@@ -355,12 +360,6 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                           ℹ️ About Page created with information about OpenGrades, its maintainers + supporters, and some fun 'real-time' statistics.
                         </Text>
                         <Space h="md" />
-                        <Title order={6}> January 20, 2025 </Title>
-                        <Text className={classes.text} c='gray'>
-                          ⚙️ Slightly* improved performance on the class search page and improved filtering. <br />
-                          📊 Aggregated page for class information across multiple terms. <br />
-                          ⌨ Using Spotlight search for class pages for actions.
-                        </Text>
                       </Alert>
                       <Space h="lg" />
                     </>
