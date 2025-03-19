@@ -1,5 +1,6 @@
 // @ts-nocheck
 import GradeReportModal from "@/components/GradeReportModal"
+import Class from "@/models/Class"
 import ClassReview from "@/models/ClassReview"
 import CourseOption from "@/models/CourseOption"
 import User from "@/models/User"
@@ -80,7 +81,7 @@ const termsOrdered = [
 const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ access, courseOptionsData }) => {
     const router = useRouter()
 
-    const selectedCourseOption = useState<string | null>(courseOptionsData[0].courseOption.id)
+    const [selectedCourseOption, setSelectedCourseOption] = useState<string | null>(courseOptionsData[0].courseOption.id)
 
     const courseOptions = courseOptionsData
         .sort((a: any, b: any) => {
@@ -166,7 +167,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
             <Space h="lg" />
 
             <Select data={courseOptions} placeholder="Select a course" searchable defaultValue={courseOptions[0].value} onChange={(value) => {
-                selectedCourseOption[1](value)
+                setSelectedCourseOption(value)
             }} />
 
             <Space h="lg" />
@@ -187,7 +188,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                             <Tabs.Panel key={year} value={year}>
                                 {(() => {
                                     const selected = courseOptionsData.find(
-                                        (d: any) => d.courseOption.id === selectedCourseOption[0]
+                                        (d: any) => d.courseOption.id === selectedCourseOption
                                     )
                                     if (!selected || !selected.classes) return null
 
@@ -297,6 +298,22 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             }
         }
 
+        const reviewedClassIds = await ClassReview.distinct('class')
+        const allClasses = await Class.find({ _id: { $in: reviewedClassIds } })
+            .select('subjectNumber aliases subjectTitle')
+        const subjectToCanonical = new Map<string, string>()
+        const subjectTitleMap = new Map<string, string>()
+
+        for (const cls of allClasses) {
+            const canonical = cls.subjectNumber
+            subjectToCanonical.set(canonical, canonical)
+            subjectTitleMap.set(canonical, cls.subjectTitle)
+
+            for (const alias of cls.aliases || []) {
+                subjectToCanonical.set(alias, canonical)
+            }
+        }
+
         const allCourseOptions = await CourseOption.find({
             courseLevel: "U"
         })
@@ -336,14 +353,15 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                     yearTermMap[yearTermKey] = new Map()
                 }
 
-                const classKey = classDoc.subjectNumber
-                const classTitle = classDoc.subjectTitle
+                const rawSubjectNumber = classDoc.subjectNumber
+                const canonicalSubjectNumber = subjectToCanonical.get(rawSubjectNumber) || rawSubjectNumber
+                const canonicalSubjectTitle = subjectTitleMap.get(canonicalSubjectNumber) || classDoc.subjectTitle
 
-                const existing = yearTermMap[yearTermKey].get(classKey)
+                const existing = yearTermMap[yearTermKey].get(canonicalSubjectNumber)
                 if (existing) {
                     existing.count += 1
                 } else {
-                    yearTermMap[yearTermKey].set(classKey, { subjectTitle: classTitle, count: 1 })
+                    yearTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, count: 1 })
                 }
             }
 
@@ -376,6 +394,55 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 classes: classesByTerm
             })
         }
+
+        const allData = {
+            courseOption: {
+                id: "All",
+                courseName: "All Courses",
+                courseOption: null,
+                departmentCode: "All"
+            },
+            classes: []
+        }
+
+        courseOptionsData.forEach((courseOptionData) => {
+            Object.entries(courseOptionData.classes).forEach(([yearTerm, classList]) => {
+                if (!allData.classes[yearTerm]) {
+                    allData.classes[yearTerm] = []
+                }
+
+                allData.classes[yearTerm].push(...classList)
+            })
+        })
+
+        const finalAllClasses: typeof allData.classes = {}
+
+        Object.entries(allData.classes).forEach(([yearTerm, classList]) => {
+            const accMap = new Map<string, { subjectNumber: string, subjectTitle: string, count: number }>()
+
+            classList.forEach(({ subjectNumber, subjectTitle, count }) => {
+                const canonical = subjectToCanonical.get(subjectNumber) || subjectNumber
+                const canonicalTitle = subjectTitleMap.get(canonical) || subjectTitle
+
+                if (accMap.has(canonical)) {
+                    accMap.get(canonical)!.count += count
+                } else {
+                    accMap.set(canonical, {
+                        subjectNumber: canonical,
+                        subjectTitle: canonicalTitle,
+                        count
+                    })
+                }
+            })
+
+            finalAllClasses[yearTerm] = Array.from(accMap.values())
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10)
+        })
+
+        allData.classes = finalAllClasses
+
+        courseOptionsData.push(allData)
 
         return {
             props: {
