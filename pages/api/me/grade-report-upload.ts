@@ -5,65 +5,53 @@ import Class from '../../../models/Class'
 import mongoConnection from '../../../utils/mongoConnection'
 
 const parseGradeReport = (gradeReport) => {
-    // Replace escaped characters to process correctly
-    gradeReport = gradeReport.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+    // Normalize all input formatting issues
+    gradeReport = gradeReport
+        .replace(/\\n/g, '\n').replace(/\\t/g, '\t') // escape cleanup
+        .replace(/\u00a0/g, ' ') // Safari non-breaking space
+        .replace(/\r\n|\r|\u2028|\u2029/g, '\n') // newline normalization
+        .replace(/[ \t]{2,}/g, '\t') // multiple spaces/tabs to tab
+        .replace(/\n[ \t]+/g, '\n') // remove leading whitespace on lines
 
-    const sections = gradeReport.split(/\n\n/)
+    const termRegex = /(Fall Term|Spring Term|January Term|Summer Term) \d{4}-\d{4}/g
+
     const parsedClasses = []
 
-    let currentTerm = null
-    let currentYear = null
+    let termMatches = [...gradeReport.matchAll(termRegex)]
 
-    sections.forEach((section, index) => {
+    for (let i = 0; i < termMatches.length; i++) {
+        const termHeader = termMatches[i][0]
+        const startIndex = termMatches[i].index
+        const endIndex = i + 1 < termMatches.length ? termMatches[i + 1].index : gradeReport.length
+
+        const section = gradeReport.slice(startIndex, endIndex).trim()
         const lines = section.split('\n')
 
-        // Skip the first term if it's a summer term
-        if (index === 0 || section.includes('Summer Term')) {
-            return
-        }
+        // Skip summer terms
+        if (termHeader.includes('Summer Term')) continue
 
-        // Check for the line that starts with "Year:"
-        let isYear1 = false
-        const yearLine = lines.find((line) => line.startsWith('Year:'))
-        if (yearLine) {
-            if (yearLine.includes('1 R')) {
-                isYear1 = true
-            }
-        }
+        // Get academic year and term name
+        const academicYearMatch = termHeader.match(/(\d{4})-(\d{4})/)
+        const currentYear = academicYearMatch ? parseInt(academicYearMatch[1]) + 1 : null
+        const currentTerm = termHeader.includes('Fall') ? 'Fall'
+            : termHeader.includes('Spring') ? 'Spring'
+                : termHeader.includes('January') ? 'January'
+                    : 'Unknown'
 
+        // Check if it's freshman year
+        const isYear1 = section.includes('Year: 1 R')
 
-        // Check for the term and year in the section
-        const termLine = lines.find(
-            (line) => line.includes('Term') && !line.includes('Units Earned')
-        )
-
-        if (termLine) {
-            const academicYearMatch = termLine.match(/(\d{4})-(\d{4})/)
-            currentYear = academicYearMatch
-                ? parseInt(academicYearMatch[1]) + 1
-                : currentYear
-
-            currentTerm = termLine.includes('Fall')
-                ? 'Fall'
-                : termLine.includes('Spring')
-                    ? 'Spring'
-                    : termLine.includes('January')
-                        ? 'January'
-                        : termLine.includes('Summer')
-                            ? 'Summer'
-                            : currentTerm
-        }
-
-        // Parse class information
+        // Parse class lines
         lines.forEach((line) => {
             if (
                 !line.includes('Subject Number') &&
                 !line.includes('Units Earned') &&
-                !line.includes('Term GPA')
+                !line.includes('Term GPA') &&
+                !line.includes('Academic:')
             ) {
-                // use tab or 4 space as delimiter
-                let parts = line.split(/\t+/) // Use tab as the delimiter
-                parts = parts.length === 1 ? line.split(/ {4,}/) : parts
+                let parts = line.split(/\t+/)
+                if (parts.length === 1) parts = line.split(/ {4,}/)
+
                 if (parts.length >= 5) {
                     const [subjectNumber, subjectTitle, units, level, grade] = parts
                     if (
@@ -86,10 +74,11 @@ const parseGradeReport = (gradeReport) => {
                 }
             }
         })
-    })
+    }
 
     return parsedClasses
 }
+
 
 const parseTerm = (term) => {
     switch (term) {
