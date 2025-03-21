@@ -35,6 +35,7 @@ const departmentsSorted = [
     "17",
     "18",
     "20",
+    "21",
     "21A",
     "21E",
     "21G",
