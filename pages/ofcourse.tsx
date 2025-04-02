@@ -359,9 +359,9 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
                 const existing = yearTermMap[yearTermKey].get(canonicalSubjectNumber)
                 if (existing) {
-                    existing.count += 1
+                    existing.realCount += 1
                 } else {
-                    yearTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, count: 1 })
+                    yearTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, realCount: 1 })
                 }
             }
 
@@ -370,12 +370,13 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
             Object.entries(yearTermMap).forEach(([yearTerm, classMap]) => {
                 const sorted = Array.from(classMap.entries())
-                    .sort((a, b) => b[1].count - a[1].count)
+                    .sort((a, b) => b[1].realCount - a[1].realCount)
                     .slice(0, 10)
-                    .map(([subjectNumber, { subjectTitle, count }]) => ({
+                    .map(([subjectNumber, { subjectTitle, realCount }]) => ({
                         subjectNumber,
                         subjectTitle,
-                        count: count >= 3 ? count : '<3'
+                        count: realCount >= 3 ? realCount : '<3',
+                        realCount
                     }))
 
                 classesByTerm[yearTerm] = sorted
@@ -420,29 +421,44 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         Object.entries(allData.classes).forEach(([yearTerm, classList]) => {
             const accMap = new Map<string, { subjectNumber: string, subjectTitle: string, count: number }>()
 
-            classList.forEach(({ subjectNumber, subjectTitle, count }) => {
+            classList.forEach(({ subjectNumber, subjectTitle, count, realCount }) => {
                 const canonical = subjectToCanonical.get(subjectNumber) || subjectNumber
                 const canonicalTitle = subjectTitleMap.get(canonical) || subjectTitle
 
                 if (accMap.has(canonical)) {
-                    accMap.get(canonical)!.count += count
+                    accMap.get(canonical)!.realCount += realCount
                 } else {
                     accMap.set(canonical, {
                         subjectNumber: canonical,
                         subjectTitle: canonicalTitle,
-                        count
+                        count,
+                        realCount,
                     })
                 }
             })
 
             finalAllClasses[yearTerm] = Array.from(accMap.values())
-                .sort((a, b) => b.count - a.count)
+                .sort((a, b) => b.realCount - a.realCount)
                 .slice(0, 10)
+                .map(({ subjectNumber, subjectTitle, count, realCount }) => ({
+                    subjectNumber,
+                    subjectTitle,
+                    count: realCount >= 3 ? realCount : '<3'
+                }))
         })
 
         allData.classes = finalAllClasses
 
         courseOptionsData.push(allData)
+
+        // strip realCount from courseOptionsData
+        courseOptionsData.forEach((courseOptionData) => {
+            Object.entries(courseOptionData.classes).forEach(([yearTerm, classList]) => {
+                classList.forEach((classItem) => {
+                    delete classItem.realCount
+                })
+            })
+        })
 
         return {
             props: {
