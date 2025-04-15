@@ -54,9 +54,11 @@ export const config = {
                         throw new Error('No access token available')
                     }
                 },
+            },
+            httpOptions: {
+                timeout: 10000,
             }
         }
-
     ],
     callbacks: {
         async jwt ({ token, user }) {
