@@ -122,7 +122,7 @@ export const config = {
                                 query['courseLevel'] = classYearAffiliation?.classYear == 'G' ? 'G' : 'U'
                             }
 
-                            const courseOption = await CourseOption.findOne().select('_id')
+                            const courseOption = await CourseOption.findOne(query).select('_id')
 
                             return courseOption
                         })
