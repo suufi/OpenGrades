@@ -20,7 +20,9 @@ const ContentSubmissionSchema = new mongoose.Schema<IContentSubmission>({
   },
   contentURL: {
     type: String,
-    required: true
+  },
+  bucketPath: {
+    type: String,
   },
   contentTitle: {
     type: String,

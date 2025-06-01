@@ -1,16 +1,17 @@
-
 // @ts-nocheck
-
 import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, UnstyledButton, em } from '@mantine/core'
 import { useForm, zodResolver } from '@mantine/form'
 import { useLocalStorage, useMediaQuery } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
 import type { InferGetServerSidePropsType, NextPage } from 'next'
 // import {  } from 'next'
+import { Dropzone, MIME_TYPES } from '@mantine/dropzone'
 import { Spotlight, SpotlightActionData } from '@mantine/spotlight'
+
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
 
 // eslint-disable-next-line camelcase
 
@@ -31,7 +32,7 @@ import GradeChart from '../../components/GradeChart'
 
 import GradeReportModal from '@/components/GradeReportModal'
 import { DonutChart } from '@mantine/charts'
-import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle, IconGraph, IconTrash } from '@tabler/icons'
+import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle, IconGraph, IconPhoto, IconTrash, IconUpload, IconX } from '@tabler/icons'
 import moment from 'moment-timezone'
 import mongoose from 'mongoose'
 import { Session, getServerSession } from 'next-auth'
@@ -514,16 +515,15 @@ function AddContent ({ classData, refreshData }: AddContentProps) {
   const [opened, setOpened] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [error, setError] = useState('')
+  const [files, setFiles] = useState<File[]>([])
 
   const schema = z.object({
-    contentURL: z.string().trim().url({ message: 'Please provide a valid URL.' }).refine((val) => !val.includes('canvas.mit.edu'), { message: 'Canvas is not a valid website for filehosting.' }),
-    contentTitle: z.string(),
+    contentTitle: z.string().min(5, 'Title must be at least 5 characters long.'),
     type: z.enum(['Syllabus', 'Grade Calculation Spreadsheet', 'Course Schedule', 'Textbook Reading Assignments', 'Miscellaneous'])
   }).required()
 
   const form = useForm({
     initialValues: {
-      contentURL: '',
       contentTitle: '',
       type: ''
     },
@@ -532,31 +532,52 @@ function AddContent ({ classData, refreshData }: AddContentProps) {
     validate: zodResolver(schema)
   })
 
+  useEffect(() => {
+    if (form.values.type && ['Syllabus', 'Grade Calculation Spreadsheet', 'Course Schedule', 'Textbook Reading Assignments'].includes(form.values.type)) {
+      form.setFieldValue('contentTitle', form.values.type)
+    }
+  }, [form.values.type])
+
   const postContent = async (values: ContentSubmissionForm) => {
+    if (files.length !== 1) {
+      setError('Please upload one file.')
+      return
+    }
+
     setFormLoading(true)
-    await fetch(`/api/classes/${classData._id}/content`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ...values
+    setError('')
+
+    try {
+      const file = files[0]
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('contentTitle', values.contentTitle)
+      formData.append('type', values.type)
+
+      const res = await fetch(`/api/classes/${classData._id}/content`, {
+        method: 'POST',
+        body: formData
       })
-    }).then(async (res) => {
+
       const body = await res.json()
+
       if (res.ok) {
         showNotification({
           title: 'Success!',
           message: `Posted your content for ${classData.subjectNumber}`
         })
-        refreshData()
         setOpened(false)
+        refreshData()
+        form.reset()
+        setFiles([])
       } else {
-        setError(body.message)
-        setFormLoading(false)
+        setError(body.message || 'Failed to upload.')
       }
-    })
-    setFormLoading(false)
+    } catch (err) {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setFormLoading(false)
+    }
   }
 
   return (
@@ -565,26 +586,88 @@ function AddContent ({ classData, refreshData }: AddContentProps) {
         opened={opened}
         centered
         onClose={() => setOpened(false)}
-        title={`Add Content for ${classData.subjectNumber}${(classData.aliases && classData.aliases.length > 0) ? `/${classData.aliases.join('/')}` : ''}`}
+        title={`Add Content for ${classData.subjectNumber}${(classData.aliases?.length ? `/${classData.aliases.join('/')}` : '')}`}
         size='lg'
       >
         <LoadingOverlay visible={formLoading} overlayProps={{ blur: 2 }} />
         <Group>
-          {error.length > 0 && <Alert icon={<IconAlertCircle size={16} />} title="Oops, look like there are some problems!" color="red" style={{ width: '100%' }}>
-            {error}
-          </Alert>}
-          <form onSubmit={form.onSubmit((values) => postContent(values))} style={{ width: '100%' }} >
+          {error && (
+            <Alert icon={<IconAlertCircle size={16} />} title="Upload failed" color="red" style={{ width: '100%' }}>
+              {error}
+            </Alert>
+          )}
+          <form onSubmit={form.onSubmit(postContent)} style={{ width: '100%' }}>
             <Stack>
-              <Text size={'sm'}> Use this form to upload course content that you feel is helpful for people looking to take this class in the future. This includes syllabi, course schedules, and textbook reading assignments. Do not upload any copyrighted material or content that can result in academic integrity violations. </Text>
-              <Select {...form.getInputProps('type')} placeholder="Select the type of content you are uploading." label="Content Type" data={['Syllabus', 'Grade Calculation Spreadsheet', 'Course Schedule', 'Textbook Reading Assignments', 'Miscellaneous']} />
-              <TextInput withAsterisk {...form.getInputProps('contentTitle')} label="Content Title" required placeholder="Brief description of what you're uploading" />
-              <TextInput withAsterisk {...form.getInputProps('contentURL')} label="Content URL" required placeholder="A publicly accessible URL to what you've uploaded." description={'Consider using a public file hosting platform like Google Drive to share your content.'} />
-              <Text size='sm'> By submitting this form, I am affirming all the information above is not a violation of academic integrity policies and not copyrighted material. I understand that malicious and deliberate entries of bad data that jeopardize the platform can result in my removal from MIT OpenGrades.</Text>
-              <Button type="submit" variant="filled" disabled={!form.isValid()}> Submit </Button>
+              <Text size='sm'>
+                Use this form to upload course content such as syllabi, schedules, or textbook reading lists. Do not upload copyrighted material or anything that could violate academic integrity.
+              </Text>
+
+              <Select
+                {...form.getInputProps('type')}
+                placeholder="Select the type of content"
+                label="Content Type"
+                required
+                data={[
+                  'Syllabus',
+                  'Grade Calculation Spreadsheet',
+                  'Course Schedule',
+                  'Textbook Reading Assignments',
+                  'Miscellaneous'
+                ]}
+              />
+
+              <TextInput
+                withAsterisk
+                {...form.getInputProps('contentTitle')}
+                label="Content Title"
+                placeholder="Brief description of what you're uploading"
+              />
+
+              <Dropzone
+                onDrop={(acceptedFiles) => setFiles(acceptedFiles)}
+                onReject={() => setError('File too large or unsupported type')}
+                maxSize={5 * 1024 ** 2}
+                accept={[
+                  MIME_TYPES.pdf,
+                  MIME_TYPES.doc,
+                  MIME_TYPES.docx,
+                  MIME_TYPES.xls,
+                  MIME_TYPES.xlsx,
+                  MIME_TYPES.ppt,
+                  MIME_TYPES.pptx
+                ]}
+                multiple={false}
+              >
+                <Group justify="center" gap="xl" mih={200} sx={{ pointerEvents: 'none' }}>
+                  <Dropzone.Accept>
+                    <IconUpload size={50} color="blue" stroke={1.5} />
+                  </Dropzone.Accept>
+                  <Dropzone.Reject>
+                    <IconX size={50} color="red" stroke={1.5} />
+                  </Dropzone.Reject>
+                  <Dropzone.Idle>
+                    <IconPhoto size={50} color="gray" stroke={1.5} />
+                  </Dropzone.Idle>
+                  <div>
+                    <Text size="lg">Drag file here or click to upload</Text>
+                    <Text size="sm" color="dimmed" mt={5}>
+                      Only one file per upload. Max size: 5MB.
+                    </Text>
+                    {files.length > 0 && <Text size="sm" mt={10}>Selected: {files[0].name}</Text>}
+                  </div>
+                </Group>
+              </Dropzone>
+
+              <Text size='sm'>
+                By submitting this form, you affirm that the material does not violate academic integrity policies.
+              </Text>
+
+              <Button type="submit" variant="filled" disabled={!form.isValid() || files.length !== 1}>
+                Submit
+              </Button>
             </Stack>
           </form>
         </Group>
-
       </Modal>
 
       <ActionIcon variant='outline' radius='xl' color='blue' onClick={() => setOpened(true)}>
@@ -592,6 +675,7 @@ function AddContent ({ classData, refreshData }: AddContentProps) {
       </ActionIcon>
     </>
   )
+
 }
 
 interface ClassPageProps {
@@ -604,24 +688,100 @@ interface ClassPageProps {
   reportsProp: IReport[]
 }
 
-const ContentSubmissionCard = ({ classId, contentSubmission, refreshData, reportsProp }: { classId: string, contentSubmission: IContentSubmission, refreshData: Function, reportsProp: IReport[] }) => {
-  const [hidden, setHidden] = useState(!contentSubmission.approved)
+// const ContentSubmissionCard = ({ classId, contentSubmission, refreshData, reportsProp }: { classId: string, contentSubmission: IContentSubmission, refreshData: Function, reportsProp: IReport[] }) => {
+//   const [hidden, setHidden] = useState(!contentSubmission.approved)
 
-  return <Card withBorder key={contentSubmission._id} shadow="sm" p='lg' >
-    <Text td={hidden ? "line-through" : undefined} fw={500} className={styles.text} size='lg' c={reportsProp.find((report: IReport) => report.contentSubmission?._id === contentSubmission._id && !report.resolved) && 'red'}>
-      {contentSubmission.contentTitle}
-    </Text>
-    {/* TODO: should be Ancchor */}
-    <Text mt="xs" c='blue' size='sm' component={Link} href={contentSubmission.contentURL} target='_blank'>
-      {new URL(contentSubmission.contentURL).hostname || 'N/A'}
-    </Text>
-    {/* Report content button */}
-    <Group justify='flex-end' mt='sm'>
-      <HideContent classId={classId} contentSubmission={contentSubmission} hidden={hidden} callback={(val: boolean) => { setHidden(val) }} />
-      <ReportField contentSubmission={contentSubmission} callback={refreshData} />
-    </Group>
-  </Card>
+//   return <Card withBorder key={contentSubmission._id} shadow="sm" p='lg' >
+//     <Text td={hidden ? "line-through" : undefined} fw={500} className={styles.text} size='lg' c={reportsProp.find((report: IReport) => report.contentSubmission?._id === contentSubmission._id && !report.resolved) && 'red'}>
+//       {contentSubmission.contentTitle}
+//     </Text>
+//     {/* TODO: should be Ancchor */}
+//     <Text mt="xs" c='blue' size='sm' component={Link} href={contentSubmission.contentURL} target='_blank'>
+//       {new URL(contentSubmission.contentURL).hostname || 'N/A'}
+//     </Text>
+//     {/* Report content button */}
+//     <Group justify='flex-end' mt='sm'>
+//       <HideContent classId={classId} contentSubmission={contentSubmission} hidden={hidden} callback={(val: boolean) => { setHidden(val) }} />
+//       <ReportField contentSubmission={contentSubmission} callback={refreshData} />
+//     </Group>
+//   </Card>
+// }
+
+const ContentSubmissionCard = ({
+  classId,
+  contentSubmission,
+  refreshData,
+  reportsProp,
+  trustLevel = 0
+}: {
+  classId: string
+  contentSubmission: IContentSubmission
+  refreshData: Function
+  reportsProp: IReport[]
+  trustLevel?: number
+}) => {
+  const [hidden, setHidden] = useState(!contentSubmission.approved)
+  const [signedURL, setSignedURL] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchSignedURL = async () => {
+      try {
+        const res = await fetch(`/api/classes/${classId}/content/${contentSubmission._id}`)
+        const json = await res.json()
+        if (json.success && json.data?.signedURL) {
+          setSignedURL(json.data.signedURL)
+        } else {
+          setSignedURL(null)
+        }
+      } catch (err) {
+        console.error('Error fetching signed URL:', err)
+        setSignedURL(null)
+      }
+    }
+
+    fetchSignedURL()
+  }, [classId, contentSubmission._id])
+
+  return (
+    <Card withBorder key={contentSubmission._id} shadow="sm" p="lg">
+      <Text
+        td={hidden ? 'line-through' : undefined}
+        fw={500}
+        className={styles.text}
+        size="lg"
+        c={
+          reportsProp.find(
+            (report: IReport) =>
+              report.contentSubmission?._id === contentSubmission._id && !report.resolved
+          )
+            ? 'red'
+            : undefined
+        }
+      >
+        {contentSubmission.contentTitle}
+      </Text>
+
+      <Text mt="xs" c="blue" size="sm" component={Link} href={signedURL || '#'} target="_blank">
+        {signedURL ? new URL(signedURL).hostname : 'Unavailable'}
+      </Text>
+
+      <Group justify="flex-end" mt="sm">
+        {
+          trustLevel && trustLevel >= 2 && (
+            <HideContent
+              classId={classId}
+              contentSubmission={contentSubmission}
+              hidden={hidden}
+              callback={(val: boolean) => setHidden(val)}
+            />
+          )
+        }
+        <ReportField contentSubmission={contentSubmission} callback={refreshData} />
+      </Group>
+    </Card>
+  )
 }
+
 
 const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter()

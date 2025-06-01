@@ -173,6 +173,7 @@ export interface IContentSubmission {
     author: IUser
     approved: boolean
     contentURL: string
+    bucketPath: string
     contentTitle: string
     type: string
     createdAt: Date

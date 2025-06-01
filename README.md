@@ -17,6 +17,8 @@ MIT OpenGrades is a web application designed to provide students with a platform
 - Yarn package manager
 - Docker (for containerized deployment)
 - MongoDB (for database)
+- Elasticsearch (for search functionality)
+- S3 bucket (for file storage)
 
 ### Installation
 
@@ -47,6 +49,15 @@ MIT_API_CLIENT_SECRET="your_api_client_secret"
 NEXTAUTH_SECRET="your_nextauth_secret"
 NEXTAUTH_URL="your_nextauth_url"
 AUTH_TRUST_HOST="true"
+
+ELASTIC_SEARCH_URI="http://localhost:9200"
+ELASTIC_SEARCH_CERT="your_elastic_search_cert"
+
+MINIO_ENDPOINT="your-minio-endpoint"
+MINIO_ACCESS_KEY="your_minio_access_key"
+MINIO_SECRET_ACCESS_KEY="your_minio_secret_access_key"
+MINIO_BUCKET="your_minio_bucket"
+MINIO_REGION="your_minio_region"
 ```
 
 4. Start the development server:

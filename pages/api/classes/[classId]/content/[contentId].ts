@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../../../utils/mongoConnection'
 
+import * as Minio from 'minio'
 import Class from '../../../../../models/Class'
 import ContentSubmission from '../../../../../models/ContentSubmission'
 
@@ -14,6 +15,14 @@ type Data = {
     data?: object,
     message?: string
 }
+
+const minioClient = new Minio.Client({
+    endPoint: process.env.MINIO_ENDPOINT,
+    region: process.env.MINIO_REGION,
+    accessKey: process.env.MINIO_ACCESS_KEY_ID,
+    secretKey: process.env.MINIO_SECRET_ACCESS_KEY,
+})
+
 
 export default async function handler (
     req: NextApiRequest,
@@ -29,7 +38,7 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                if (session.user && session.user?.trustLevel < 1) {
+                if (session.user?.trustLevel < 1) {
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
@@ -41,6 +50,20 @@ export default async function handler (
                 if (!content) {
                     return res.status(404).json({ success: false, message: 'Content not found.' })
                 }
+
+                if (content.bucketPath) {
+                    const key = content.bucketPath
+                    try {
+                        const signedUrl = await minioClient.presignedGetObject(process.env.MINIO_BUCKET_NAME!, key, 60 * 2) // URL valid for 2 minutes
+                        content.signedURL = signedUrl
+                    } catch (err) {
+                        console.error('Error generating signed URL:', err)
+                        content.signedURL = null
+                    }
+                } else if (content.contentURL) {
+                    content.signedURL = content.contentURL
+                }
+
                 return res.status(200).json({ success: true, data: content })
             } catch (error: unknown) {
                 if (error instanceof Error) {
