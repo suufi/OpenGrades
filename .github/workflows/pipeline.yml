@@ -48,6 +48,11 @@ jobs:
              "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}"
              "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}"
              "ELASTIC_SEARCH_URI=${{ secrets.ELASTIC_SEARCH_URI }}"
+             "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}"
+             "MINIO_ACCESS_KEY_ID=${{ secrets.MINIO_ACCESS_KEY_ID }}"
+             "MINIO_SECRET_ACCESS_KEY=${{ secrets.MINIO_SECRET_ACCESS_KEY }}"
+             "MINIO_BUCKET_NAME=${{ secrets.MINIO_BUCKET_NAME }}"
+             "MINIO_REGION=${{ secrets.MINIO_REGION }}"             
 
   deploy:
     name: Deploy Image
@@ -80,6 +85,11 @@ jobs:
           echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
           echo "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}" >> .env
           echo "ELASTIC_SEARCH_URI=${{ secrets.ELASTIC_SEARCH_URI }}" >> .env
+          echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> .env
+          echo "MINIO_ACCESS_KEY_ID=${{ secrets.MINIO_ACCESS_KEY_ID }}" >> .env
+          echo "MINIO_SECRET_ACCESS_KEY=${{ secrets.MINIO_SECRET_ACCESS_KEY }}" >> .env
+          echo "MINIO_BUCKET_NAME=${{ secrets.MINIO_BUCKET_NAME }}" >> .env
+          echo "MINIO_REGION=${{ secrets.MINIO_REGION }}" >> .env
 
       # Check if .env file is properly created
       - name: Display .env file contents for debugging

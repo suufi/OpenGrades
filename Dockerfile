@@ -52,6 +52,12 @@ RUN \
     export NEXTAUTH_URL=$(cat /run/secrets/NEXTAUTH_URL) && \
     export AUTH_TRUST_HOST=$(cat /run/secrets/AUTH_TRUST_HOST) && \
     export ELASTIC_SEARCH_URI=$(cat /run/secrets/ELASTIC_SEARCH_URI) && \
+    export MINIO_ENDPOINT=$(cat /run/secrets/MINIO_ENDPOINT) && \
+    export MINIO_ACCESS_KEY_ID=$(cat /run/secrets/MINIO_ACCESS_KEY_ID) && \
+    export MINIO_SECRET_ACCESS_KEY=$(cat /run/secrets/MINIO_SECRET_ACCESS_KEY) && \
+    export MINIO_BUCKET_NAME=$(cat /run/secrets/MINIO_BUCKET_NAME) && \
+    export MINIO_REGION=$(cat /run/secrets/MINIO_REGION) && \
+
     yarn run build
 
 # Production image, copy all the files and run next
