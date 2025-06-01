@@ -40,6 +40,11 @@ RUN \
     --mount=type=secret,id=NEXTAUTH_URL \
     --mount=type=secret,id=AUTH_TRUST_HOST \
     --mount=type=secret,id=ELASTIC_SEARCH_URI \
+    --mount=type=secret,id=MINIO_ENDPOINT \
+    --mount=type=secret,id=MINIO_ACCESS_KEY_ID \
+    --mount=type=secret,id=MINIO_SECRET_ACCESS_KEY \
+    --mount=type=secret,id=MINIO_BUCKET_NAME \
+    --mount=type=secret,id=MINIO_REGION \
     export MONGODB_CONNECTION_URI=$(cat /run/secrets/MONGODB_CONNECTION_URI) && \
     export MIT_OIDC_WELLKNOWN=$(cat /run/secrets/MIT_OIDC_WELLKNOWN) && \
     export MIT_OIDC_CLIENT_ID=$(cat /run/secrets/MIT_OIDC_CLIENT_ID) && \
@@ -52,6 +57,12 @@ RUN \
     export NEXTAUTH_URL=$(cat /run/secrets/NEXTAUTH_URL) && \
     export AUTH_TRUST_HOST=$(cat /run/secrets/AUTH_TRUST_HOST) && \
     export ELASTIC_SEARCH_URI=$(cat /run/secrets/ELASTIC_SEARCH_URI) && \
+    export MINIO_ENDPOINT=$(cat /run/secrets/MINIO_ENDPOINT) && \
+    export MINIO_ACCESS_KEY_ID=$(cat /run/secrets/MINIO_ACCESS_KEY_ID) && \
+    export MINIO_SECRET_ACCESS_KEY=$(cat /run/secrets/MINIO_SECRET_ACCESS_KEY) && \
+    export MINIO_BUCKET_NAME=$(cat /run/secrets/MINIO_BUCKET_NAME) && \
+    export MINIO_REGION=$(cat /run/secrets/MINIO_REGION) && \
+
     yarn run build
 
 # Production image, copy all the files and run next
