@@ -22,7 +22,7 @@ const AuditLogSchema = new mongoose.Schema<IAuditLog>({
       'HideReview',
       'JoinPlatform',
       'VerifyPlatform',
-      'DeanonymizeReview'
+      'DeanonymizeReview',
     ],
     type: String
   },

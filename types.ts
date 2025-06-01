@@ -154,7 +154,8 @@ export enum AuditLogType {
     EditReview = 'EditReview',
     HideReview = 'HideReview',
     JoinPlatform = 'JoinPlatform',
-    VerifyPlatform = 'VerifyPlatform'
+    VerifyPlatform = 'VerifyPlatform',
+    DeanonymizeReview = 'DeanonymizeReview',
 }
 
 export interface IAuditLog {
