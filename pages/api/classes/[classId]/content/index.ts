@@ -3,6 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../../../utils/mongoConnection'
 
+import AuditLog from '@/models/AuditLog'
 import { auth } from '@/utils/auth'
 import formidable from 'formidable'
 import * as Minio from 'minio'
