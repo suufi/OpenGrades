@@ -56,7 +56,7 @@ export const config = {
                 },
             },
             httpOptions: {
-                timeout: 10000,
+                timeout: 20000,
             }
         }
     ],
@@ -111,7 +111,7 @@ export const config = {
                             : null
 
                         // Get courseOption objects for each course that the user is affiliated with
-                        const courseOptionObjects = await courseOptions.map(async (course: any) => {
+                        const courseOptionObjects = await Promise.all(courseOptions.map(async (course: any) => {
                             const query = {
                                 departmentCode: course.departmentCode,
                                 courseOption: course.courseOption,
@@ -125,11 +125,32 @@ export const config = {
                             const courseOption = await CourseOption.findOne(query).select('_id')
 
                             return courseOption
-                        })
+                        }))
+
+                        const apiAffiliationType = res.item.affiliations[0]?.type || null
+                        const wasStudent = existingUser?.affiliation === 'student'
+                        const shouldPreserveAffiliation = wasStudent && apiAffiliationType === 'affiliate'
+
+                        const verified = shouldPreserveAffiliation ? true : apiAffiliationType === 'student'
+                        const affiliation = shouldPreserveAffiliation ? 'alumni' : apiAffiliationType
+                        const year = shouldPreserveAffiliation ? 'A' : classYearAffiliation?.classYear || null
+
                         // Safely compute classOf, handling the absence of classYear
                         const classOf = (classYearAffiliation && classYearAffiliation.classYear !== 'G' && classYearAffiliation.classYear !== 'U')
                             ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliation.classYear)
-                            : null
+                            : existingUser?.classOf || null
+
+                        const courseAffiliation = shouldPreserveAffiliation
+                            ? existingUser?.courseAffiliation || []
+                            : courseOptionObjects
+
+                        if (shouldPreserveAffiliation && apiAffiliationType === 'affiliate') {
+                            await AuditLog.create({
+                                actor: existingUser._id,
+                                description: `Preserved student status and course affiliations for ${existingUser.kerb} despite API reporting "affiliate"`,
+                                type: 'PreserveAlumni'
+                            })
+                        }
 
                         await User.findOneAndUpdate(
                             {
@@ -141,11 +162,11 @@ export const config = {
                                     name: profile?.name,
                                     email: profile?.email,
                                     kerb: profile?.email?.split('@')[0],
-                                    affiliation: res.item.affiliations[0]?.type || null,
-                                    verified: res.item.affiliations[0]?.type === 'student',
-                                    year: classYearAffiliation?.classYear || null,
+                                    affiliation,
+                                    verified,
+                                    year,
                                     classOf,
-                                    courseAffiliation: await Promise.all(courseOptionObjects)
+                                    courseAffiliation
                                 }
                             },
                             {
