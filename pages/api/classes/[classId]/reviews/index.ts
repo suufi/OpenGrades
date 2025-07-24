@@ -47,6 +47,9 @@ export default async function handler (
   switch (method) {
     case 'GET':
       try {
+        if (session.user?.trustLevel < 2) {
+          return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
+        }
         const classes = await ClassReview.find({ class: req.query.classId }).populate(['class', 'author']).lean()
         return res.status(200).json({ success: true, data: classes })
       } catch (error: unknown) {
