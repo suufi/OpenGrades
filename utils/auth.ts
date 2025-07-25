@@ -128,6 +128,7 @@ export const config = {
                         }))
 
                         const apiAffiliationType = res.item.affiliations[0]?.type || null
+                        const existingUser = await User.findOne({ email: profile?.email }).lean()
                         const wasStudent = existingUser?.affiliation === 'student'
                         const shouldPreserveAffiliation = wasStudent && apiAffiliationType === 'affiliate'
 
