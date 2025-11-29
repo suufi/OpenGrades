@@ -40,7 +40,7 @@
     "moment-timezone": "^0.5.40",
     "mongoose": "^8.6.2",
     "mongoose-findorcreate": "^4.0.0",
-    "next": "v14",
+    "next": "^14.2.30",
     "next-auth": "^4.24.7",
     "next-plausible": "^3.12.4",
     "primeicons": "^5.0.0",

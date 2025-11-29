@@ -43,6 +43,12 @@ function parseDepartment (subjectNumber) {
 
 const descriptionCache: Record<string, string> = {}
 
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+}
+
 export default async function handler (
   req: NextApiRequest,
   res: NextApiResponse<Data>
@@ -359,6 +365,45 @@ export default async function handler (
         if (!body.selectedDepartments?.length) {
           return res.status(400).json({ success: false, message: 'Provide at least one department.' })
         }
+
+        // Set up streaming response
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.setHeader('Cache-Control', 'no-cache')
+        res.setHeader('Connection', 'keep-alive')
+        res.setHeader('X-Accel-Buffering', 'no')
+        res.statusCode = 200
+
+        const sendMessage = (data: any) => {
+          res.write(JSON.stringify(data) + '\n')
+          if (typeof (res as any).flush === 'function') {
+            (res as any).flush()
+          }
+        }
+
+        const sendProgress = (current: number, total: number, department: string) => {
+          sendMessage({
+            type: 'progress',
+            current,
+            total,
+            department
+          })
+        }
+
+        const sendComplete = (newClasses: number, updatedClasses: number) => {
+          sendMessage({
+            type: 'complete',
+            newClasses,
+            updatedClasses
+          })
+        }
+
+        const sendError = (message: string) => {
+          sendMessage({
+            type: 'error',
+            message
+          })
+        }
+
         // console.log('actor', session.user)
         await AuditLog.create({
           actor: session.user._id,
@@ -411,91 +456,48 @@ export default async function handler (
         }
 
         const allClasses: IClass[] = []
+        const totalDepartments = body.selectedDepartments.length
 
-        // for (const department of body.selectedDepartments) {
-        //   let apiFetch
-        //   try {
-        //     apiFetch = await fetch(`https://mit-course-catalog-v2.cloudhub.io/coursecatalog/v2/terms/${body.term}/subjects?dept=${department}`, {
-        //       headers: requestHeaders
-        //     }).then(async (response) => {
-        //       const res = await response.json()
-        //       if (response.ok) {
-        //         return res
-        //       }
-        //       throw new Error(res.errorDescription)
-        //     })
-        //   } catch (error: unknown) {
-        //     console.log(error)
-        //     if (error instanceof Error) {
-        //       throw new Error(error.message)
-        //     }
-        //   }
+        // Send initial status
+        sendProgress(0, totalDepartments, 'Gathering departments')
 
-        //   await Promise.all(
-        //     apiFetch.items.map(async (apiClassEntry: APIClass) => {
-        //       console.log('pushing', apiClassEntry.subjectId)
-        //       const classMatchRegex = /(\w{1,3}\.[\w]{1,5})/g
-        //       const aliases = [...apiClassEntry.cluster.matchAll(classMatchRegex)].map(match => parseClassName(match[0]))
-        //       console.log(apiClassEntry.subjectId, "has aliases", aliases, "and department", department, "and cross-listed departments", aliases.map(parseDepartment))
-        //       allClasses.push({
-        //         term: apiClassEntry.termCode,
-        //         subjectNumber: apiClassEntry.subjectId,
-        //         aliases,
-        //         subjectTitle: apiClassEntry.title,
-        //         academicYear: parseInt(apiClassEntry.academicYear),
-        //         department,
-        //         crossListedDepartments: aliases.map(parseDepartment).filter(aliasDep => aliasDep !== department),
-        //         units: apiClassEntry.units,
-        //         description: await fetchDescription(apiClassEntry.description),
-        //         offered: apiClassEntry.offered,
-        //         display: apiClassEntry.offered,
-        //         reviewable: body.reviewable,
-        //         instructors: decode(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
-        //       })
-        //     })
-        //   )
-        // }
+        // Process departments sequentially with progress updates
+        for (let i = 0; i < body.selectedDepartments.length; i++) {
+          const department = body.selectedDepartments[i]
 
-        const departmentFetchPromises = body.selectedDepartments.map(async department => {
-          const apiFetch = await fetch(`https://mit-course-catalog-v2.cloudhub.io/coursecatalog/v2/terms/${body.term}/subjects?dept=${department}`, {
-            headers: requestHeaders
-          }).then(async (response) => {
-            const res = await response.json()
-            if (response.ok) return res
-            throw new Error(res.errorDescription)
-          })
+          sendProgress(i + 1, totalDepartments, department)
 
-          // Return an object that has the department + items
-          return { department, items: apiFetch.items }
-        })
-
-        let deptFetchResults
-        try {
-          deptFetchResults = await Promise.all(departmentFetchPromises)
-        } catch (err) {
-          throw new Error(err instanceof Error ? err.message : String(err))
-        }
-
-        const classMatchRegex = /(\w{1,3}\.[\w]{1,5})/g
-
-        for (const deptResult of deptFetchResults) {
-          for (const apiClassEntry of deptResult.items) {
-            const aliases = [...apiClassEntry.cluster.matchAll(classMatchRegex)].map(match => parseClassName(match[0]))
-            allClasses.push({
-              term: apiClassEntry.termCode,
-              subjectNumber: apiClassEntry.subjectId,
-              aliases,
-              subjectTitle: apiClassEntry.title,
-              academicYear: parseInt(apiClassEntry.academicYear),
-              department: deptResult.department,
-              crossListedDepartments: aliases.map(parseDepartment).filter(aliasDep => aliasDep !== deptResult.department),
-              units: apiClassEntry.units,
-              description: await fetchDescription(apiClassEntry.description),
-              offered: apiClassEntry.offered,
-              display: apiClassEntry.offered,
-              reviewable: body.reviewable,
-              instructors: decode(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
+          try {
+            const apiFetch = await fetch(`https://mit-course-catalog-v2.cloudhub.io/coursecatalog/v2/terms/${body.term}/subjects?dept=${department}`, {
+              headers: requestHeaders
+            }).then(async (response) => {
+              const res = await response.json()
+              if (response.ok) return res
+              throw new Error(res.errorDescription)
             })
+
+            const classMatchRegex = /(\w{1,3}\.[\w]{1,5})/g
+
+            for (const apiClassEntry of apiFetch.items) {
+              const aliases = [...apiClassEntry.cluster.matchAll(classMatchRegex)].map(match => parseClassName(match[0]))
+              allClasses.push({
+                term: apiClassEntry.termCode,
+                subjectNumber: apiClassEntry.subjectId,
+                aliases,
+                subjectTitle: apiClassEntry.title,
+                academicYear: parseInt(apiClassEntry.academicYear),
+                department: department,
+                crossListedDepartments: aliases.map(parseDepartment).filter(aliasDep => aliasDep !== department),
+                units: apiClassEntry.units,
+                description: await fetchDescription(apiClassEntry.description),
+                offered: apiClassEntry.offered,
+                display: apiClassEntry.offered,
+                reviewable: body.reviewable,
+                instructors: decode(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
+              })
+            }
+          } catch (error) {
+            console.error(`Error fetching department ${department}:`, error)
           }
         }
 
@@ -584,16 +586,16 @@ export default async function handler (
           }))
         )
 
-        return res.status(200).json({
-          success: true,
-          data: {
-            newClasses: bulkAddResult.insertedCount,
-            updatedClasses: bulkWriteUpdate.modifiedCount + bulkWriteCrossListedUpdate.modifiedCount,
-          }
-        })
+        sendComplete(bulkAddResult.insertedCount, bulkWriteUpdate.modifiedCount + bulkWriteCrossListedUpdate.modifiedCount)
+        res.end()
       } catch (error: unknown) {
         if (error instanceof Error) {
-          return res.status(400).json({ success: false, message: error.toString() })
+          if (!res.headersSent) {
+            return res.status(400).json({ success: false, message: error.toString() })
+          } else {
+            res.write(JSON.stringify({ type: 'error', message: error.toString() }) + '\n')
+            res.end()
+          }
         }
       }
       break

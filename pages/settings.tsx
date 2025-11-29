@@ -6,7 +6,7 @@ import InferNextPropsType from 'infer-next-props-type'
 import Head from 'next/head'
 
 import { Badge, Button, Center, Checkbox, Container, Grid, Group, List, MultiSelect, Select, Stack, Switch, Table, Text, TextInput, Title, useMantineColorScheme } from '@mantine/core'
-import { showNotification } from '@mantine/notifications'
+import { notifications, showNotification } from '@mantine/notifications'
 
 import mongoConnection from '@/utils/mongoConnection'
 
@@ -325,34 +325,125 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 
   const fetchClasses = async () => {
     setLoadingButton(true)
-    await fetch('/api/classes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        term,
-        selectedDepartments,
-        reviewable
-      })
-    }).then(async (res) => {
-      const body = await res.json()
-      if (res.ok) {
-        showNotification({
-          title: 'Success!',
-          message: `Created ${body.data.newClasses} classes. Updated ${body.data.updatedClasses} classes.`
+    let notificationId: string | undefined
+
+    try {
+      const response = await fetch('/api/classes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          term,
+          selectedDepartments,
+          reviewable
         })
-        loadLazyData()
-        resetFilters()
-      } else {
+      })
+
+      if (!response.ok) {
+        const body = await response.json()
         showNotification({
           title: 'Error fetching',
           message: body.message,
           color: 'red'
         })
+        setLoadingButton(false)
+        return
       }
-    })
-    setLoadingButton(false)
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No reader available')
+      }
+
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.trim() === '') continue
+
+          console.log('Received line:', line)
+
+          try {
+            const data = JSON.parse(line)
+            console.log('Parsed data:', data)
+
+            if (data.type === 'progress') {
+              console.log('Showing/updating progress notification', notificationId)
+              if (notificationId) {
+                notifications.update({
+                  id: notificationId,
+                  title: 'Fetching Classes',
+                  message: `(${data.current}/${data.total}) Fetching ${data.department}...`,
+                  loading: true,
+                  autoClose: false,
+                  withCloseButton: false
+                })
+              } else {
+                notificationId = `fetch-${Date.now()}`
+                console.log('Creating notification with ID:', notificationId)
+                notifications.show({
+                  id: notificationId,
+                  title: 'Fetching Classes',
+                  message: `(${data.current}/${data.total}) Fetching ${data.department}...`,
+                  loading: true,
+                  autoClose: false,
+                  withCloseButton: false
+                })
+              }
+            } else if (data.type === 'complete') {
+              console.log('Showing complete notification')
+              if (notificationId) {
+                notifications.update({
+                  id: notificationId,
+                  title: 'Success!',
+                  message: `Created ${data.newClasses} classes. Updated ${data.updatedClasses} classes.`,
+                  color: 'green',
+                  loading: false,
+                  autoClose: 5000
+                })
+              }
+            } else if (data.type === 'error') {
+              console.log('Showing error notification')
+              if (notificationId) {
+                notifications.update({
+                  id: notificationId,
+                  title: 'Error',
+                  message: data.message,
+                  color: 'red',
+                  loading: false,
+                  autoClose: 5000
+                })
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse line:', line, e)
+          }
+        }
+      }
+
+      loadLazyData()
+      resetFilters()
+    } catch (error) {
+      console.error('Error:', error)
+      showNotification({
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'An error occurred',
+        color: 'red'
+      })
+    } finally {
+      setLoadingButton(false)
+    }
   }
 
   const openDeleteModal = () => openConfirmModal({
