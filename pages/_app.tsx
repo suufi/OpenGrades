@@ -437,7 +437,9 @@ function ContentFetcher (props: AppProps) {
   const needsDegreeTermAssignment = (() => {
     const isGrad = userProfile?.year === 'G'
     const hasProgramTerms = Array.isArray((userProfile as any)?.programTerms) && ((userProfile as any).programTerms.length > 0)
-    return isGrad && !hasProgramTerms
+    const hasMultipleAffiliations = Array.isArray((userProfile as any)?.courseAffiliation) && ((userProfile as any).courseAffiliation.length > 1)
+
+    return isGrad && hasMultipleAffiliations && !hasProgramTerms
   })()
 
   const needsEmailOptIn = (userProfile as any)?.emailOptIn === null || (userProfile as any)?.emailOptIn === undefined

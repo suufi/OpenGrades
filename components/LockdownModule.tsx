@@ -578,6 +578,9 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                   if (active === 1 && (emailOptIn === null || !form.values.classOf)) {
                     return <Button onClick={nextStep} disabled={true}>Next step</Button>
                   }
+                  if (active === 2 && isGradStudent && wasMITUndergrad === null) {
+                    return <Button onClick={nextStep} disabled={true}>Next step</Button>
+                  }
                   if (active <= nextBoundary) {
                     return <Button onClick={nextStep}>Next step</Button>
                   }
