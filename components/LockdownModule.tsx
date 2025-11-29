@@ -59,6 +59,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const [undergradPrograms, setUndergradPrograms] = useState<ICourseOption[]>([])
   const [selectedUndergradPrograms, setSelectedUndergradPrograms] = useState<string[]>([])
   const [loadingPrograms, setLoadingPrograms] = useState(false)
+  const [emailOptIn, setEmailOptIn] = useState<boolean | null>(true)
 
   async function verifyReferralKerb (kerb: string) {
     const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
@@ -156,7 +157,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
           ...values,
           referredBy: referredByState.status === 'success' ? referredBy : undefined,
           undergradProgramIds: selectedUndergradPrograms.length > 0 ? selectedUndergradPrograms : undefined,
-          partialReviews: partialReviewsEnabled ? partialReviewsData : []
+          partialReviews: partialReviewsEnabled ? partialReviewsData : [],
+          emailOptIn
         })
       })
       const body = await res.json()
@@ -371,6 +373,25 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                     label: 'Black, Indigenous, or Latino'
                   }
                 ]} />
+                <Divider my="md" />
+                <Stack gap="sm">
+                  <Title order={4}>Email Communication Preferences</Title>
+                  <Text size="sm" c="dimmed">
+                    We would like to occasionally send you emails about new features, class additions, raffles, and important updates.
+                    We will <b>never</b> spam you or sell your email. Expect a maximum of 1 email every other month.
+                  </Text>
+                  <Select
+                    label="Would you like to receive occasional emails from MIT OpenGrades?"
+                    placeholder="Please select an option"
+                    value={emailOptIn === null ? null : emailOptIn ? 'yes' : 'no'}
+                    onChange={(value) => setEmailOptIn(value === 'yes' ? true : value === 'no' ? false : null)}
+                    data={[
+                      { value: 'yes', label: 'Yes, I would like to receive emails' },
+                      { value: 'no', label: 'No, I do not want to receive emails' }
+                    ]}
+                    required
+                  />
+                </Stack>
               </Stepper.Step>
               {isGradStudent && (
                 <Stepper.Step label="MIT Undergrad Status" description="Were you an MIT undergrad?">
@@ -554,6 +575,9 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
               {(!profileSubmitted) && (
                 (() => {
                   const nextBoundary = isGradStudent ? 2 : 1
+                  if (active === 1 && emailOptIn === null) {
+                    return <Button onClick={nextStep} disabled={true}>Next step</Button>
+                  }
                   if (active <= nextBoundary) {
                     return <Button onClick={nextStep}>Next step</Button>
                   }

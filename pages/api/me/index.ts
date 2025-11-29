@@ -64,6 +64,7 @@ export default async function handler (
             flatClasses: z.array(z.string()).optional(),
             referredBy: z.string().optional(),
             undergradProgramIds: z.array(z.string()).optional(),
+            emailOptIn: z.boolean().optional(),
             partialReviews: z.array(z.object({
               class: z.string(),
               letterGrade: z.string(),
@@ -87,6 +88,7 @@ export default async function handler (
           if (data.identityFlags) updateData.identityFlags = data.identityFlags
           if (data.flatClasses) updateData.classesTaken = data.flatClasses
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
+          if (typeof data.emailOptIn === 'boolean') updateData.emailOptIn = data.emailOptIn
           if (user.trustLevel < 1) updateData.trustLevel = 1
 
           if (data.undergradProgramIds && data.undergradProgramIds.length > 0) {

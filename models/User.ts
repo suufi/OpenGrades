@@ -79,6 +79,10 @@ const UserSchema = new mongoose.Schema<IUser>({
     type: Date,
     default: null
   },
+  emailOptIn: {
+    type: Boolean,
+    default: null
+  },
   programTerms: [{
     program: {
       type: Schema.Types.ObjectId,

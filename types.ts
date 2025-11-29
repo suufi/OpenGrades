@@ -106,6 +106,7 @@ export interface IUser {
     supportStatus: SupportStatus,
     courseAffiliation: ICourseOption[],
     lastGradeReportUpload: Date,
+    emailOptIn?: boolean | null,
     programTerms?: Array<{
         program: ICourseOption | string,
         terms: string[]

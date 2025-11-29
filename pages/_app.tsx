@@ -440,10 +440,12 @@ function ContentFetcher (props: AppProps) {
     return isGrad && !hasProgramTerms
   })()
 
+  const needsEmailOptIn = (userProfile as any)?.emailOptIn === null || (userProfile as any)?.emailOptIn === undefined
+
   return (
     !userProfile.banned || userProfile.verified === false
       ? <>
-        {needsDegreeTermAssignment || !(userProfile?.trustLevel !== undefined && userProfile?.trustLevel > 0)
+        {needsEmailOptIn || needsDegreeTermAssignment || !(userProfile?.trustLevel !== undefined && userProfile?.trustLevel > 0)
           ? <LockdownModule academicYears={availableAcademicYears} {...pageProps} />
           : <Component {...pageProps} />
         }
