@@ -5,7 +5,8 @@ import ClassReview from "@/models/ClassReview"
 import CourseOption from "@/models/CourseOption"
 import User from "@/models/User"
 import mongoConnection from "@/utils/mongoConnection"
-import { Center, Container, Select, Space, Table, Tabs, Text, Title } from "@mantine/core"
+import { Center, Container, Select, Space, Table, Tabs, Text, Title, UnstyledButton } from "@mantine/core"
+import { showNotification } from "@mantine/notifications"
 import { Chart as ChartJS, registerables } from "chart.js"
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from "next"
 import { getServerSession, Session } from "next-auth"
@@ -13,7 +14,6 @@ import Head from "next/head"
 import { useRouter } from "next/router"
 import authOptions from "pages/api/auth/[...nextauth]"
 import { useState } from "react"
-
 ChartJS.register(...registerables)
 
 const departmentsSorted = [
@@ -83,7 +83,7 @@ const termsOrdered = [
 const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ access, courseOptionsData }) => {
     const router = useRouter()
 
-    const [selectedCourseOption, setSelectedCourseOption] = useState<string | null>(courseOptionsData[0].courseOption.id)
+    const [selectedCourseOption, setSelectedCourseOption] = useState<string | null>(courseOptionsData?.[0]?.courseOption?.id || null)
 
     const courseOptions = courseOptionsData
         .sort((a: any, b: any) => {
@@ -100,7 +100,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                 label: `${courseOption.courseOption.departmentCode}${courseOption.courseOption.courseOption ? `-${courseOption.courseOption.courseOption}` : ''}: ${courseOption.courseOption.courseName}`
             }
         })
-    if (!access) {
+    if (!access || !courseOptionsData || courseOptionsData.length === 0) {
         const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
         const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
             const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
@@ -168,7 +168,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
 
             <Space h="lg" />
 
-            <Select data={courseOptions} placeholder="Select a course" searchable defaultValue={courseOptions[0].value} onChange={(value) => {
+            <Select data={courseOptions} placeholder="Select a course" searchable defaultValue={courseOptions[0]?.value} onChange={(value) => {
                 setSelectedCourseOption(value)
             }} />
 

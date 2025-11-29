@@ -126,7 +126,9 @@ export default async function handler (
             }
             await ClassReview.create(reviewsToMake)
 
-            await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: data.partialReviews.length > 0 ? new Date() : null })
+            if (reviewsToMake.length > 0) {
+              await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: new Date() })
+            }
           }
 
           return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
