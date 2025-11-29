@@ -9,6 +9,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { auth } from '@/utils/auth'
 
 import AuditLog from '@/models/AuditLog'
+import ContentSubmission from '@/models/ContentSubmission'
 import { Client } from '@elastic/elasticsearch'
 import { decode } from 'html-entities'
 import mongoose from 'mongoose'
@@ -283,11 +284,19 @@ export default async function handler (
             { $group: { _id: '$class', count: { $sum: 1 } } }
           ])
 
+          // Get the content submission count for each class
+          const contentCounts = await ContentSubmission.aggregate([
+            { $match: { approved: true } },
+            { $group: { _id: '$class', count: { $sum: 1 } } }
+          ])
+
           // Map the review count to each class
           const reviewCountMap = new Map(reviewCounts.map(({ _id, count }) => [_id.toString(), count]))
+          const contentCountMap = new Map(contentCounts.map(({ _id, count }) => [_id.toString(), count]))
           classes = classes.map((classEntry) => ({
             ...classEntry,
             classReviewCount: reviewCountMap.get(classEntry._id.toString()) || 0,
+            contentSubmissionCount: contentCountMap.get(classEntry._id.toString()) || 0,
           }))
 
           return res.status(200).json({
@@ -314,8 +323,15 @@ export default async function handler (
           { $group: { _id: '$class', count: { $sum: 1 } } }
         ])
 
+        // Get the content submission count for each class in the current page
+        const contentCounts = await ContentSubmission.aggregate([
+          { $match: { approved: true, class: { $in: classIdsOnThisPage } } },
+          { $group: { _id: '$class', count: { $sum: 1 } } }
+        ])
+
         // Map the review count to each class
         const reviewCountMap = new Map(reviewCounts.map(({ _id, count }) => [_id.toString(), count]))
+        const contentCountMap = new Map(contentCounts.map(({ _id, count }) => [_id.toString(), count]))
         const classesWithReviews = paginatedClasses
           .sort((a, b) => {
             if (sortField === 'relevance') {
@@ -326,6 +342,7 @@ export default async function handler (
           }).map((classEntry) => ({
             ...classEntry,
             classReviewCount: reviewCountMap.get(classEntry._id.toString()) || 0,
+            contentSubmissionCount: contentCountMap.get(classEntry._id.toString()) || 0,
             highlight: highlights[classEntry._id.toString()] || {},
             score: scores[classEntry._id.toString()] || 0
           }))

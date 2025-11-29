@@ -4,7 +4,7 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { IClass, IClassReview } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
-import { Accordion, Alert, Avatar, Badge, Button, Card, Center, Container, Divider, Flex, Group, Paper, Space, Stack, Switch, Text, Title, UnstyledButton } from '@mantine/core'
+import { Accordion, Avatar, Badge, Button, Card, Center, Container, Divider, Flex, Group, Paper, Space, Stack, Switch, Text, Title, UnstyledButton } from '@mantine/core'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import { useRouter } from 'next/router'
@@ -12,6 +12,7 @@ import { useState } from 'react'
 
 
 import GradeReportModal from '@/components/GradeReportModal'
+import ContentSubmission from '@/models/ContentSubmission'
 import User from '@/models/User'
 import styles from '@/styles/ClassPage.module.css'
 import { BarChart, DonutChart } from '@mantine/charts'
@@ -40,6 +41,15 @@ interface AggregateProps {
     classesProp: IClass[]
     reviewsProp: IClassReview[],
     lastGradeReportUpload: boolean,
+    submissionsProp: Array<{
+        _id: string,
+        class: IClass,
+        contentTitle: string,
+        type: string,
+        contentURL?: string,
+        bucketPath?: string,
+        createdAt: string
+    }>
 }
 
 interface ClassReviewCommentProps {
@@ -116,7 +126,7 @@ function ClassReviewComment ({ classReview,
     )
 }
 
-const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gradePointsProp, lastGradeReportUpload }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gradePointsProp, lastGradeReportUpload, submissionsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
     const router = useRouter()
 
     const [classes, setClasses] = useState(classesProp)
@@ -166,23 +176,19 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
 
 
     return (
-        <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
+        <Container style={{ padding: 'var(--mantine-spacing-lg)', maxWidth: 1200 }}>
             <Button variant='transparent' onClick={() => router.back()}>
                 ← Back
             </Button>
             <Space h='lg' />
-            <Alert
-                color='orange'
-                variant='filled'
-                title='This page is still under construction and is not yet finalized.'
-            />
+
             <Space h='lg' />
-            <Title> Aggregated for {router.query.subjectNumber} </Title>
+            <Title>Aggregated for {router.query.subjectNumber}</Title>
             <Space h='lg' />
 
-            <Title> Summary </Title>
+            <Title order={2}>Summary</Title>
             <Center>
-                <Group align='center'>
+                <Group align='center' gap='xl'>
                     {
                         gradePointsProp.length > 0 ?
                             (
@@ -204,7 +210,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                                     }, [] as { name: string, value: number, color: string }[]
                                     )}
                                 />)
-                            : <Text>
+                            : <Text c='dimmed'>
                                 {
                                     lastGradeReportUpload ? "No grade points for this class yet." :
                                         <>
@@ -244,7 +250,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                                     }, [] as { name: string, value: number, color: string }[]
                                     )}
                                 />
-                            ) : <Text> No reviews for this class yet. </Text>
+                            ) : <Text c='dimmed'>No reviews for this class yet.</Text>
                     }
                 </Group>
             </Center>
@@ -252,12 +258,13 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
             {
                 (reviewsProp.length > 0 || gradePointsProp.length > 0) && (
                     <>
-                        <Title order={2}> By Term </Title>
+                        <Space h='lg' />
+                        <Title order={2}>By Term</Title>
                         <Space h='sm' />
                     </>
                 )
             }
-            <Flex>
+            <Flex gap='md' wrap='wrap'>
                 {reviewsProp.length > 0 &&
                     <BarChart
                         h={400}
@@ -339,9 +346,9 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
 
             <Space h='lg' />
 
-            <Flex justify='space-between'>
-                <Title order={2}> Classes </Title>
-
+            <Space h='xl' />
+            <Flex justify='space-between' align='center'>
+                <Title order={2}>Classes</Title>
                 <Switch checked={onlyOffered} onChange={(e) => setOnlyOffered(e.currentTarget.checked)} label="Only show classes offered" />
             </Flex>
             <Space h='sm' />
@@ -361,7 +368,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                                                 <Text> {c.instructors.join(", ")} </Text>
                                                 <Group>
                                                     {!c.offered && <Badge color='red'> Not offered </Badge>}
-                                                    <Badge variant={reviewsProp.filter(r => r.class._id === c._id).length == 0 ? 'transparent' : 'filled'} color='purple'> {reviewsProp.filter(r => r.class._id === c._id).length} review{reviewsProp.filter(r => r.class === c._id).length === 1 ? '' : 's'} </Badge>
+                                                    <Badge variant={reviewsProp.filter(r => r.class._id === c._id).length == 0 ? 'transparent' : 'filled'} color='purple'> {reviewsProp.filter(r => r.class._id === c._id).length} review{reviewsProp.filter(r => r.class._id === c._id).length === 1 ? '' : 's'} </Badge>
                                                 </Group>
                                             </Flex>
                                         </Stack>
@@ -395,6 +402,46 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                     }
                 </Accordion>
             </Stack>
+
+            <Space h='xl' />
+            <Title order={2}>Content Submissions</Title>
+            <Space h='sm' />
+            {
+                submissionsProp.length === 0 ? (
+                    <Text c='dimmed'>No content submissions for this class yet.</Text>
+                ) : (
+                    <Accordion chevronPosition='left' variant='separated' multiple>
+                        {submissionsProp
+                            .sort((a, b) => a.class.term.localeCompare(b.class.term))
+                            .map((s) => (
+                                <Accordion.Item key={s._id} value={s._id}>
+                                    <Accordion.Control>
+                                        <Flex justify='space-between' align='center'>
+                                            <Stack gap={0}>
+                                                <Text fw={600}>{s.contentTitle}</Text>
+                                                <Text c='dimmed' size='sm'>{s.type} • {s.class.subjectNumber} {s.class.subjectTitle} • {s.class.term}</Text>
+                                            </Stack>
+                                            <Badge variant='light'>{moment(s.createdAt).tz('America/New_York').format('MMM DD, YYYY')}</Badge>
+                                        </Flex>
+                                    </Accordion.Control>
+                                    <Accordion.Panel>
+                                        <Group gap='sm'>
+                                            {s.contentURL && (
+                                                <Button component='a' href={s.contentURL} target='_blank' rel='noopener noreferrer' variant='light'>Open Link</Button>
+                                            )}
+                                            {s.bucketPath && (
+                                                <Button component='a' href={`/api/content/${encodeURIComponent(s.bucketPath)}`} target='_blank' rel='noopener noreferrer' variant='light'>Download</Button>
+                                            )}
+                                            {!s.contentURL && !s.bucketPath && (
+                                                <Text c='dimmed'>No file or URL attached.</Text>
+                                            )}
+                                        </Group>
+                                    </Accordion.Panel>
+                                </Accordion.Item>
+                            ))}
+                    </Accordion>
+                )
+            }
         </Container >
 
     )
@@ -485,12 +532,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const lastGradeReportUpload = user.lastGradeReportUpload && (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) < 1000 * 60 * 60 * 24 * 30 * 4
 
+    const submissions = await ContentSubmission.find({
+        class: { $in: classIds },
+        approved: true
+    }).populate('class').select('contentTitle type contentURL bucketPath class createdAt -author').lean()
+
     return {
         props: {
             classesProp: JSON.parse(JSON.stringify(classes)),
             reviewsProp: JSON.parse(JSON.stringify(reviews)),
             gradePointsProp: lastGradeReportUpload ? JSON.parse(JSON.stringify(shuffleArray((gradePointsData.length > 3 || user.trustLevel >= 2) ? gradePointsData : []))) : [],
-            lastGradeReportUpload
+            lastGradeReportUpload,
+            submissionsProp: JSON.parse(JSON.stringify(submissions))
         }
     }
 }

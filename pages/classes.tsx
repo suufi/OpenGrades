@@ -12,11 +12,11 @@ import { IClass } from '../types'
 
 import { useDebouncedValue, useDisclosure, useHotkeys, useToggle } from '@mantine/hooks'
 
-import { IconGridPattern, IconList, IconSearch, IconUserCircle } from '@tabler/icons'
+import { IconFile, IconGridPattern, IconList, IconSearch, IconUserCircle } from '@tabler/icons'
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
-const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: IClass & { classReviewCount: number, userCount: number, withDescription: boolean, searchTerm: string, highlight: object }) => {
+const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: IClass & { classReviewCount: number, contentSubmissionCount: number, userCount: number, withDescription: boolean, searchTerm: string, highlight: object }) => {
   const router = useRouter()
 
   let formattedDescription = (
@@ -102,10 +102,17 @@ const ClassButton = ({ _id, classReviewCount, subjectTitle, subjectNumber, alias
               </Flex>
             )
           }
-          <Flex justify={'flex-end'} align={'center'}>
-            <IconUserCircle fontWeight={300} color='gray' />
-            <Space w={2} />
-            <Text c='dimmed'>{userCount} </Text>
+          <Flex justify={'flex-end'} align={'center'} gap={8}>
+            {contentSubmissionCount > 0 && (
+              <Flex align={'center'} gap={2}>
+                <IconFile size={18} fontWeight={300} color='gray' />
+                <Text c='dimmed' size='sm'>{contentSubmissionCount}</Text>
+              </Flex>
+            )}
+            <Flex align={'center'} gap={2}>
+              <IconUserCircle size={18} fontWeight={300} color='gray' />
+              <Text c='dimmed' size='sm'>{userCount}</Text>
+            </Flex>
           </Flex>
         </Group>
       </UnstyledButton>
@@ -489,7 +496,7 @@ const Classes: NextPage = () => {
               <Masonry gutter={'0.5rem'}>
                 {
                   classes.map((classEntry: IClass) => (
-                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} {...classEntry} />
+                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} {...classEntry} />
                   ))
                 }
               </Masonry>
@@ -497,7 +504,7 @@ const Classes: NextPage = () => {
             <Stack spacing="md">
               {
                 classes.map((classEntry: IClass) => (
-                  <ClassButton key={classEntry._id} classReviewCount={classEntry.classReviewCount || 0} withDescription searchTerm={searchTerm} highlight={classEntry.highlight} {...classEntry} />
+                  <ClassButton key={classEntry._id} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} withDescription searchTerm={searchTerm} highlight={classEntry.highlight} {...classEntry} />
                 ))
               }
             </Stack>
