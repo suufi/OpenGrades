@@ -335,7 +335,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                 <Group grow>
                   <TextInput disabled {...form.getInputProps('kerb')} label="Kerb" />
                   <TextInput disabled {...form.getInputProps('name')} label="Name" />
-                  <NumberInput {...form.getInputProps('classOf')} label="Class of" min={2019} max={2029} />
+                  <NumberInput {...form.getInputProps('classOf')} label="Class of" description="Known or expected graduation year (required)" min={2019} max={2035} required />
                 </Group>
                 <Space h='md' />
                 <Select {...form.getInputProps('affiliation')} label="Affiliation" disabled data={['staff', 'student', 'affiliate']} />
@@ -575,7 +575,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
               {(!profileSubmitted) && (
                 (() => {
                   const nextBoundary = isGradStudent ? 2 : 1
-                  if (active === 1 && emailOptIn === null) {
+                  if (active === 1 && (emailOptIn === null || !form.values.classOf)) {
                     return <Button onClick={nextStep} disabled={true}>Next step</Button>
                   }
                   if (active <= nextBoundary) {
