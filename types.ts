@@ -106,6 +106,10 @@ export interface IUser {
     supportStatus: SupportStatus,
     courseAffiliation: ICourseOption[],
     lastGradeReportUpload: Date,
+    programTerms?: Array<{
+        program: ICourseOption | string,
+        terms: string[]
+    }>,
     createdAt: Date,
     updatedAt: Date,
 }
@@ -229,6 +233,7 @@ export interface IFAQ {
 }
 
 export interface ICourseOption {
+    _id?: string,
     departmentCode: string,
     departmentName: string,
     courseDescription: string,

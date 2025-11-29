@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { IClassReview } from '../types'
+import type { IClassReview } from '../types'
 
 const { Schema } = mongoose
 

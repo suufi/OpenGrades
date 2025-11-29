@@ -11,8 +11,9 @@ import { UserContext } from '../components/UserContextProvider'
 import { useDebouncedState, useMediaQuery } from '@mantine/hooks'
 import { IconCheck } from '@tabler/icons'
 import Link from 'next/link'
-import { IClass, IdentityFlags } from '../types'
+import { IClass, ICourseOption, IdentityFlags } from '../types'
 import ClassSearch from './ClassSearch'
+import DegreeTermsModal from './DegreeTermsModal'
 
 type State = {
   data: string
@@ -42,7 +43,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
   const [referredByState, setReferredByState] = useState<State>({ data: '', status: 'initial' })
   const [academicYearsTaken, setAcademicYearsTaken] = useState<string[]>([])
-  const nextStep = () => setActive((current) => (current < 3 ? current + 1 : current))
+  const nextStep = () => setActive((current) => (current < 10 ? current + 1 : current))
   const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current))
   const [formLoading, setFormLoading] = useState(false)
   const { userProfile, setUserProfile } = useContext(UserContext)
@@ -50,6 +51,14 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const [gradeReport, setGradeReport] = useDebouncedState<string>('', 1000)
   const [partialReviewsEnabled, setPartialReviewsEnabled] = useState(true)
   const [partialReviewsData, setPartialReviewsData] = useState<{ class: string, letterGrade: string, dropped: boolean, firstYear: boolean }[]>([])
+  const [wasMITUndergrad, setWasMITUndergrad] = useState<boolean | null>(null)
+  const [mitUndergradClassOf, setMitUndergradClassOf] = useState<number | null>(null)
+  const [isGradStudent, setIsGradStudent] = useState(false)
+  const [profileSubmitted, setProfileSubmitted] = useState(false)
+  const [degreeTermsSaved, setDegreeTermsSaved] = useState(false)
+  const [undergradPrograms, setUndergradPrograms] = useState<ICourseOption[]>([])
+  const [selectedUndergradPrograms, setSelectedUndergradPrograms] = useState<string[]>([])
+  const [loadingPrograms, setLoadingPrograms] = useState(false)
 
   async function verifyReferralKerb (kerb: string) {
     const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
@@ -129,38 +138,67 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   }, [userProfile])
 
   async function submitProfile (values: UserProfile) {
-    console.log('submitting profile')
+
+    const potentialGrad = (userProfile as any)?.year === 'G'
+    if (potentialGrad && wasMITUndergrad === null) {
+      console.log('Blocking submission: grad student must confirm MIT undergrad status first.')
+      setIsGradStudent(true)
+      setActive(2)
+      return
+    }
+
     setFormLoading(true)
-    await fetch('/api/me', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ...values,
-        referredBy: referredByState.status === 'success' ? referredBy : undefined,
-        partialReviews: partialReviewsEnabled ? partialReviewsData : []
+    try {
+      const res = await fetch('/api/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...values,
+          referredBy: referredByState.status === 'success' ? referredBy : undefined,
+          undergradProgramIds: selectedUndergradPrograms.length > 0 ? selectedUndergradPrograms : undefined,
+          partialReviews: partialReviewsEnabled ? partialReviewsData : []
+        })
       })
-    }).then(async (res) => {
       const body = await res.json()
-      if (res.ok) {
-        showNotification({
-          title: 'Success!',
-          message: 'Your account is now active!'
-        })
-        update()
-        setUserProfile(body.data)
-        router.push('/classes')
-      } else {
-        showNotification({
-          title: 'Error!',
-          message: body.message
-        })
+      if (!res.ok) {
+        showNotification({ title: 'Error!', message: body.message })
         setFormLoading(false)
+        return
       }
-    })
-    setFormLoading(false)
+      showNotification({ title: 'Success!', message: 'Your account is now active!' })
+      await update()
+      await new Promise(resolve => setTimeout(resolve, 150))
+      setUserProfile(body.data)
+      setProfileSubmitted(true)
+      setFormLoading(false)
+
+      const finalGrad = potentialGrad || isGradStudent
+      console.log('finalGrad:', finalGrad, 'wasMITUndergrad:', wasMITUndergrad)
+      if (finalGrad) {
+        if (wasMITUndergrad === true) {
+          setDegreeTermsSaved(false)
+          setActive(4)
+          return
+        }
+        if (wasMITUndergrad === false) {
+          window.location.href = '/classes'
+
+          return
+        }
+        setActive(2)
+        return
+      }
+
+      // Undergrad flow: redirect
+      window.location.href = '/classes'
+      console.log('Redirecting to /classes')
+    } catch (e: any) {
+      console.error(e)
+      showNotification({ title: 'Error!', message: 'Failed to submit profile.' })
+      setFormLoading(false)
+    }
   }
+
 
   useEffect(() => {
     form.setValues({
@@ -171,6 +209,32 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
+
+  useEffect(() => {
+    if ((userProfile as any)?.year === 'G') {
+      setIsGradStudent(true)
+    } else {
+      setIsGradStudent(false)
+    }
+  }, [userProfile])
+
+  useEffect(() => {
+    const fetchUndergradPrograms = async () => {
+      setLoadingPrograms(true)
+      try {
+        const res = await fetch('/api/courses?courseLevel=U')
+        const body = await res.json()
+        if (res.ok && body.success) {
+          setUndergradPrograms(body.data)
+        }
+      } catch (error) {
+        console.error('Error fetching undergraduate programs:', error)
+      } finally {
+        setLoadingPrograms(false)
+      }
+    }
+    fetchUndergradPrograms()
+  }, [])
 
   useEffect(() => {
     if (!gradeReport) return
@@ -308,6 +372,122 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                   }
                 ]} />
               </Stepper.Step>
+              {isGradStudent && (
+                <Stepper.Step label="MIT Undergrad Status" description="Were you an MIT undergrad?">
+                  <Stack>
+                    <Title order={3}>Graduate Student Information</Title>
+                    <Text>
+                      We noticed you're a graduate student. Were you previously an undergraduate student at MIT?
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      This information helps us better categorize your classes on the "Who's Taken What" page.
+                      If you were an MIT undergrad, you'll be able to assign your semesters to either your
+                      undergraduate or graduate degree program.
+                    </Text>
+                    <Group mt="md">
+                      <Button
+                        variant={wasMITUndergrad === true ? 'filled' : 'outline'}
+                        onClick={() => {
+                          setWasMITUndergrad(true)
+                        }}
+                      >
+                        Yes, I was an MIT undergrad
+                      </Button>
+                      <Button
+                        variant={wasMITUndergrad === false ? 'filled' : 'outline'}
+                        onClick={() => {
+                          setWasMITUndergrad(false)
+                          setMitUndergradClassOf(null)
+                          setSelectedUndergradPrograms([])
+                        }}
+                      >
+                        No, I was not
+                      </Button>
+                    </Group>
+                    {wasMITUndergrad === true && (
+                      <>
+                        <Space h="md" />
+                        <NumberInput
+                          label="What year did you graduate from MIT as an undergrad?"
+                          description="This helps us automatically assign your semesters to your undergraduate vs graduate degree"
+                          placeholder="e.g., 2024"
+                          min={2000}
+                          max={new Date().getFullYear()}
+                          value={mitUndergradClassOf || undefined}
+                          onChange={(value) => setMitUndergradClassOf(value as number)}
+                        />
+                        <Space h="md" />
+                        {
+                          undergradPrograms.length === 0 && (
+                            <Text c="dimmed"> Loading undergraduate programs... </Text>
+                          )
+                        }
+                        <MultiSelect
+                          label="Undergraduate Programs"
+                          description="Select all undergraduate degree programs you completed at MIT"
+                          placeholder={loadingPrograms ? "Loading programs..." : "Search and select your programs"}
+                          data={(() => {
+                            const filtered = (undergradPrograms || []).filter(prog => {
+                              const hasNIE = prog.courseOption?.includes('NIE')
+                              const hasNIV = prog.courseOption?.includes('NIV')
+                              const hasZZZ = prog.courseOption?.includes('ZZZ')
+                              const isNONE = prog.departmentCode === 'NONE' || prog.departmentCode === 'UND'
+                              const hasSpecial = prog.courseName?.includes('Special')
+                              const isCourseCoop = ['6', '7'].includes(prog.departmentCode) && prog.courseOption?.slice(-1) === 'A'
+                              const isMSRP = prog.courseOption?.includes('MSRP')
+                              return !hasNIE && !hasNIV && !isNONE && !hasSpecial && !hasZZZ && !isCourseCoop && !isMSRP
+                            })
+
+                            // Group by department code
+                            const grouped = filtered.reduce((acc, prog) => {
+                              const groupKey = `Course ${prog.departmentCode}`
+                              if (!acc[groupKey]) {
+                                acc[groupKey] = []
+                              }
+                              acc[groupKey].push({
+                                value: prog._id || '',
+                                label: `Course ${prog.departmentCode}${prog.courseOption ? `-${prog.courseOption}` : ''}: ${prog.courseName}`
+                              })
+                              return acc
+                            }, {} as Record<string, Array<{ value: string; label: string }>>)
+
+                            // Sort groups: numeric first, then non-numeric
+                            return Object.entries(grouped)
+                              .sort(([a], [b]) => {
+                                const aNum = a.replace('Course ', '')
+                                const bNum = b.replace('Course ', '')
+                                const aIsNumeric = !isNaN(Number(aNum))
+                                const bIsNumeric = !isNaN(Number(bNum))
+
+                                if (aIsNumeric && bIsNumeric) {
+                                  return Number(aNum) - Number(bNum)
+                                }
+                                if (aIsNumeric) return -1
+                                if (bIsNumeric) return 1
+                                return aNum.localeCompare(bNum)
+                              })
+                              .map(([group, items]) => ({
+                                group,
+                                items
+                              }))
+                          })()}
+                          value={selectedUndergradPrograms}
+                          onChange={setSelectedUndergradPrograms}
+                          searchable
+                          disabled={loadingPrograms}
+                          maxDropdownHeight={300}
+                          nothingFoundMessage="No programs found"
+                        />
+                        {selectedUndergradPrograms.length > 0 && (
+                          <Text size="sm" c="dimmed">
+                            Selected {selectedUndergradPrograms.length} program{selectedUndergradPrograms.length !== 1 ? 's' : ''}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </Stack>
+                </Stepper.Step>
+              )}
               <Stepper.Step label="Class History" description="Add classes you've taken">
                 <Stack>
                   <Text> To maintain the platform, we depend on students providing reviews for classes they&apos;ve taken in the past. In the semesters fields below, please input the classes you&apos;ve taken (or dropped). You don&apos;t have to review every class, but please try to review as many as you can. By listing a class below, we may reach out to you to request a class review if there is interest in a class but little to no reviews. </Text>
@@ -343,11 +523,60 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                   </Stack>
                 </Stack>
               </Stepper.Step>
+              {isGradStudent && wasMITUndergrad && (
+                <Stepper.Step label="Degree Term Assignment" description="Assign terms to your degrees">
+                  <Stack>
+                    <Title order={3}>Assign Semesters to Degree Programs</Title>
+                    <Text>
+                      Now let's assign your semesters to either your undergraduate or graduate degree program.
+                      This helps categorize your classes correctly on the "Who's Taken What" page.
+                    </Text>
+                    <DegreeTermsModal
+                      embedded
+                      initialTerms={Object.keys((form.values.classes as Record<string, string[]>) || {})}
+                      autoAssignClassOf={mitUndergradClassOf ?? undefined}
+                      eligibleOverride
+                      selectedUndergradProgramIds={selectedUndergradPrograms}
+                      onSave={(undergradTerms) => {
+                        showNotification({
+                          title: 'Saved!',
+                          message: 'Your degree term assignments have been saved.'
+                        })
+                        setDegreeTermsSaved(true)
+                      }}
+                    />
+                  </Stack>
+                </Stepper.Step>
+              )}
             </Stepper>
             <Group justify="center" mt="xl">
-              <Button variant="default" onClick={prevStep}>Back</Button>
-              {active < 2 && <Button onClick={nextStep}>Next step</Button>}
-              {active === 2 && <Button type='submit'>Submit</Button>}
+              <Button variant="default" onClick={prevStep} disabled={profileSubmitted}>Back</Button>
+              {(!profileSubmitted) && (
+                (() => {
+                  const nextBoundary = isGradStudent ? 2 : 1
+                  if (active <= nextBoundary) {
+                    return <Button onClick={nextStep}>Next step</Button>
+                  }
+                  return null
+                })()
+              )}
+              {(!isGradStudent && active === 2 && !profileSubmitted) && (
+                <Button type='submit'>Submit</Button>
+              )}
+              {(isGradStudent && active === 3 && !profileSubmitted) && (
+                <Button type='submit'>{wasMITUndergrad ? 'Assign Terms' : 'Submit'}</Button>
+              )}
+              {active === 4 && isGradStudent && wasMITUndergrad && profileSubmitted && (
+                <Button
+                  onClick={async () => {
+                    await new Promise(resolve => setTimeout(resolve, 100))
+                    window.location.href = '/classes'
+                  }}
+                  disabled={!degreeTermsSaved}
+                >
+                  Finish
+                </Button>
+              )}
             </Group>
           </form>
           {/* </Flex> */}

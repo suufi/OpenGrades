@@ -1,13 +1,13 @@
 // @ts-nocheck
 import '@/models/Class'
+import ClassReview from '@/models/ClassReview'
+import { auth } from '@/utils/auth'
+import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { z } from 'zod'
 import User from '../../../models/User'
 import { IdentityFlags } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
-
-import ClassReview from '@/models/ClassReview'
-import { auth } from '@/utils/auth'
-import { z } from 'zod'
 
 type Data = {
   success: boolean,
@@ -38,7 +38,7 @@ export default async function handler (
     case 'GET':
       try {
         if (session.user?.id) {
-          const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
+          const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
 
           return res.status(200).json({ success: true, data: { session, user } })
         } else {
@@ -52,17 +52,18 @@ export default async function handler (
       break
     case 'PUT':
       try {
-        const user = await User.exists({ email: session.user?.id.toLowerCase() })
+        const user = await User.findOne({ email: session.user?.id.toLowerCase() }).lean()
 
         if (user) {
           const schema = z.object({
-            kerb: z.string(),
-            name: z.string(),
-            classOf: z.number(),
-            affiliation: z.string(),
-            identityFlags: z.array(z.nativeEnum(IdentityFlags)),
-            flatClasses: z.array(z.string()),
+            kerb: z.string().optional(),
+            name: z.string().optional(),
+            classOf: z.number().optional(),
+            affiliation: z.string().optional(),
+            identityFlags: z.array(z.nativeEnum(IdentityFlags)).optional(),
+            flatClasses: z.array(z.string()).optional(),
             referredBy: z.string().optional(),
+            undergradProgramIds: z.array(z.string()).optional(),
             partialReviews: z.array(z.object({
               class: z.string(),
               letterGrade: z.string(),
@@ -71,20 +72,35 @@ export default async function handler (
             })).optional()
           }).partial({
             identityFlags: true,
-            flatClasses: true
+            flatClasses: true,
+            referredBy: true,
+            undergradProgramIds: true,
           })
 
           const data = schema.parse(body)
 
           const referredByUser = data.referredBy ? await User.exists({ kerb: data.referredBy }) : false
 
-          await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
-            classOf: data.classOf,
-            classesTaken: data.flatClasses,
-            identityFlags: data.identityFlags,
-            referredBy: referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined,
-            trustLevel: 1
-          })
+          const updateData: any = {}
+
+          if (data.classOf) updateData.classOf = data.classOf
+          if (data.identityFlags) updateData.identityFlags = data.identityFlags
+          if (data.flatClasses) updateData.classesTaken = data.flatClasses
+          if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
+          if (user.trustLevel < 1) updateData.trustLevel = 1
+
+          if (data.undergradProgramIds && data.undergradProgramIds.length > 0) {
+            const existingAffiliations = user.courseAffiliation || []
+            const newAffiliations = data.undergradProgramIds.map(id => new mongoose.Types.ObjectId(id))
+            const allAffiliations = [...existingAffiliations, ...newAffiliations]
+            const uniqueAffiliations = Array.from(new Set(allAffiliations.map(a => a.toString()))).map(id => new mongoose.Types.ObjectId(id))
+
+            updateData.courseAffiliation = uniqueAffiliations
+          }
+
+          await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() },
+            updateData
+          )
 
           if (data.partialReviews) {
             const reviewsToMake = []

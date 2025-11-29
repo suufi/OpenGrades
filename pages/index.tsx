@@ -8,6 +8,7 @@ import Head from 'next/head'
 //   Session,
 // } from "@auth/core/types"
 import ClassSearch from '@/components/ClassSearch'
+import DegreeTermsModal from '@/components/DegreeTermsModal'
 import GradeReportModal from '@/components/GradeReportModal'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
@@ -75,6 +76,20 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     getInitialValueInEffect: true
   })
 
+  const [degreeTermsModalOpened, setDegreeTermsModalOpened] = useState(false)
+  // Initialize reviewed state based on profile: grad + program terms => reviewed
+  const [degreeTermsReviewed, setDegreeTermsReviewed] = useLocalStorage({
+    key: 'degreeTermsReviewed',
+    defaultValue: ((userProp?.year === 'G') && (userProp?.programTerms?.length ?? 0) > 0) || false,
+    getInitialValueInEffect: true
+  })
+
+  const [gradeReportModalOpened, { open: openGradeReportModal, close: closeGradeReportModal }] = useDisclosure(false)
+
+  // Check eligibility based on student level 'G' (handles early grad with no course affiliation)
+  const isEligibleForDegreeTerms = userProp?.year === 'G'
+
+  const hasAssignedTerms = userProp.programTerms && userProp.programTerms.length > 0
 
   async function verifyReferralKerb (kerb: string) {
     const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
@@ -369,6 +384,31 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             </>
           }
 
+          {
+            isEligibleForDegreeTerms && !degreeTermsReviewed && (
+              <>
+                <Alert
+                  variant="light"
+                  color="grape"
+                  title="📚 Graduate Degree Program Assignment"
+                  icon={<IconCircleCheck size={24} />}
+                >
+                  <Text size="sm" mb="sm">
+                    As a graduate student who was an MIT undergrad, you can assign your semesters to either your undergraduate or graduate degree program. This helps categorize your classes on the "Who's Taken What" page.
+                  </Text>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    onClick={() => setDegreeTermsModalOpened(true)}
+                  >
+                    {hasAssignedTerms ? 'Review & Edit Assignments' : 'Assign Terms Now'}
+                  </Button>
+                </Alert>
+                <Space h="lg" />
+              </>
+            )
+          }
+
           <Card>
             <LoadingOverlay visible={contentLoading} />
             <Title order={3}> 📚 Classes Taken </Title>
@@ -535,6 +575,19 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         </Grid.Col>
       </Grid>
 
+      <GradeReportModal opened={gradeReportModalOpened} onClose={closeGradeReportModal} onAddClasses={handleAddClassesFromModal} />
+      <DegreeTermsModal
+        opened={degreeTermsModalOpened}
+        onClose={() => {
+          setDegreeTermsModalOpened(false)
+          // Only mark as reviewed when user explicitly closes/cancels
+          // setDegreeTermsReviewed(true)
+        }}
+        onSave={() => {
+          // Refresh page data to update user profile
+          router.reload()
+        }}
+      />
     </Container >
   )
 }
@@ -560,6 +613,9 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         { path: 'classesTaken', select: '-description' },
         {
           path: 'referredBy', select: 'kerb'
+        },
+        {
+          path: 'courseAffiliation'
         }
       ]).lean()
       const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean()

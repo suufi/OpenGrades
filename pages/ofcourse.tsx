@@ -72,6 +72,8 @@ const yearsOrdered = [
     "Senior Year",
 ]
 
+const mengTab = "MEng"
+
 const termsOrdered = [
     "FA",
     "JA",
@@ -181,70 +183,161 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                             </Tabs.Tab>
                         ))
                     }
+                    {
+                        (() => {
+                            const selected = courseOptionsData.find(
+                                (d: any) => d.courseOption.id === selectedCourseOption
+                            )
+
+                            if (selected?.mengClasses && Object.keys(selected.mengClasses).length > 0) {
+                                return (
+                                    <Tabs.Tab key={mengTab} value={mengTab}>
+                                        {mengTab}
+                                    </Tabs.Tab>
+                                )
+                            }
+                            return null
+                        })()
+                    }
                 </Tabs.List>
                 {
-                    yearsOrdered.map((year) => {
-                        return (
-                            <Tabs.Panel key={year} value={year}>
-                                {(() => {
-                                    const selected = courseOptionsData.find(
-                                        (d: any) => d.courseOption.id === selectedCourseOption
-                                    )
-                                    if (!selected || !selected.classes) return null
-
-                                    if (Object.entries(selected.classes)
-                                        .filter(([yearTerm, _]) => yearTerm.startsWith(year)).length === 0) return <>
-                                            <Space h="sm" />
-                                            <Text>
-                                                No data available for this year.
-                                            </Text>
-                                        </>
-
-                                    return Object.entries(selected.classes)
-                                        .filter(([yearTerm, _]) => yearTerm.startsWith(year))
-                                        .sort(([a], [b]) => {
-                                            const termA = termsOrdered.indexOf(a.split(' ')[2])
-                                            const termB = termsOrdered.indexOf(b.split(' ')[2])
-                                            return termA - termB
-                                        })
-                                        .map(([yearTerm, classList]: any) => (
-                                            <div key={yearTerm}>
-                                                <Space h="md" />
-                                                <Title order={4}>{yearTerm}</Title>
-                                                <Center>
-                                                    <Table striped>
-                                                        <Table.Thead>
-                                                            <Table.Tr>
-                                                                <Table.Th>Subject Number</Table.Th>
-                                                                <Table.Th>Subject Title</Table.Th>
-                                                                <Table.Th>Count</Table.Th>
-                                                            </Table.Tr>
-                                                        </Table.Thead>
-                                                        <Table.Tbody>
-                                                            {classList.map((c: any) => (
-                                                                <Table.Tr key={c.subjectNumber}>
-                                                                    <Table.Td>{c.subjectNumber}</Table.Td>
-                                                                    <Table.Td>{c.subjectTitle}</Table.Td>
-                                                                    <Table.Td>{c.count}</Table.Td>
-                                                                </Table.Tr>
-                                                            ))}
-                                                        </Table.Tbody>
-                                                        {
-                                                            yearTerm.slice(-2) == "SP" && (
-                                                                <Table.Caption>
-                                                                    Reflected counts are based on the number of reviews (partial and full) submitted for each class. Students who are listed across two majors have class counts counted for both degrees. Classes are attributed to the last recorded degree affiliation for user and may have discrepancies due to changes in degree. Due to formatting of first year fall grades,
-                                                                    the counts may not be accurate for first year fall classes. Classes with less than 3 reviews will not show counts.
-                                                                </Table.Caption>
-                                                            )
-                                                        }
-                                                    </Table>
-                                                </Center>
-                                            </div>
-                                        ))
-                                })()}
-                            </Tabs.Panel>
+                    (() => {
+                        const selected = courseOptionsData.find(
+                            (d: any) => d.courseOption.id === selectedCourseOption
                         )
-                    })
+                        const hasMEngData = selected?.mengClasses && Object.keys(selected.mengClasses).length > 0
+                        const tabsToRender = hasMEngData ? [...yearsOrdered, mengTab] : yearsOrdered
+
+                        return tabsToRender.map((year) => {
+                            if (year === mengTab) {
+                                return (
+                                    <Tabs.Panel key={mengTab} value={mengTab}>
+                                        {(() => {
+                                            const selected = courseOptionsData.find(
+                                                (d: any) => d.courseOption.id === selectedCourseOption
+                                            )
+                                            if (!selected || !selected.mengClasses) return null
+
+                                            if (Object.keys(selected.mengClasses).length === 0) {
+                                                return (
+                                                    <>
+                                                        <Space h="sm" />
+                                                        <Text>
+                                                            No MEng data available.
+                                                        </Text>
+                                                    </>
+                                                )
+                                            }
+
+                                            return Object.entries(selected.mengClasses)
+                                                .sort(([a], [b]) => {
+                                                    const [yearA, termA] = a.split(' ')
+                                                    const [yearB, termB] = b.split(' ')
+                                                    if (yearA !== yearB) return parseInt(yearA) - parseInt(yearB)
+                                                    const termOrderA = termsOrdered.indexOf(termA)
+                                                    const termOrderB = termsOrdered.indexOf(termB)
+                                                    return termOrderA - termOrderB
+                                                })
+                                                .map(([yearTerm, classList]: any) => (
+                                                    <div key={yearTerm}>
+                                                        <Space h="md" />
+                                                        <Title order={4}>{yearTerm}</Title>
+                                                        <Center>
+                                                            <Table striped>
+                                                                <Table.Thead>
+                                                                    <Table.Tr>
+                                                                        <Table.Th>Subject Number</Table.Th>
+                                                                        <Table.Th>Subject Title</Table.Th>
+                                                                        <Table.Th>Count</Table.Th>
+                                                                    </Table.Tr>
+                                                                </Table.Thead>
+                                                                <Table.Tbody>
+                                                                    {classList.map((c: any) => (
+                                                                        <Table.Tr key={c.subjectNumber}>
+                                                                            <Table.Td>{c.subjectNumber}</Table.Td>
+                                                                            <Table.Td>{c.subjectTitle}</Table.Td>
+                                                                            <Table.Td>{c.count}</Table.Td>
+                                                                        </Table.Tr>
+                                                                    ))}
+                                                                </Table.Tbody>
+                                                                {
+                                                                    yearTerm.split(' ')[1] == "SP" && (
+                                                                        <Table.Caption>
+                                                                            Reflected counts are based on the number of reviews (partial and full) submitted for each class during MEng program. Students with term assignments show only their graduate degree classes here.
+                                                                        </Table.Caption>
+                                                                    )
+                                                                }
+                                                            </Table>
+                                                        </Center>
+                                                    </div>
+                                                ))
+                                        })()}
+                                    </Tabs.Panel>
+                                )
+                            }
+
+                            return (
+                                <Tabs.Panel key={year} value={year}>
+                                    {(() => {
+                                        const selected = courseOptionsData.find(
+                                            (d: any) => d.courseOption.id === selectedCourseOption
+                                        )
+                                        if (!selected || !selected.classes) return null
+
+                                        if (Object.entries(selected.classes)
+                                            .filter(([yearTerm, _]) => yearTerm.startsWith(year)).length === 0) return <>
+                                                <Space h="sm" />
+                                                <Text>
+                                                    No data available for this year.
+                                                </Text>
+                                            </>
+
+                                        return Object.entries(selected.classes)
+                                            .filter(([yearTerm, _]) => yearTerm.startsWith(year))
+                                            .sort(([a], [b]) => {
+                                                const termA = termsOrdered.indexOf(a.split(' ')[2])
+                                                const termB = termsOrdered.indexOf(b.split(' ')[2])
+                                                return termA - termB
+                                            })
+                                            .map(([yearTerm, classList]: any) => (
+                                                <div key={yearTerm}>
+                                                    <Space h="md" />
+                                                    <Title order={4}>{yearTerm}</Title>
+                                                    <Center>
+                                                        <Table striped>
+                                                            <Table.Thead>
+                                                                <Table.Tr>
+                                                                    <Table.Th>Subject Number</Table.Th>
+                                                                    <Table.Th>Subject Title</Table.Th>
+                                                                    <Table.Th>Count</Table.Th>
+                                                                </Table.Tr>
+                                                            </Table.Thead>
+                                                            <Table.Tbody>
+                                                                {classList.map((c: any) => (
+                                                                    <Table.Tr key={c.subjectNumber}>
+                                                                        <Table.Td>{c.subjectNumber}</Table.Td>
+                                                                        <Table.Td>{c.subjectTitle}</Table.Td>
+                                                                        <Table.Td>{c.count}</Table.Td>
+                                                                    </Table.Tr>
+                                                                ))}
+                                                            </Table.Tbody>
+                                                            {
+                                                                yearTerm.slice(-2) == "SP" && (
+                                                                    <Table.Caption>
+                                                                        Reflected counts are based on the number of reviews (partial and full) submitted for each class. Students who are listed across two majors have class counts counted for both degrees. Classes are attributed to the last recorded degree affiliation for user and may have discrepancies due to changes in degree. Due to formatting of first year fall grades,
+                                                                        the counts may not be accurate for first year fall classes. Classes with less than 3 reviews will not show counts.
+                                                                    </Table.Caption>
+                                                                )
+                                                            }
+                                                        </Table>
+                                                    </Center>
+                                                </div>
+                                            ))
+                                    })()}
+                                </Tabs.Panel>
+                            )
+                        })
+                    })()
                 }
             </Tabs>
 
@@ -259,14 +352,13 @@ interface ServerSideProps {
     courseOptionsData: any
 }
 
-// Utility function to infer academic year group
 const getYearLabel = (classOf: number, academicYear: number): string | null => {
     const yearDiff = classOf - academicYear
     if (yearDiff === 3) return 'First Year'
     if (yearDiff === 2) return 'Sophomore Year'
     if (yearDiff === 1) return 'Junior Year'
     if (yearDiff === 0) return 'Senior Year'
-    return null // Outside 4-year range
+    return null
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
@@ -286,8 +378,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 }
             }
 
-            // if the user.lastGradeReportUpload is null or the lastGradeReportUpload is more than 4 months ago then redirect to /
-            // mandates that the user uploads a grade report every 4 months to access statistics
+
             if (!user.lastGradeReportUpload || (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) > 1000 * 60 * 60 * 24 * 30 * 4) {
                 return {
                     props: {
@@ -318,36 +409,97 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             courseLevel: "U"
         })
 
+        const course6MEngOptions = await CourseOption.find({
+            courseLevel: "G",
+            departmentCode: "6",
+            courseOption: { $regex: /P$/ }
+        })
+
+        const mengProgramMap = new Map<string, any>()
+        course6MEngOptions.forEach(meng => {
+            const baseOption = meng.courseOption.replace(/P$/, '')
+            mengProgramMap.set(baseOption, meng)
+        })
+
         const courseOptionsData = []
 
         for (const courseOption of allCourseOptions) {
+            const mengProgram = mengProgramMap.get(courseOption.courseOption || '')
+            const hasMEngProgram = courseOption.departmentCode === '6' && mengProgram
 
             const affiliatedUsers = await User.find({
-                courseAffiliation: courseOption._id,
+                $or: [
+                    { courseAffiliation: courseOption._id },
+                    ...(hasMEngProgram ? [{ courseAffiliation: mengProgram._id }] : [])
+                ],
                 classOf: { $ne: null }
-            }).select('_id classOf')
+            }).select('_id classOf programTerms courseAffiliation').populate('courseAffiliation').populate('programTerms.program')
 
-            const userMap = new Map<string, number>()
-            affiliatedUsers.forEach(u => userMap.set(u._id.toString(), u.classOf))
+            const userMap = new Map<string, { classOf: number, programTerms?: Array<{ program: any, terms: string[] }>, isMEng: boolean }>()
+            affiliatedUsers.forEach(u => {
+                const isMEng = hasMEngProgram && u.courseAffiliation?.some((aff: any) =>
+                    aff._id.toString() === mengProgram._id.toString()
+                )
+
+                userMap.set(u._id.toString(), {
+                    classOf: u.classOf,
+                    programTerms: u.programTerms || [],
+                    isMEng: isMEng || false
+                })
+            })
 
             const reviews = await ClassReview.find({
                 author: { $in: Array.from(userMap.keys()) }
             }).populate('class')
 
             const yearTermMap: Record<string, Map<string, { subjectTitle: string, count: number }>> = {}
+            const mengTermMap: Record<string, Map<string, { subjectTitle: string, count: number }>> = {}
 
             for (const review of reviews) {
                 const classDoc = review.class as any
                 const authorId = review.author.toString()
-                const userClassOf = userMap.get(authorId)
+                const userData = userMap.get(authorId)
 
-                if (!classDoc || !userClassOf) continue
+                if (!classDoc || !userData) continue
 
-                const yearLabel = getYearLabel(userClassOf, classDoc.academicYear)
+                const term = classDoc.term // e.g., "2022FA"
+                const termSeason = term.slice(-2) // FA, JA, SP
+
+                const programForTerm = userData.programTerms?.find(pt => pt.terms.includes(term))
+                const programId = programForTerm?.program?._id?.toString() || programForTerm?.program
+
+                const belongsToCurrentProgram = programId === courseOption._id.toString()
+                const belongsToMEngProgram = hasMEngProgram && programId === mengProgram._id.toString()
+
+                if (hasMEngProgram && userData.isMEng && userData.programTerms && userData.programTerms.length > 0) {
+                    if (belongsToMEngProgram) {
+                        const termYear = term.substring(0, 4)
+                        const yearTermKey = `${termYear} ${termSeason}`
+
+                        if (!mengTermMap[yearTermKey]) {
+                            mengTermMap[yearTermKey] = new Map()
+                        }
+
+                        const rawSubjectNumber = classDoc.subjectNumber
+                        const canonicalSubjectNumber = subjectToCanonical.get(rawSubjectNumber) || rawSubjectNumber
+                        const canonicalSubjectTitle = subjectTitleMap.get(canonicalSubjectNumber) || classDoc.subjectTitle
+
+                        const existing = mengTermMap[yearTermKey].get(canonicalSubjectNumber)
+                        if (existing) {
+                            existing.realCount += 1
+                        } else {
+                            mengTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, realCount: 1 })
+                        }
+                        continue
+                    } else if (!belongsToCurrentProgram) {
+                        continue
+                    }
+                }
+
+                const yearLabel = getYearLabel(userData.classOf, classDoc.academicYear)
                 if (!yearLabel) continue
 
-                const term = classDoc.term.slice(-2) // FA, JA, SP
-                const yearTermKey = `${yearLabel} ${term}`
+                const yearTermKey = `${yearLabel} ${termSeason}`
 
                 if (!yearTermMap[yearTermKey]) {
                     yearTermMap[yearTermKey] = new Map()
@@ -382,8 +534,24 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 classesByTerm[yearTerm] = sorted
             })
 
-            // If no classes are in all terms, skip this courseOption
-            if (Object.values(classesByTerm).every(c => c.length === 0)) continue
+            const mengClasses: Record<string, { subjectNumber: string, subjectTitle: string, count: number }[]> = {}
+
+            Object.entries(mengTermMap).forEach(([yearTerm, classMap]) => {
+                const sorted = Array.from(classMap.entries())
+                    .sort((a, b) => b[1].realCount - a[1].realCount)
+                    .slice(0, 10)
+                    .map(([subjectNumber, { subjectTitle, realCount }]) => ({
+                        subjectNumber,
+                        subjectTitle,
+                        count: realCount >= 3 ? realCount : '<3',
+                        realCount
+                    }))
+
+                mengClasses[yearTerm] = sorted
+            })
+
+            if (Object.values(classesByTerm).every(c => c.length === 0) &&
+                Object.values(mengClasses).every(c => c.length === 0)) continue
 
             courseOptionsData.push({
                 courseOption: {
@@ -392,7 +560,8 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                     courseOption: courseOption.courseOption,
                     departmentCode: courseOption.departmentCode
                 },
-                classes: classesByTerm
+                classes: classesByTerm,
+                mengClasses: mengClasses
             })
         }
 
@@ -403,7 +572,8 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 courseOption: null,
                 departmentCode: "All"
             },
-            classes: []
+            classes: {},
+            mengClasses: {}
         }
 
         courseOptionsData.forEach((courseOptionData) => {
@@ -414,6 +584,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
                 allData.classes[yearTerm].push(...classList)
             })
+
         })
 
         const finalAllClasses: typeof allData.classes = {}
@@ -458,6 +629,15 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                     delete classItem.realCount
                 })
             })
+
+            // Also strip realCount from mengClasses
+            if (courseOptionData.mengClasses) {
+                Object.entries(courseOptionData.mengClasses).forEach(([yearTerm, classList]) => {
+                    classList.forEach((classItem) => {
+                        delete classItem.realCount
+                    })
+                })
+            }
         })
 
         return {
@@ -466,7 +646,13 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 courseOptionsData: JSON.parse(JSON.stringify(courseOptionsData))
             }
         }
+    }
 
+    return {
+        redirect: {
+            destination: '/api/auth/signin',
+            permanent: false
+        }
     }
 }
 

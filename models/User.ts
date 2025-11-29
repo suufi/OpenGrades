@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-import { IUser } from '../types'
+import type { IUser } from '../types'
 
 const { Schema } = mongoose
 
@@ -78,7 +78,16 @@ const UserSchema = new mongoose.Schema<IUser>({
   lastGradeReportUpload: {
     type: Date,
     default: null
-  }
+  },
+  programTerms: [{
+    program: {
+      type: Schema.Types.ObjectId,
+      ref: 'CourseOption'
+    },
+    terms: [{
+      type: String
+    }]
+  }]
 }, { timestamps: true })
 
 export default (mongoose.models.User || mongoose.model('User', UserSchema))
