@@ -535,7 +535,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const submissions = await ContentSubmission.find({
         class: { $in: classIds },
         approved: true
-    }).populate('class').select('contentTitle type contentURL bucketPath class createdAt -author').lean()
+    }).populate('class').select('contentTitle type contentURL bucketPath class createdAt').select('-author -approved').lean()
 
     return {
         props: {
