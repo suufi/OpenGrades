@@ -124,9 +124,18 @@ export default async function handler (
           }
         })
       } catch (error: unknown) {
+        console.error('Upload error:', error)
         if (error instanceof Error) {
-          return res.status(400).json({ success: false, message: error.toString() })
+          const s3Error = error as any
+          if (s3Error.code) {
+            return res.status(400).json({
+              success: false,
+              message: `Storage Error: ${s3Error.code}${s3Error.message ? ` - ${s3Error.message}` : ''}`
+            })
+          }
+          return res.status(400).json({ success: false, message: error.message || error.toString() })
         }
+        return res.status(500).json({ success: false, message: 'An unexpected error occurred.' })
       }
     case 'PUT':
       try {
