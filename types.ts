@@ -68,12 +68,19 @@ export enum SupportStatus {
     Supporter = 'Supporter'
 }
 
+export interface IInstructorDetail {
+    name: string
+    kerbId: string
+    instrType: string
+}
+
 export interface IClass {
     _id?: string
     subjectNumber: string
     aliases?: string[]
     subjectTitle: string
     instructors: string[]
+    instructorDetails?: IInstructorDetail[]
     term: string
     academicYear: number
     display?: boolean
@@ -81,6 +88,13 @@ export interface IClass {
     department: string
     crossListedDepartments: string[]
     units: string
+    unitHours?: string
+    communicationRequirement?: string | null
+    hassAttribute?: string | null
+    girAttribute?: string[]
+    prerequisites?: string
+    corequisites?: string
+    has_final?: boolean | null
     reviewable: boolean
     offered: boolean
     createdAt?: Date
@@ -111,6 +125,8 @@ export interface IUser {
         program: ICourseOption | string,
         terms: string[]
     }>,
+    aiEmbeddingOptOut?: boolean,
+    qaEmailOptOut?: boolean,
     createdAt: Date,
     updatedAt: Date,
 }
@@ -229,6 +245,8 @@ export interface IFAQ {
     _id?: string
     question: string
     answer: string
+    category: string
+    order: number
     createdAt: Date
     updatedAt: Date
 }

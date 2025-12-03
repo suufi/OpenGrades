@@ -91,7 +91,16 @@ const UserSchema = new mongoose.Schema<IUser>({
     terms: [{
       type: String
     }]
-  }]
+  }],
+  // Privacy settings
+  aiEmbeddingOptOut: {
+    type: Boolean,
+    default: false  // False = opted-in (allow embeddings)
+  },
+  qaEmailOptOut: {
+    type: Boolean,
+    default: false  // False = opted-in (receive Q&A emails)
+  }
 }, { timestamps: true })
 
 export default (mongoose.models.User || mongoose.model('User', UserSchema))

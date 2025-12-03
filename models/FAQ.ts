@@ -11,6 +11,14 @@ const FAQSchema = new mongoose.Schema<IFAQ>({
     answer: {
         type: String,
         required: true
+    },
+    category: {
+        type: String,
+        required: false
+    },
+    order: {
+        type: Number,
+        required: false
     }
 }, { timestamps: true })
 

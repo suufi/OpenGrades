@@ -86,9 +86,9 @@ export default async function handler (
                 const autoAssignedByProgram: Record<string, string[]> = {}
 
                 if (user.classOf) {
-                    // For grad students, assign terms to U programs if before graduation, G programs if after
-                    const undergradPrograms = user.courseAffiliation.filter((p: any) => p.courseLevel === 'U')
-                    const gradPrograms = user.courseAffiliation.filter((p: any) => p.courseLevel === 'G')
+                    // For grad students, assign terms to ALL U programs if before graduation, ALL G programs if after
+                    const undergradPrograms = (user.courseAffiliation || []).filter((p: any) => p.courseLevel === 'U')
+                    const gradPrograms = (user.courseAffiliation || []).filter((p: any) => p.courseLevel === 'G')
 
                     for (const term of allTerms) {
                         const academicYear = parseInt(term.substring(0, 4))
@@ -96,17 +96,21 @@ export default async function handler (
                             const yearDiff = user.classOf - academicYear
 
                             if (yearDiff >= 0 && undergradPrograms.length > 0) {
-                                const programId = undergradPrograms[0]._id.toString()
-                                if (!autoAssignedByProgram[programId]) {
-                                    autoAssignedByProgram[programId] = []
+                                for (const prog of undergradPrograms) {
+                                    const programId = prog._id.toString()
+                                    if (!autoAssignedByProgram[programId]) {
+                                        autoAssignedByProgram[programId] = []
+                                    }
+                                    autoAssignedByProgram[programId].push(term)
                                 }
-                                autoAssignedByProgram[programId].push(term)
                             } else if (yearDiff < 0 && gradPrograms.length > 0) {
-                                const programId = gradPrograms[0]._id.toString()
-                                if (!autoAssignedByProgram[programId]) {
-                                    autoAssignedByProgram[programId] = []
+                                for (const prog of gradPrograms) {
+                                    const programId = prog._id.toString()
+                                    if (!autoAssignedByProgram[programId]) {
+                                        autoAssignedByProgram[programId] = []
+                                    }
+                                    autoAssignedByProgram[programId].push(term)
                                 }
-                                autoAssignedByProgram[programId].push(term)
                             }
                         }
                     }
@@ -166,15 +170,21 @@ export default async function handler (
 
                     const gradTerms = allTerms.filter(t => !undergradTerms.includes(t))
 
-                    const undergradProgram = (userForAff.courseAffiliation || []).find((p: any) => p.courseLevel === 'U')
-                    const gradProgram = (userForAff.courseAffiliation || []).find((p: any) => p.courseLevel === 'G')
+                    const undergradPrograms = (userForAff.courseAffiliation || []).filter((p: any) => p.courseLevel === 'U')
+                    const gradPrograms = (userForAff.courseAffiliation || []).filter((p: any) => p.courseLevel === 'G')
 
                     finalProgramTerms = []
-                    if (undergradProgram && undergradTerms.length > 0) {
-                        finalProgramTerms.push({ program: undergradProgram._id.toString(), terms: undergradTerms })
+                    // Assign the same undergradTerms to ALL undergrad programs the user completed
+                    if (undergradPrograms.length > 0 && undergradTerms.length > 0) {
+                        for (const up of undergradPrograms) {
+                            finalProgramTerms.push({ program: up._id.toString(), terms: undergradTerms })
+                        }
                     }
-                    if (gradProgram && gradTerms.length > 0) {
-                        finalProgramTerms.push({ program: gradProgram._id.toString(), terms: gradTerms })
+                    // Assign gradTerms to ALL grad programs (if multiple exist)
+                    if (gradPrograms.length > 0 && gradTerms.length > 0) {
+                        for (const gp of gradPrograms) {
+                            finalProgramTerms.push({ program: gp._id.toString(), terms: gradTerms })
+                        }
                     }
                 }
 

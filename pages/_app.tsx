@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useContext, useEffect, useState } from 'react'
 
-import { ActionIcon, AppShell, Avatar, Badge, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Modal, NumberInput, Stack, Text, TextInput, ThemeIcon, Tooltip, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
+import { ActionIcon, Anchor, AppShell, Avatar, Badge, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Modal, NumberInput, Stack, Switch, Text, TextInput, ThemeIcon, Tooltip, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications, notifications } from '@mantine/notifications'
@@ -67,7 +67,7 @@ const theme = createTheme({
 
 })
 
-function MainLink ({ icon, color, label, href, active, target }: MainLinkProps) {
+function MainLink({ icon, color, label, href, active, target }: MainLinkProps) {
   return (
     <Link href={href} passHref style={{ textDecoration: 'none' }} target={target}>
       <UnstyledButton
@@ -85,7 +85,7 @@ function MainLink ({ icon, color, label, href, active, target }: MainLinkProps) 
   )
 }
 
-function NavigationLinks () {
+function NavigationLinks() {
   const { status } = useSession()
   const { pathname } = useRouter()
 
@@ -122,7 +122,7 @@ function NavigationLinks () {
     )
 }
 
-function useEditProfileModal () {
+function useEditProfileModal() {
   const [opened, { open, close }] = useDisclosure(false)
   const { userProfile, setUserProfile } = useContext(UserContext)
   const [classOf, setClassOf] = useState<number | string>('')
@@ -319,6 +319,112 @@ function useEditProfileModal () {
             Last grade report upload: {new Date(userProfile.lastGradeReportUpload).toLocaleDateString()}
           </Text>
         )}
+
+        <Divider my="md" label="Privacy Settings" labelPosition="center" />
+
+        <Stack gap="sm">
+          <div>
+            <Switch
+              label="Allow my reviews in AI recommendations"
+              description="Your reviews help train our recommendation system running on MIT SIPB servers. All AI processing is local—no external services. Only class comments and review metadata (first year, retaking, dropped status) are used. No identifiable information is shared."
+              checked={!userProfile?.aiEmbeddingOptOut}
+              onChange={(event) => {
+                setUserProfile({ ...userProfile, aiEmbeddingOptOut: !event.currentTarget.checked })
+
+                fetch('/api/me/privacy', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ aiEmbeddingOptOut: !event.currentTarget.checked })
+                }).then(res => res.json()).then(data => {
+                  if (data.success) {
+                    notifications.show({
+                      title: 'Success',
+                      message: data.message,
+                      color: 'green'
+                    })
+                  } else {
+                    notifications.show({
+                      title: 'Error',
+                      message: data.message || 'Failed to update privacy settings',
+                      color: 'red'
+                    })
+
+                    setUserProfile({ ...userProfile, aiEmbeddingOptOut: !(!event.currentTarget.checked) })
+                  }
+                })
+              }}
+            />
+            <Text size="xs" c="dimmed" mt={4}>
+              Learn more about our <a href="/about" style={{ color: 'inherit' }}>AI and privacy practices</a>. You must enable this to use AI features.
+            </Text>
+          </div>
+
+          <div>
+            <Switch
+              label="Receive Q&A emails about my courses"
+              description="Get notified when someone has questions about classes you've taken. (Feature coming soon)"
+              checked={!userProfile?.qaEmailOptOut}
+              onChange={(event) => {
+                setUserProfile({ ...userProfile, qaEmailOptOut: !event.currentTarget.checked })
+
+                fetch('/api/me/privacy', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ qaEmailOptOut: !event.currentTarget.checked })
+                }).then(res => res.json()).then(data => {
+                  if (data.success) {
+                    notifications.show({
+                      title: 'Success',
+                      message: 'Q&A email preferences updated',
+                      color: 'green'
+                    })
+                  } else {
+                    notifications.show({
+                      title: 'Error',
+                      message: data.message || 'Failed to update privacy settings',
+                      color: 'red'
+                    })
+
+                    setUserProfile({ ...userProfile, qaEmailOptOut: !(!event.currentTarget.checked) })
+                  }
+                })
+              }}
+            />
+          </div>
+
+          <div>
+            <Switch
+              label="Receive general platform emails"
+              description="Get updates, announcements, and general communications from MIT OpenGrades"
+              checked={userProfile?.emailOptIn === true}
+              onChange={(event) => {
+                setUserProfile({ ...userProfile, emailOptIn: event.currentTarget.checked })
+
+                fetch('/api/me', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ emailOptIn: event.currentTarget.checked })
+                }).then(res => res.json()).then(data => {
+                  if (data.success) {
+                    notifications.show({
+                      title: 'Success',
+                      message: 'Email preferences updated',
+                      color: 'green'
+                    })
+                  } else {
+                    notifications.show({
+                      title: 'Error',
+                      message: data.message || 'Failed to update email preferences',
+                      color: 'red'
+                    })
+
+                    setUserProfile({ ...userProfile, emailOptIn: !event.currentTarget.checked })
+                  }
+                })
+              }}
+            />
+          </div>
+        </Stack>
       </Stack>
 
       <Group justify="flex-end" mt="xl">
@@ -335,7 +441,7 @@ function useEditProfileModal () {
   return { modal, open }
 }
 
-function UserNavBarSection () {
+function UserNavBarSection() {
   const theme = useMantineTheme()
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const { data: session, status } = useSession()
@@ -409,7 +515,7 @@ function UserNavBarSection () {
     )
 }
 
-function ContentFetcher (props: AppProps) {
+function ContentFetcher(props: AppProps) {
   console.log("cOntent fetcher", props)
   const { Component, pageProps } = props
 
@@ -464,7 +570,7 @@ function ContentFetcher (props: AppProps) {
   )
 }
 
-function App ({ pageProps, Component }: AppProps) {
+function App({ pageProps, Component }: AppProps) {
   const [opened, { toggle }] = useDisclosure()
   console.log("App.props", pageProps)
   // const [colorScheme, setColorScheme] = useLocalStorage<ColorScheme>({
@@ -539,10 +645,10 @@ function App ({ pageProps, Component }: AppProps) {
   )
 }
 
-export default function AppWrapper ({ Component, pageProps }: AppProps) {
+export default function AppWrapper({ Component, pageProps }: AppProps) {
   useEffect(() => {
     window.dataLayer = window.dataLayer || []
-    function gtag () { dataLayer.push(arguments) }
+    function gtag() { dataLayer.push(arguments) }
     gtag('js', new Date())
     gtag('config', 'G-2EWKT6ED8T')
   }, [])

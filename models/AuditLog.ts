@@ -23,7 +23,8 @@ const AuditLogSchema = new mongoose.Schema<IAuditLog>({
       'JoinPlatform',
       'VerifyPlatform',
       'DeanonymizeReview',
-      'PreserveAlumni'
+      'PreserveAlumni',
+      'PrivacySettingsUpdate'
     ],
     type: String
   },
