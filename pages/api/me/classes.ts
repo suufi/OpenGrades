@@ -9,7 +9,9 @@ import User from '@/models/User'
 import { IClassReview } from '@/types'
 import mongoose from 'mongoose'
 
-function normalizeGrade (grade: string) {
+function normalizeGrade(grade: string) {
+    if (grade === 'DR') return 'DR'
+
     if (['A', 'B', 'C', 'D', 'F'].includes(grade[0])) {
         return grade[0]
     }
@@ -61,18 +63,30 @@ export default async function handler (
                     if (body.partialReviews) {
                         const reviewsToMake = []
                         const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean()
-                        const classesWithExistingReviews = existingReviews.map((r: IClassReview) => r.class.toString())
+                        const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
                         for (const review of body.partialReviews) {
-                            // Check if the review already exists, if so, skip it
-                            if (classesWithExistingReviews.includes(review.class)) {
+                            const existingReview = existingReviewsByClass.get(review.class)
+
+                            // If existing review has 'D' but new grade report shows 'DR', update it
+                            if (existingReview && existingReview.letterGrade === 'D' && review.letterGrade === 'DR') {
+                                await ClassReview.updateOne(
+                                    { _id: existingReview._id },
+                                    { letterGrade: 'DR', droppedClass: true }
+                                )
                                 continue
                             }
+
+                            // Skip if review already exists
+                            if (existingReview) {
+                                continue
+                            }
+
                             reviewsToMake.push({
                                 class: review.class,
                                 author: user._id,
                                 letterGrade: normalizeGrade(review.letterGrade),
-                                dropped: review.dropped,
+                                droppedClass: review.droppedClass,
                                 display: false,
                                 firstYear: review.firstYear,
                                 partial: true,
