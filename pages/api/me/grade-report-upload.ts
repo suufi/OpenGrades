@@ -154,7 +154,7 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
                             partial: true,
                             display: false,
                             firstYear: cls.freshman,
-                            dropped: cls.grade == 'DR'
+                            droppedClass: cls.grade == 'DR'
                         }
 
                         partialReviews.push(partialReview)
