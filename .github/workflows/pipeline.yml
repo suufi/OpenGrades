@@ -16,9 +16,6 @@ jobs:
       - name: Set up Docker Buildx 🚀
         uses: docker/setup-buildx-action@v3
 
-      - name: Build image
-        run: docker compose -f docker-compose.yml build
-
       - name: Login to Docker Hub 🚢
         uses: docker/login-action@v3
         with:
@@ -26,11 +23,13 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN}}
 
       - name: Build and push 🏗️
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:${{ github.sha }}
             ${{ secrets.DOCKER_HUB_USERNAME}}/mitopengrades:latest
@@ -66,9 +65,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Debug step: List files to ensure docker-compose.yml is checked out
-      - name: List files in the repository root for debugging
-        run: ls -la
+
 
       # Create .env file from secrets
       - name: Create .env file
@@ -91,9 +88,7 @@ jobs:
           echo "MINIO_BUCKET_NAME=${{ secrets.MINIO_BUCKET_NAME }}" >> .env
           echo "MINIO_REGION=${{ secrets.MINIO_REGION }}" >> .env
 
-      # Check if .env file is properly created
-      - name: Display .env file contents for debugging
-        run: cat .env
+
 
       # Create the target directory on the server if it doesn't exist
       - name: Create target directory on the server
@@ -127,6 +122,5 @@ jobs:
           script: |
             set -e
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }} 
-            docker-compose -f /home/suufi/.deploy/docker-compose.yml pull
-            docker-compose --env-file /home/suufi/.deploy/.env -f /home/suufi/.deploy/docker-compose.yml up -d
-          
+            docker compose -f /home/suufi/.deploy/docker-compose.yml pull
+            docker compose --env-file /home/suufi/.deploy/.env -f /home/suufi/.deploy/docker-compose.yml up -d

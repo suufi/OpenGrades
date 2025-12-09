@@ -1,10 +1,17 @@
 services:
   opengrades:
     image: suufi/mitopengrades:latest
+    restart: unless-stopped
     ports:
       - "3000:3000"
     networks:
       - web
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     environment:
       MONGODB_CONNECTION_URI: ${MONGODB_CONNECTION_URI}
       MIT_OIDC_WELLKNOWN: ${MIT_OIDC_WELLKNOWN}
@@ -42,8 +49,6 @@ services:
     depends_on:
       - opengrades
 
-volumes:
-  web-root:
 
 
 networks:
