@@ -1,6 +1,6 @@
-
 import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Switch, Text, Textarea, TextInput, Title } from '@mantine/core'
-import { useForm, UseFormReturnType, zodResolver } from '@mantine/form'
+import { useForm, UseFormReturnType } from '@mantine/form'
+import { zod4Resolver } from 'mantine-form-zod-resolver'
 import { showNotification } from '@mantine/notifications'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
@@ -36,7 +36,7 @@ type UserProfile = {
   referredBy?: string
 }
 
-function LockdownModule ({ academicYears }: { academicYears: string[] }) {
+function LockdownModule({ academicYears }: { academicYears: string[] }) {
   const { status, update } = useSession()
   const router = useRouter()
   const [active, setActive] = useState(0)
@@ -47,7 +47,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current))
   const [formLoading, setFormLoading] = useState(false)
   const { userProfile, setUserProfile } = useContext(UserContext)
-  const isMobile = useMediaQuery(`(max-width: ${em(750)})`)
+  const isMobile = useMediaQuery(`(max - width: ${em(750)})`)
   const [gradeReport, setGradeReport] = useDebouncedState<string>('', 1000)
   const [partialReviewsEnabled, setPartialReviewsEnabled] = useState(true)
   const [partialReviewsData, setPartialReviewsData] = useState<{ class: string, letterGrade: string, dropped: boolean, firstYear: boolean }[]>([])
@@ -61,8 +61,8 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
   const [loadingPrograms, setLoadingPrograms] = useState(false)
   const [emailOptIn, setEmailOptIn] = useState<boolean | null>(true)
 
-  async function verifyReferralKerb (kerb: string) {
-    const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
+  async function verifyReferralKerb(kerb: string) {
+    const res = await fetch(`/ api / me / referral - kerb ? kerb = ${kerb} `)
     const body = await res.json()
     if (res.ok && body.data) {
       setReferredByState({ data: body.data, status: 'success' })
@@ -85,7 +85,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     classOf: z.number().min(2000).max(new Date().getFullYear() + 7),
     identityFlags: z.nativeEnum(IdentityFlags).array(),
     affiliation: z.string(),
-    classes: z.record(z.array(z.string())),
+    classes: z.array(z.string()),
     referredBy: z.string().optional()
   }).partial({
     flags: true,
@@ -104,7 +104,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     },
     // mode: 'uncontrolled',
     validateInputOnBlur: true,
-    validate: zodResolver(schema),
+    validate: zod4Resolver(schema),
 
     transformValues: (values) => ({
       ...values,
@@ -123,7 +123,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
       classes: Array.isArray(userProfile?.classesTaken)
         ? userProfile?.classesTaken.reduce(
           (acc: { [key: string]: string[] }, c: IClass) => {
-            const key = `${c.term}`
+            const key = `${c.term} `
             if (acc[key]) {
               acc[key].push(c._id)
             } else {
@@ -138,7 +138,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
     form.reset()
   }, [userProfile])
 
-  async function submitProfile (values: UserProfile) {
+  async function submitProfile(values: UserProfile) {
 
     const potentialGrad = (userProfile as any)?.year === 'G'
     if (potentialGrad && wasMITUndergrad === null) {
@@ -263,7 +263,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
 
           // Extract academic years
           const newAcademicYearsTaken = [
-            ...new Set((matchedClasses as IClass[]).map((c: IClass) => `${c.academicYear - 1}-${c.academicYear}`)),
+            ...new Set((matchedClasses as IClass[]).map((c: IClass) => `${c.academicYear - 1} -${c.academicYear} `)),
           ]
           setAcademicYearsTaken(newAcademicYearsTaken)
 
@@ -279,7 +279,7 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
 
           // Create a new object with the classes grouped by term
           const newClasses = classesWithPartialReviews.reduce((acc: { [key: string]: string[] }, c: IClass) => {
-            const key = `${c.term}`
+            const key = `${c.term} `
             if (acc[key]) {
               acc[key].push(c._id)
             } else {
@@ -461,13 +461,13 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
 
                             // Group by department code
                             const grouped = filtered.reduce((acc, prog) => {
-                              const groupKey = `Course ${prog.departmentCode}`
+                              const groupKey = `Course ${prog.departmentCode} `
                               if (!acc[groupKey]) {
                                 acc[groupKey] = []
                               }
                               acc[groupKey].push({
                                 value: prog._id || '',
-                                label: `Course ${prog.departmentCode}${prog.courseOption ? `-${prog.courseOption}` : ''}: ${prog.courseName}`
+                                label: `Course ${prog.departmentCode}${prog.courseOption ? `-${prog.courseOption}` : ''}: ${prog.courseName} `
                               })
                               return acc
                             }, {} as Record<string, Array<{ value: string; label: string }>>)
@@ -529,11 +529,11 @@ function LockdownModule ({ academicYears }: { academicYears: string[] }) {
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
                               <Title order={3}> 🍁 Fall {year} </Title>
-                              <ClassSearch term={`${year + 1}FA`} display={`Fall ${Number(year)}-${year + 1}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1} FA`} display={`Fall ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
                               <Title order={3}> ❄️ IAP {year + 1} </Title>
-                              <ClassSearch term={`${year + 1}JA`} display={`IAP ${Number(year)}-${year + 1}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1} JA`} display={`IAP ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
                               <Title order={3}> 🌹 Spring {year + 1} </Title>
-                              <ClassSearch term={`${year + 1}SP`} display={`Spring ${Number(year)}-${year + 1}`} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1} SP`} display={`Spring ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
                             </React.Fragment>
                           )
                         })

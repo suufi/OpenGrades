@@ -1,5 +1,5 @@
 // import { auth } from "@/utils/auth"
-export { default } from "next-auth/middleware"
+export { default as proxy } from "next-auth/middleware"
 
 // export default auth((req) => {
 //   if (!req.auth) {

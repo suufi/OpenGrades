@@ -1,0 +1,3029 @@
+{
+  "oldToNew": {
+    "6.0001": "6.100A",
+    "6.0002": "6.100B",
+    "6.0004": "6.1900",
+    "6.000L": "6.100L",
+    "6.002": "6.2000",
+    "6.003": "6.3000",
+    "6.004": "6.1910",
+    "6.006": "6.1210",
+    "6.008": "6.3800",
+    "6.009": "6.1010",
+    "6.01": "6.9080",
+    "6.010": "6.9000",
+    "6.011": "6.3010",
+    "6.012": "6.2500",
+    "6.013": "6.2300",
+    "6.014": "6.2210",
+    "6.015": "6.2540",
+    "6.02": "6.3400",
+    "6.020": "6.4800",
+    "6.021": "6.4810",
+    "6.022": "6.4820",
+    "6.023": "6.4830",
+    "6.024": "6.4840",
+    "6.025": "6.4860",
+    "6.026": "6.8801",
+    "6.027": "6.4850",
+    "6.03": "6.4900",
+    "6.031": "6.1020",
+    "6.033": "6.1800",
+    "6.034": "6.4100",
+    "6.035": "6.1100",
+    "6.036": "6.3900",
+    "6.037": "6.9550",
+    "6.038": "6.4110",
+    "6.039": "6.1810",
+    "6.041": "6.3700",
+    "6.042": "6.1200",
+    "6.042A": "6.120A",
+    "6.045": "6.1400",
+    "6.046": "6.1220",
+    "6.047": "6.8701",
+    "6.049": "6.4710",
+    "6.050": "6.2490",
+    "6.051": "6.2400",
+    "6.052": "6.1850",
+    "6.053": "6.1600",
+    "6.054": "6.1420",
+    "6.057": "6.9500",
+    "6.058": "6.9510",
+    "6.061": "6.2200",
+    "6.070": "6.2020",
+    "6.073": "6.4570",
+    "6.08": "6.9010",
+    "6.100": "6.9801",
+    "6.101": "6.2040",
+    "6.111": "6.2050",
+    "6.115": "6.2060",
+    "6.1151": "6.2061",
+    "6.117": "6.9520",
+    "6.123": "6.4870",
+    "6.129": "6.4880",
+    "6.131": "6.2220",
+    "6.1311": "6.2221",
+    "6.141": "6.4200",
+    "6.146": "6.9600",
+    "6.147": "6.9610",
+    "6.148": "6.9620",
+    "6.150": "6.9640",
+    "6.151": "6.9650",
+    "6.152": "6.2600",
+    "6.157": "6.2410",
+    "6.161": "6.2370",
+    "6.163": "6.9030",
+    "6.170": "6.1040",
+    "6.172": "6.1060",
+    "6.175": "6.1920",
+    "6.176": "6.9630",
+    "6.178": "6.9560",
+    "6.179": "6.9570",
+    "6.182": "6.4890",
+    "6.185": "6.4550",
+    "6.187": "6.3020",
+    "6.207": "6.3260",
+    "6.215": "6.7201",
+    "6.231": "6.7940",
+    "6.241": "6.7100",
+    "6.244": "6.7820",
+    "6.245": "6.7110",
+    "6.246": "6.7950",
+    "6.247": "6.7120",
+    "6.248": "6.7380",
+    "6.249": "6.7390",
+    "6.251": "6.7210",
+    "6.252": "6.7220",
+    "6.254": "6.7240",
+    "6.255": "6.7200",
+    "6.256": "6.7230",
+    "6.260": "6.7480",
+    "6.261": "6.7490",
+    "6.262": "6.7710",
+    "6.263": "6.7450",
+    "6.265": "6.7720",
+    "6.267": "6.7420",
+    "6.268": "6.7260",
+    "6.300": "6.2080",
+    "6.301": "6.2090",
+    "6.302": "6.3100",
+    "6.320": "6.3102",
+    "6.321": "6.2092",
+    "6.330": "6.2222",
+    "6.332": "6.6270",
+    "6.333": "6.6030",
+    "6.334": "6.6220",
+    "6.335": "6.7340",
+    "6.336": "6.7300",
+    "6.337": "6.7310",
+    "6.338": "6.7320",
+    "6.339": "6.7330",
+    "6.341": "6.7000",
+    "6.344": "6.7010",
+    "6.345": "6.8620",
+    "6.347": "6.7050",
+    "6.348": "6.7060",
+    "6.374": "6.6010",
+    "6.375": "6.5910",
+    "6.401": "6.3720",
+    "6.404": "6.3950",
+    "6.405": "6.7411",
+    "6.419": "6.3730",
+    "6.431": "6.3702",
+    "6.434": "6.7730",
+    "6.435": "6.7830",
+    "6.436": "6.7700",
+    "6.437": "6.7800",
+    "6.438": "6.7810",
+    "6.439": "6.3732",
+    "6.440": "6.7460",
+    "6.441": "6.7470",
+    "6.442": "6.7430",
+    "6.443": "6.6420",
+    "6.445": "6.6410",
+    "6.450": "6.7410",
+    "6.452": "6.7440",
+    "6.454": "6.9090",
+    "6.456": "6.7020",
+    "6.481": "6.3722",
+    "6.484": "6.8200",
+    "6.485": "6.7250",
+    "6.521": "6.4812",
+    "6.522": "6.4822",
+    "6.524": "6.4842",
+    "6.525": "6.4861",
+    "6.542": "6.8820",
+    "6.544": "6.8880",
+    "6.545": "6.8890",
+    "6.552": "6.8830",
+    "6.555": "6.8800",
+    "6.556": "6.8810",
+    "6.557": "6.4852",
+    "6.561": "6.4832",
+    "6.580": "6.8721",
+    "6.589": "6.8720",
+    "6.602": "6.6331",
+    "6.621": "6.6330",
+    "6.630": "6.6300",
+    "6.631": "6.6310",
+    "6.632": "6.6320",
+    "6.634": "6.6340",
+    "6.637": "6.6370",
+    "6.640": "6.6210",
+    "6.644": "6.6440",
+    "6.645": "6.6450",
+    "6.685": "6.6280",
+    "6.690": "6.2212",
+    "6.695": "6.6290",
+    "6.701": "6.2530",
+    "6.717": "6.2690",
+    "6.719": "6.2532",
+    "6.720": "6.6500",
+    "6.728": "6.6400",
+    "6.730": "6.6510",
+    "6.731": "6.6520",
+    "6.732": "6.6530",
+    "6.735": "6.6540",
+    "6.736": "6.6550",
+    "6.774": "6.6610",
+    "6.775": "6.6000",
+    "6.776": "6.6020",
+    "6.777": "6.2692",
+    "6.780": "6.6630",
+    "6.781": "6.6600",
+    "6.800": "6.4210",
+    "6.801": "6.8391",
+    "6.802": "6.8711",
+    "6.803": "6.4140",
+    "6.804": "6.4120",
+    "6.805": "6.4590",
+    "6.806": "6.8611",
+    "6.807": "6.4420",
+    "6.808": "6.1820",
+    "6.810": "6.4510",
+    "6.811": "6.4530",
+    "6.812": "6.5931",
+    "6.814": "6.5831",
+    "6.815": "6.8371",
+    "6.816": "6.5081",
+    "6.817": "6.4130",
+    "6.818": "6.1120",
+    "6.819": "6.8301",
+    "6.820": "6.5110",
+    "6.822": "6.5120",
+    "6.823": "6.5900",
+    "6.824": "6.5840",
+    "6.825": "6.5930",
+    "6.826": "6.5850",
+    "6.827": "6.5060",
+    "6.828": "6.5810",
+    "6.829": "6.5820",
+    "6.830": "6.5830",
+    "6.832": "6.8210",
+    "6.833": "6.4142",
+    "6.834": "6.8110",
+    "6.835": "6.8510",
+    "6.836": "6.5080",
+    "6.837": "6.4400",
+    "6.838": "6.8410",
+    "6.839": "6.8420",
+    "6.840": "6.5400",
+    "6.841": "6.5410",
+    "6.842": "6.5420",
+    "6.843": "6.4212",
+    "6.844": "6.4102",
+    "6.845": "6.5430",
+    "6.846": "6.5920",
+    "6.847": "6.5350",
+    "6.849": "6.5310",
+    "6.850": "6.5320",
+    "6.851": "6.5230",
+    "6.852": "6.5250",
+    "6.853": "6.5340",
+    "6.854": "6.5210",
+    "6.855": "6.5240",
+    "6.856": "6.5220",
+    "6.857": "6.5610",
+    "6.858": "6.5660",
+    "6.859": "6.8530",
+    "6.860": "6.7910",
+    "6.861": "6.8150",
+    "6.862": "6.3902",
+    "6.863": "6.8630",
+    "6.864": "6.8610",
+    "6.865": "6.8370",
+    "6.866": "6.8390",
+    "6.867": "6.7900",
+    "6.869": "6.8300",
+    "6.870": "6.8320",
+    "6.871": "6.7930",
+    "6.874": "6.8710",
+    "6.875": "6.5620",
+    "6.876": "6.5630",
+    "6.877": "6.4132",
+    "6.878": "6.8700",
+    "6.881": "6.8160",
+    "6.882": "6.8170",
+    "6.883": "6.8180",
+    "6.884": "6.8190",
+    "6.885": "6.5690",
+    "6.886": "6.5990",
+    "6.887": "6.5880",
+    "6.888": "6.5890",
+    "6.889": "6.5480",
+    "6.890": "6.5490",
+    "6.891": "6.5370",
+    "6.892": "6.5380",
+    "6.893": "6.5390",
+    "6.894": "6.8580",
+    "6.895": "6.8590",
+    "6.896": "6.8480",
+    "6.897": "6.8490",
+    "6.901": "6.9160",
+    "6.9021": "6.9101",
+    "6.902A": "6.910A",
+    "6.902B": "6.910B",
+    "6.903": "6.9310",
+    "6.904": "6.9320",
+    "6.9041": "6.9321",
+    "6.905": "6.5151",
+    "6.906": "6.9300",
+    "6.910": "6.9800",
+    "6.911": "6.9110",
+    "6.912": "6.9120",
+    "6.913": "6.9130",
+    "6.914": "6.9140",
+    "6.915": "6.9150",
+    "6.920": "6.9820",
+    "6.921": "6.9850",
+    "6.922": "6.9860",
+    "6.926": "6.9260",
+    "6.927": "6.9270",
+    "6.928": "6.9280",
+    "6.929": "6.9380",
+    "6.930": "6.9360",
+    "6.932": "6.9970",
+    "6.934": "6.9370",
+    "6.935": "6.9350",
+    "6.936": "6.9302",
+    "6.941": "6.9390",
+    "6.943": "6.9020",
+    "6.945": "6.5150",
+    "6.946": "6.5160",
+    "6.951": "6.9870",
+    "6.952": "6.9880",
+    "6.960": "6.9920",
+    "6.961": "6.9932",
+    "6.962": "6.9990",
+    "6.963": "6.9930",
+    "6.980": "6.9902",
+    "6.981": "6.9900",
+    "6.991": "6.9910",
+    "6.994": "6.9940",
+    "6.995": "6.9950",
+    "6.997": "6.9830",
+    "6.998": "6.9840"
+  },
+  "newToOld": {
+    "6.100A": "6.0001",
+    "6.100B": "6.0002",
+    "6.100L": "6.000L",
+    "6.1010": "6.009",
+    "6.1020": "6.031",
+    "6.1040": "6.170",
+    "6.1060": "6.172",
+    "6.1100": "6.035",
+    "6.1120": "6.818",
+    "6.1200": "6.042",
+    "6.120A": "6.042A",
+    "6.1210": "6.006",
+    "6.1220": "6.046",
+    "6.1400": "6.045",
+    "6.1420": "6.054",
+    "6.1600": "6.053",
+    "6.1800": "6.033",
+    "6.1810": "6.039",
+    "6.1820": "6.808",
+    "6.1850": "6.052",
+    "6.1900": "6.0004",
+    "6.1910": "6.004",
+    "6.1920": "6.175",
+    "6.2000": "6.002",
+    "6.2020": "6.070",
+    "6.2040": "6.101",
+    "6.2050": "6.111",
+    "6.2060": "6.115",
+    "6.2061": "6.1151",
+    "6.2080": "6.300",
+    "6.2090": "6.301",
+    "6.2092": "6.321",
+    "6.2200": "6.061",
+    "6.2210": "6.014",
+    "6.2212": "6.690",
+    "6.2220": "6.131",
+    "6.2221": "6.1311",
+    "6.2222": "6.330",
+    "6.2300": "6.013",
+    "6.2370": "6.161",
+    "6.2400": "6.051",
+    "6.2410": "6.157",
+    "6.2490": "6.050",
+    "6.2500": "6.012",
+    "6.2530": "6.701",
+    "6.2532": "6.719",
+    "6.2540": "6.015",
+    "6.2600": "6.152",
+    "6.2690": "6.717",
+    "6.2692": "6.777",
+    "6.3000": "6.003",
+    "6.3010": "6.011",
+    "6.3020": "6.187",
+    "6.3100": "6.302",
+    "6.3102": "6.320",
+    "6.3260": "6.207",
+    "6.3400": "6.02",
+    "6.3700": "6.041",
+    "6.3702": "6.431",
+    "6.3720": "6.401",
+    "6.3722": "6.481",
+    "6.3730": "6.419",
+    "6.3732": "6.439",
+    "6.3800": "6.008",
+    "6.3900": "6.036",
+    "6.3902": "6.862",
+    "6.3950": "6.404",
+    "6.4100": "6.034",
+    "6.4102": "6.844",
+    "6.4110": "6.038",
+    "6.4120": "6.804",
+    "6.4130": "6.817",
+    "6.4132": "6.877",
+    "6.4140": "6.803",
+    "6.4142": "6.833",
+    "6.4200": "6.141",
+    "6.4210": "6.800",
+    "6.4212": "6.843",
+    "6.4400": "6.837",
+    "6.4420": "6.807",
+    "6.4510": "6.810",
+    "6.4530": "6.811",
+    "6.4550": "6.185",
+    "6.4570": "6.073",
+    "6.4590": "6.805",
+    "6.4710": "6.049",
+    "6.4800": "6.020",
+    "6.4810": "6.021",
+    "6.4812": "6.521",
+    "6.4820": "6.022",
+    "6.4822": "6.522",
+    "6.4830": "6.023",
+    "6.4832": "6.561",
+    "6.4840": "6.024",
+    "6.4842": "6.524",
+    "6.4850": "6.027",
+    "6.4852": "6.557",
+    "6.4860": "6.025",
+    "6.4861": "6.525",
+    "6.4870": "6.123",
+    "6.4880": "6.129",
+    "6.4890": "6.182",
+    "6.4900": "6.03",
+    "6.5060": "6.827",
+    "6.5080": "6.836",
+    "6.5081": "6.816",
+    "6.5110": "6.820",
+    "6.5120": "6.822",
+    "6.5150": "6.945",
+    "6.5151": "6.905",
+    "6.5160": "6.946",
+    "6.5210": "6.854",
+    "6.5220": "6.856",
+    "6.5230": "6.851",
+    "6.5240": "6.855",
+    "6.5250": "6.852",
+    "6.5310": "6.849",
+    "6.5320": "6.850",
+    "6.5340": "6.853",
+    "6.5350": "6.847",
+    "6.5370": "6.891",
+    "6.5380": "6.892",
+    "6.5390": "6.893",
+    "6.5400": "6.840",
+    "6.5410": "6.841",
+    "6.5420": "6.842",
+    "6.5430": "6.845",
+    "6.5480": "6.889",
+    "6.5490": "6.890",
+    "6.5610": "6.857",
+    "6.5620": "6.875",
+    "6.5630": "6.876",
+    "6.5660": "6.858",
+    "6.5690": "6.885",
+    "6.5810": "6.828",
+    "6.5820": "6.829",
+    "6.5830": "6.830",
+    "6.5831": "6.814",
+    "6.5840": "6.824",
+    "6.5850": "6.826",
+    "6.5880": "6.887",
+    "6.5890": "6.888",
+    "6.5900": "6.823",
+    "6.5910": "6.375",
+    "6.5920": "6.846",
+    "6.5930": "6.825",
+    "6.5931": "6.812",
+    "6.5990": "6.886",
+    "6.6000": "6.775",
+    "6.6010": "6.374",
+    "6.6020": "6.776",
+    "6.6030": "6.333",
+    "6.6210": "6.640",
+    "6.6220": "6.334",
+    "6.6270": "6.332",
+    "6.6280": "6.685",
+    "6.6290": "6.695",
+    "6.6300": "6.630",
+    "6.6310": "6.631",
+    "6.6320": "6.632",
+    "6.6330": "6.621",
+    "6.6331": "6.602",
+    "6.6340": "6.634",
+    "6.6370": "6.637",
+    "6.6400": "6.728",
+    "6.6410": "6.445",
+    "6.6420": "6.443",
+    "6.6440": "6.644",
+    "6.6450": "6.645",
+    "6.6500": "6.720",
+    "6.6510": "6.730",
+    "6.6520": "6.731",
+    "6.6530": "6.732",
+    "6.6540": "6.735",
+    "6.6550": "6.736",
+    "6.6600": "6.781",
+    "6.6610": "6.774",
+    "6.6630": "6.780",
+    "6.7000": "6.341",
+    "6.7010": "6.344",
+    "6.7020": "6.456",
+    "6.7050": "6.347",
+    "6.7060": "6.348",
+    "6.7100": "6.241",
+    "6.7110": "6.245",
+    "6.7120": "6.247",
+    "6.7200": "6.255",
+    "6.7201": "6.215",
+    "6.7210": "6.251",
+    "6.7220": "6.252",
+    "6.7230": "6.256",
+    "6.7240": "6.254",
+    "6.7250": "6.485",
+    "6.7260": "6.268",
+    "6.7300": "6.336",
+    "6.7310": "6.337",
+    "6.7320": "6.338",
+    "6.7330": "6.339",
+    "6.7340": "6.335",
+    "6.7380": "6.248",
+    "6.7390": "6.249",
+    "6.7410": "6.450",
+    "6.7411": "6.405",
+    "6.7420": "6.267",
+    "6.7430": "6.442",
+    "6.7440": "6.452",
+    "6.7450": "6.263",
+    "6.7460": "6.440",
+    "6.7470": "6.441",
+    "6.7480": "6.260",
+    "6.7490": "6.261",
+    "6.7700": "6.436",
+    "6.7710": "6.262",
+    "6.7720": "6.265",
+    "6.7730": "6.434",
+    "6.7800": "6.437",
+    "6.7810": "6.438",
+    "6.7820": "6.244",
+    "6.7830": "6.435",
+    "6.7900": "6.867",
+    "6.7910": "6.860",
+    "6.7930": "6.871",
+    "6.7940": "6.231",
+    "6.7950": "6.246",
+    "6.8110": "6.834",
+    "6.8150": "6.861",
+    "6.8160": "6.881",
+    "6.8170": "6.882",
+    "6.8180": "6.883",
+    "6.8190": "6.884",
+    "6.8200": "6.484",
+    "6.8210": "6.832",
+    "6.8300": "6.869",
+    "6.8301": "6.819",
+    "6.8320": "6.870",
+    "6.8370": "6.865",
+    "6.8371": "6.815",
+    "6.8390": "6.866",
+    "6.8391": "6.801",
+    "6.8410": "6.838",
+    "6.8420": "6.839",
+    "6.8480": "6.896",
+    "6.8490": "6.897",
+    "6.8510": "6.835",
+    "6.8530": "6.859",
+    "6.8580": "6.894",
+    "6.8590": "6.895",
+    "6.8610": "6.864",
+    "6.8611": "6.806",
+    "6.8620": "6.345",
+    "6.8630": "6.863",
+    "6.8700": "6.878",
+    "6.8701": "6.047",
+    "6.8710": "6.874",
+    "6.8711": "6.802",
+    "6.8720": "6.589",
+    "6.8721": "6.580",
+    "6.8800": "6.555",
+    "6.8801": "6.026",
+    "6.8810": "6.556",
+    "6.8820": "6.542",
+    "6.8830": "6.552",
+    "6.8880": "6.544",
+    "6.8890": "6.545",
+    "6.9000": "6.010",
+    "6.9010": "6.08",
+    "6.9020": "6.943",
+    "6.9030": "6.163",
+    "6.9080": "6.01",
+    "6.9090": "6.454",
+    "6.9101": "6.9021",
+    "6.910A": "6.902A",
+    "6.910B": "6.902B",
+    "6.9110": "6.911",
+    "6.9120": "6.912",
+    "6.9130": "6.913",
+    "6.9140": "6.914",
+    "6.9150": "6.915",
+    "6.9160": "6.901",
+    "6.9260": "6.926",
+    "6.9270": "6.927",
+    "6.9280": "6.928",
+    "6.9300": "6.906",
+    "6.9302": "6.936",
+    "6.9310": "6.903",
+    "6.9320": "6.904",
+    "6.9321": "6.9041",
+    "6.9350": "6.935",
+    "6.9360": "6.930",
+    "6.9370": "6.934",
+    "6.9380": "6.929",
+    "6.9390": "6.941",
+    "6.9500": "6.057",
+    "6.9510": "6.058",
+    "6.9520": "6.117",
+    "6.9550": "6.037",
+    "6.9560": "6.178",
+    "6.9570": "6.179",
+    "6.9600": "6.146",
+    "6.9610": "6.147",
+    "6.9620": "6.148",
+    "6.9630": "6.176",
+    "6.9640": "6.150",
+    "6.9650": "6.151",
+    "6.9800": "6.910",
+    "6.9801": "6.100",
+    "6.9820": "6.920",
+    "6.9830": "6.997",
+    "6.9840": "6.998",
+    "6.9850": "6.921",
+    "6.9860": "6.922",
+    "6.9870": "6.951",
+    "6.9880": "6.952",
+    "6.9900": "6.981",
+    "6.9902": "6.980",
+    "6.9910": "6.991",
+    "6.9920": "6.960",
+    "6.9930": "6.963",
+    "6.9932": "6.961",
+    "6.9940": "6.994",
+    "6.9950": "6.995",
+    "6.9970": "6.932",
+    "6.9990": "6.962"
+  },
+  "subjects": [
+    {
+      "oldnum": "6.0001",
+      "newnum": "6.100A",
+      "title": "Introduction to Computer Science Programming in Python",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.0002",
+      "newnum": "6.100B",
+      "title": "Introduction to Computational Thinking and Data Science",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.000L",
+      "newnum": "6.100L",
+      "title": "Introduction to Computer Science and Programming",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.009",
+      "newnum": "6.1010",
+      "title": "Fundamentals of Programming",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.031",
+      "newnum": "6.1020",
+      "title": "Elements of Software Construction",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.170",
+      "newnum": "6.1040",
+      "title": "Software Studio",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.172",
+      "newnum": "6.1060",
+      "title": "Software Performance Engineering",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.035",
+      "newnum": "6.1100",
+      "title": "Computer Language Engineering",
+      "level": "U",
+      "subarea": "Programming Languages"
+    },
+    {
+      "oldnum": "6.818",
+      "newnum": "6.1120",
+      "title": "Dynamic Computer Language Engineering",
+      "level": "U",
+      "subarea": "Programming Languages"
+    },
+    {
+      "oldnum": "6.042",
+      "newnum": "6.1200",
+      "title": "Mathematics for Computer Science",
+      "level": "U",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.042A",
+      "newnum": "6.120A",
+      "title": "Mathematics for Computer Science",
+      "level": "U",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.006",
+      "newnum": "6.1210",
+      "title": "Introduction to Algorithms",
+      "level": "U",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.046",
+      "newnum": "6.1220",
+      "title": "Design and Analysis of Algorithms",
+      "level": "U",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.045",
+      "newnum": "6.1400",
+      "title": "Computability and Complexity Theory",
+      "level": "U",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.054",
+      "newnum": "6.1420",
+      "title": "Fixed Parameter and Fine-grained Complexity",
+      "level": "U",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.053",
+      "newnum": "6.1600",
+      "title": "Foundations of Computer Security",
+      "level": "U",
+      "subarea": "Security & Cryptography"
+    },
+    {
+      "oldnum": "6.033",
+      "newnum": "6.1800",
+      "title": "Computer Systems Engineering",
+      "level": "U",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.039",
+      "newnum": "6.1810",
+      "title": "Operating Systems Engineering",
+      "level": "U",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.808",
+      "newnum": "6.1820",
+      "title": "Mobile and Sensor Computing",
+      "level": "U",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.052",
+      "newnum": "6.1850",
+      "title": "Computer Systems & Society",
+      "level": "U",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.0004",
+      "newnum": "6.1900",
+      "title": "Introduction to Low-level Programming in C and Assembly",
+      "level": "U",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.004",
+      "newnum": "6.1910",
+      "title": "Computation Structures",
+      "level": "U",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.175",
+      "newnum": "6.1920",
+      "title": "Constructive Computer Architecture",
+      "level": "U",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.002",
+      "newnum": "6.2000",
+      "title": "Circuits and Electronics",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.070",
+      "newnum": "6.2020",
+      "title": "Electronics Project Laboratory",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.101",
+      "newnum": "6.2040",
+      "title": "Analog Electronics Laboratory",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.111",
+      "newnum": "6.2050",
+      "title": "Digital Systems Laboratory",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.115",
+      "newnum": "6.2060",
+      "title": "Microcomputer Project Laboratory",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.1151",
+      "newnum": "6.2061",
+      "title": "Microcomputer Project Laboratory - Independent Inquiry",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.300",
+      "newnum": "6.2080",
+      "title": "Introduction to Electronic Circuits",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.301",
+      "newnum": "6.2090",
+      "title": "Solid-State Circuits",
+      "level": "U",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.321",
+      "newnum": "6.2092",
+      "title": "Solid-State Circuits",
+      "level": "G",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.061",
+      "newnum": "6.2200",
+      "title": "Introduction to Electric Power Systems",
+      "level": "U",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.014",
+      "newnum": "6.2210",
+      "title": "Electromagnetic Fields, Forces and Motion",
+      "level": "U",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.690",
+      "newnum": "6.2212",
+      "title": "Introduction to Electric Power Systems",
+      "level": "G",
+      "subarea": "Energy",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.131",
+      "newnum": "6.2220",
+      "title": "Power Electronics Laboratory",
+      "level": "U",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.1311",
+      "newnum": "6.2221",
+      "title": "Power Electronics Laboratory - Independent Inquiry",
+      "level": "U",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.330",
+      "newnum": "6.2222",
+      "title": "Power Electronics Laboratory",
+      "level": "G",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.013",
+      "newnum": "6.2300",
+      "title": "Electromagnetics Waves and Applications",
+      "level": "U",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.161",
+      "newnum": "6.2370",
+      "title": "Modern Optics Project Laboratory",
+      "level": "U",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.051",
+      "newnum": "6.2400",
+      "title": "Introduction to Quantum Systems Engineering",
+      "level": "U",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.157",
+      "newnum": "6.2410",
+      "title": "Quantum Engineering Platforms",
+      "level": "U",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.050",
+      "newnum": "6.2490",
+      "title": "Information, Entropy, and Computation",
+      "level": "U",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.012",
+      "newnum": "6.2500",
+      "title": "Nanoelectronics and Computing Systems",
+      "level": "U",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.701",
+      "newnum": "6.2530",
+      "title": "Introduction to Nanoelectronics",
+      "level": "U",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.719",
+      "newnum": "6.2532",
+      "title": "Nanoelectronics",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.015",
+      "newnum": "6.2540",
+      "title": "Nanotechnology: From Atoms to Systems",
+      "level": "U",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.152",
+      "newnum": "6.2600",
+      "title": "Micro/Nano Processing Technology",
+      "level": "U",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.717",
+      "newnum": "6.2690",
+      "title": "Design and Fabrication of Microelectromechanical Systems",
+      "level": "U",
+      "subarea": "Nanoelectronics & Nanotechnology",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.777",
+      "newnum": "6.2692",
+      "title": "Design and Fabrication of Microelectromechanical Systems",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.003",
+      "newnum": "6.3000",
+      "title": "Signal Processing",
+      "level": "U",
+      "subarea": "Signal Processing"
+    },
+    {
+      "oldnum": "6.011",
+      "newnum": "6.3010",
+      "title": "Signals, Systems and Inference",
+      "level": "U",
+      "subarea": "Signal Processing"
+    },
+    {
+      "oldnum": "6.187",
+      "newnum": "6.3020",
+      "title": "Fundamentals of Music Processing",
+      "level": "U",
+      "subarea": "Signal Processing"
+    },
+    {
+      "oldnum": "6.302",
+      "newnum": "6.3100",
+      "title": "Dynamical System Modeling and Control Design",
+      "level": "U",
+      "subarea": "Control"
+    },
+    {
+      "oldnum": "6.320",
+      "newnum": "6.3102",
+      "title": "Dynamical System Modeling and Control Design",
+      "level": "G",
+      "subarea": "Control"
+    },
+    {
+      "oldnum": "6.207",
+      "newnum": "6.3260",
+      "title": "Networks",
+      "level": "U",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.02",
+      "newnum": "6.3400",
+      "title": "Introduction to EECS via Communication Networks",
+      "level": "U",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.041",
+      "newnum": "6.3700",
+      "title": "Introduction to Probability",
+      "level": "U",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.431",
+      "newnum": "6.3702",
+      "title": "Introduction to Probability",
+      "level": "G",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.401",
+      "newnum": "6.3720",
+      "title": "Introduction to Statistical Data Analysis",
+      "level": "U",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.481",
+      "newnum": "6.3722",
+      "title": "Introduction to Statistical Data Analysis",
+      "level": "G",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.419",
+      "newnum": "6.3730",
+      "title": "Statistics, Computation and Applications",
+      "level": "U",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.439",
+      "newnum": "6.3732",
+      "title": "Statistics, Computation and Applications",
+      "level": "G",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.008",
+      "newnum": "6.3800",
+      "title": "Introduction to Inference",
+      "level": "U",
+      "subarea": "Inference"
+    },
+    {
+      "oldnum": "6.036",
+      "newnum": "6.3900",
+      "title": "Introduction to Machine Learning",
+      "level": "U",
+      "subarea": "Machine Learning"
+    },
+    {
+      "oldnum": "6.862",
+      "newnum": "6.3902",
+      "title": "Applied Machine Learning",
+      "level": "G",
+      "subarea": "Machine Learning",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.404",
+      "newnum": "6.3950",
+      "title": "AI, Decision Making, and Society",
+      "level": "U",
+      "subarea": "Machine Learning"
+    },
+    {
+      "oldnum": "6.034",
+      "newnum": "6.4100",
+      "title": "Artificial Intelligence",
+      "level": "U",
+      "subarea": "Artificial Intelligence"
+    },
+    {
+      "oldnum": "6.844",
+      "newnum": "6.4102",
+      "title": "Artificial Intelligence",
+      "level": "G",
+      "subarea": "Artificial Intelligence"
+    },
+    {
+      "oldnum": "6.038",
+      "newnum": "6.4110",
+      "title": "Representation & Inference in AI",
+      "level": "U",
+      "subarea": "Artificial Intelligence"
+    },
+    {
+      "oldnum": "6.804",
+      "newnum": "6.4120",
+      "title": "Computational Cognitive Science",
+      "level": "U",
+      "subarea": "Artificial Intelligence"
+    },
+    {
+      "oldnum": "6.817",
+      "newnum": "6.4130",
+      "title": "Principles of Autonomy and Decision Making",
+      "level": "U",
+      "subarea": "Artificial Intelligence"
+    },
+    {
+      "oldnum": "6.877",
+      "newnum": "6.4132",
+      "title": "Principles of Autonomy and Decision Making",
+      "level": "G",
+      "subarea": "Artificial Intelligence"
+    },
+    {
+      "oldnum": "6.803",
+      "newnum": "6.4140",
+      "title": "The Human Intelligence Enterprise",
+      "level": "U",
+      "subarea": "Artificial Intelligence",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.833",
+      "newnum": "6.4142",
+      "title": "The Human Intelligence Enterprise",
+      "level": "G",
+      "subarea": "Artificial Intelligence",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.141",
+      "newnum": "6.4200",
+      "title": "Robotics: Science and Systems",
+      "level": "U",
+      "subarea": "Robotics"
+    },
+    {
+      "oldnum": "6.800",
+      "newnum": "6.4210",
+      "title": "Robotic Manipulation",
+      "level": "U",
+      "subarea": "Robotics"
+    },
+    {
+      "oldnum": "6.843",
+      "newnum": "6.4212",
+      "title": "Robotic Manipulation",
+      "level": "G",
+      "subarea": "Robotics"
+    },
+    {
+      "oldnum": "6.837",
+      "newnum": "6.4400",
+      "title": "Computer Graphics",
+      "level": "U",
+      "subarea": "Graphics"
+    },
+    {
+      "oldnum": "6.807",
+      "newnum": "6.4420",
+      "title": "Computational Design and Fabrication",
+      "level": "U",
+      "subarea": "Graphics"
+    },
+    {
+      "oldnum": "6.810",
+      "newnum": "6.4510",
+      "title": "Engineering Interactive Technologies",
+      "level": "U",
+      "subarea": "Human-Computer Interaction & Society"
+    },
+    {
+      "oldnum": "6.811",
+      "newnum": "6.4530",
+      "title": "Principles and Practice of Assistive Technology",
+      "level": "U",
+      "subarea": "Human-Computer Interaction & Society"
+    },
+    {
+      "oldnum": "6.185",
+      "newnum": "6.4550",
+      "title": "Interactive Music Systems",
+      "level": "U",
+      "subarea": "Human-Computer Interaction & Society"
+    },
+    {
+      "oldnum": "6.073",
+      "newnum": "6.4570",
+      "title": "Creating Video Games",
+      "level": "U",
+      "subarea": "Human-Computer Interaction & Society"
+    },
+    {
+      "oldnum": "6.805",
+      "newnum": "6.4590",
+      "title": "Foundations of Information Policy",
+      "level": "U",
+      "subarea": "Human-Computer Interaction & Society"
+    },
+    {
+      "oldnum": "6.049",
+      "newnum": "6.4710",
+      "title": "Evolutionary Biology: Concepts, Models and Computation",
+      "level": "U",
+      "subarea": "Computational Biology"
+    },
+    {
+      "oldnum": "6.020",
+      "newnum": "6.4800",
+      "title": "Biomedical Systems - Modeling and Inference",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.021",
+      "newnum": "6.4810",
+      "title": "Cellular Neurophysiology and Computing",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.521",
+      "newnum": "6.4812",
+      "title": "Cellular Neurophysiology and Computing",
+      "level": "G",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.022",
+      "newnum": "6.4820",
+      "title": "Quantitative and Clinical Physiology",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.522",
+      "newnum": "6.4822",
+      "title": "Quantitative Physiology: Organ Transport Systems",
+      "level": "G",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.023",
+      "newnum": "6.4830",
+      "title": "Fields, Forces and Flows in Biological Systems",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.561",
+      "newnum": "6.4832",
+      "title": "Fields, Forces, and Flows in Biological Systems",
+      "level": "G",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.024",
+      "newnum": "6.4840",
+      "title": "Molecular, Cellular, and Tissue Biomechanics",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.524",
+      "newnum": "6.4842",
+      "title": "Molecular, Cellular, and Tissue Biomechanics",
+      "level": "G",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.027",
+      "newnum": "6.4850",
+      "title": "Biomolecular Feedback Systems",
+      "level": "U",
+      "subarea": "Biomedical & Health",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.557",
+      "newnum": "6.4852",
+      "title": "Biomolecular Feedback Systems",
+      "level": "G",
+      "subarea": "Biomedical & Health",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.025",
+      "newnum": "6.4860",
+      "title": "Medical Device Design",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.525",
+      "newnum": "6.4861",
+      "title": "Medical Device Design",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.123",
+      "newnum": "6.4870",
+      "title": "Bioinstrumentation Project Lab",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.129",
+      "newnum": "6.4880",
+      "title": "Biological Circuit Engineering Laboratory",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.182",
+      "newnum": "6.4890",
+      "title": "Psychoacoustics Project Laboratory",
+      "level": "U",
+      "subarea": "Biomedical & Health",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.03",
+      "newnum": "6.4900",
+      "title": "Introduction to EECS via Medical Technology",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.827",
+      "newnum": "6.5060",
+      "title": "Algorithm Engineering",
+      "level": "G",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.836",
+      "newnum": "6.5080",
+      "title": "Multicore Programming",
+      "level": "G",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.816",
+      "newnum": "6.5081",
+      "title": "Multicore Programming",
+      "level": "U",
+      "subarea": "Programming & Software Engineering"
+    },
+    {
+      "oldnum": "6.820",
+      "newnum": "6.5110",
+      "title": "Foundations of Program Analysis",
+      "level": "G",
+      "subarea": "Programming Languages"
+    },
+    {
+      "oldnum": "6.822",
+      "newnum": "6.5120",
+      "title": "Formal Reasoning About Programs",
+      "level": "G",
+      "subarea": "Programming Languages"
+    },
+    {
+      "oldnum": "6.945",
+      "newnum": "6.5150",
+      "title": "Large-scale Symbolic Systems",
+      "level": "G",
+      "subarea": "Programming Languages"
+    },
+    {
+      "oldnum": "6.905",
+      "newnum": "6.5151",
+      "title": "Large-scale Symbolic Systems",
+      "level": "U",
+      "subarea": "Programming Languages"
+    },
+    {
+      "oldnum": "6.946",
+      "newnum": "6.5160",
+      "title": "Classical Mechanics: A Computational Approach",
+      "level": "G",
+      "subarea": "Programming Languages"
+    },
+    {
+      "oldnum": "6.854",
+      "newnum": "6.5210",
+      "title": "Advanced Algorithms",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.856",
+      "newnum": "6.5220",
+      "title": "Randomized Algorithms",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.851",
+      "newnum": "6.5230",
+      "title": "Advanced Data Structures",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.855",
+      "newnum": "6.5240",
+      "title": "Sublinear Time Algorithms",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.852",
+      "newnum": "6.5250",
+      "title": "Distributed Algorithms",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.849",
+      "newnum": "6.5310",
+      "title": "Geometric Folding Algorithms: Linkages, Origami, Polyhedra",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.850",
+      "newnum": "6.5320",
+      "title": "Geometric Computing",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.853",
+      "newnum": "6.5340",
+      "title": "Topics in Algorithmic Game Theory",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.847",
+      "newnum": "6.5350",
+      "title": "Matrix Multiplication & Graph Algorithms",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.891",
+      "newnum": "6.5370",
+      "title": "Advanced Topics in Theoretical Computer Science",
+      "level": "G",
+      "subarea": "Theoretical Computer Science",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.892",
+      "newnum": "6.5380",
+      "title": "Advanced Topics in Theoretical Computer Science",
+      "level": "G",
+      "subarea": "Theoretical Computer Science",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.893",
+      "newnum": "6.5390",
+      "title": "Advanced Topics in Theoretical Computer Science",
+      "level": "G",
+      "subarea": "Theoretical Computer Science",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.840",
+      "newnum": "6.5400",
+      "title": "Theory of Computation",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.841",
+      "newnum": "6.5410",
+      "title": "Advanced Complexity Theory",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.842",
+      "newnum": "6.5420",
+      "title": "Randomness and Computation",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.845",
+      "newnum": "6.5430",
+      "title": "Quantum Complexity Theory",
+      "level": "G",
+      "subarea": "Theoretical Computer Science"
+    },
+    {
+      "oldnum": "6.889",
+      "newnum": "6.5480",
+      "title": "Advanced Topics in Theoretical Computer Science",
+      "level": "G",
+      "subarea": "Theoretical Computer Science",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.890",
+      "newnum": "6.5490",
+      "title": "Advanced Topics in Theoretical Computer Science",
+      "level": "G",
+      "subarea": "Theoretical Computer Science",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.857",
+      "newnum": "6.5610",
+      "title": "Applied Cryptography and Security",
+      "level": "G",
+      "subarea": "Security & Cryptography"
+    },
+    {
+      "oldnum": "6.875",
+      "newnum": "6.5620",
+      "title": "Cryptography and Cryptanalysis",
+      "level": "G",
+      "subarea": "Security & Cryptography"
+    },
+    {
+      "oldnum": "6.876",
+      "newnum": "6.5630",
+      "title": "Advanced Topics in Cryptography",
+      "level": "G",
+      "subarea": "Security & Cryptography",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.858",
+      "newnum": "6.5660",
+      "title": "Computer Systems Security",
+      "level": "G",
+      "subarea": "Security & Cryptography"
+    },
+    {
+      "oldnum": "6.885",
+      "newnum": "6.5690",
+      "title": "Advanced Topics in Computer Systems",
+      "level": "G",
+      "subarea": "Security & Cryptography",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.828",
+      "newnum": "6.5810",
+      "title": "Operating System Engineering",
+      "level": "G",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.829",
+      "newnum": "6.5820",
+      "title": "Computer Networks",
+      "level": "G",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.830",
+      "newnum": "6.5830",
+      "title": "Database Systems",
+      "level": "G",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.814",
+      "newnum": "6.5831",
+      "title": "Database Systems",
+      "level": "U",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.824",
+      "newnum": "6.5840",
+      "title": "Distributed Computer Systems Engineering",
+      "level": "G",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.826",
+      "newnum": "6.5850",
+      "title": "Principles of Computer Systems",
+      "level": "G",
+      "subarea": "Computer Systems"
+    },
+    {
+      "oldnum": "6.887",
+      "newnum": "6.5880",
+      "title": "Advanced Topics in Computer Systems",
+      "level": "G",
+      "subarea": "Computer Systems",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.888",
+      "newnum": "6.5890",
+      "title": "Advanced Topics in Computer Systems",
+      "level": "G",
+      "subarea": "Computer Systems",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.823",
+      "newnum": "6.5900",
+      "title": "Computer System Architecture",
+      "level": "G",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.375",
+      "newnum": "6.5910",
+      "title": "Complex Digital Systems Design",
+      "level": "G",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.846",
+      "newnum": "6.5920",
+      "title": "Parallel Computing",
+      "level": "G",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.825",
+      "newnum": "6.5930",
+      "title": "Hardware Architecture for Deep Learning",
+      "level": "G",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.812",
+      "newnum": "6.5931",
+      "title": "Hardware Architecture for Deep Learning",
+      "level": "U",
+      "subarea": "Computer Architecture"
+    },
+    {
+      "oldnum": "6.886",
+      "newnum": "6.5990",
+      "title": "Advanced Topics in Computer Systems",
+      "level": "G",
+      "subarea": "Computer Architecture",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.775",
+      "newnum": "6.6000",
+      "title": "CMOS Analog and Mixed-Signal Circuit Design",
+      "level": "G",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.374",
+      "newnum": "6.6010",
+      "title": "Analysis and Design of Digital Integrated Circuits",
+      "level": "G",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.776",
+      "newnum": "6.6020",
+      "title": "High Speed Communication Circuits",
+      "level": "G",
+      "subarea": "Circuits & Applications"
+    },
+    {
+      "oldnum": "6.333",
+      "newnum": "6.6030",
+      "title": "Advanced Topics in Circuits",
+      "level": "G",
+      "subarea": "Circuits & Applications",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.640",
+      "newnum": "6.6210",
+      "title": "Electromagnetic Fields, Forces and Motion",
+      "level": "G",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.334",
+      "newnum": "6.6220",
+      "title": "Power Electronics",
+      "level": "G",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.332",
+      "newnum": "6.6270",
+      "title": "Advanced Topics in Circuits",
+      "level": "G",
+      "subarea": "Energy",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.685",
+      "newnum": "6.6280",
+      "title": "Electric Machines",
+      "level": "G",
+      "subarea": "Energy"
+    },
+    {
+      "oldnum": "6.695",
+      "newnum": "6.6290",
+      "title": "Engineering, Economics and Regulation of the Electric Power Sector",
+      "level": "G",
+      "subarea": "Energy",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.630",
+      "newnum": "6.6300",
+      "title": "Electromagnetics",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.631",
+      "newnum": "6.6310",
+      "title": "Optics and Photonics",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.632",
+      "newnum": "6.6320",
+      "title": "Electromagnetic Wave Theory",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.621",
+      "newnum": "6.6330",
+      "title": "Fundamentals of Photonics",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.602",
+      "newnum": "6.6331",
+      "title": "Fundamentals of Photonics",
+      "level": "U",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.634",
+      "newnum": "6.6340",
+      "title": "Nonlinear Optics",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.637",
+      "newnum": "6.6370",
+      "title": "Optical Imaging Devices, and Systems",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.728",
+      "newnum": "6.6400",
+      "title": "Applied Quantum and Statistical Physics",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.445",
+      "newnum": "6.6410",
+      "title": "Quantum Computation",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.443",
+      "newnum": "6.6420",
+      "title": "Quantum Information Science",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum"
+    },
+    {
+      "oldnum": "6.644",
+      "newnum": "6.6440",
+      "title": "Advanced Topics in Applied Physics",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.645",
+      "newnum": "6.6450",
+      "title": "Advanced Topics in Applied Physics",
+      "level": "G",
+      "subarea": "Electromagnetics, Photonics, and Quantum",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.720",
+      "newnum": "6.6500",
+      "title": "Integrated Microelectronic Devices",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.730",
+      "newnum": "6.6510",
+      "title": "Physics for Solid-State Applications",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.731",
+      "newnum": "6.6520",
+      "title": "Semiconductor Optoelectronics: Theory and Design",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.732",
+      "newnum": "6.6530",
+      "title": "Physics of Solids",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.735",
+      "newnum": "6.6540",
+      "title": "Advanced Topics in Materials, Devices, and Nanotechnology",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.736",
+      "newnum": "6.6550",
+      "title": "Advanced Topics in Materials, Devices, and Nanotechnology",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.781",
+      "newnum": "6.6600",
+      "title": "Nanostructure Fabrication",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.774",
+      "newnum": "6.6610",
+      "title": "Physics of Microfabrication: Front End Processing",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.780",
+      "newnum": "6.6630",
+      "title": "Control of Manufacturing Processes",
+      "level": "G",
+      "subarea": "Nanoelectronics & Nanotechnology"
+    },
+    {
+      "oldnum": "6.341",
+      "newnum": "6.7000",
+      "title": "Discrete-Time Signal Processing",
+      "level": "G",
+      "subarea": "Signal Processing"
+    },
+    {
+      "oldnum": "6.344",
+      "newnum": "6.7010",
+      "title": "Digital Image Processing",
+      "level": "G",
+      "subarea": "Signal Processing"
+    },
+    {
+      "oldnum": "6.456",
+      "newnum": "6.7020",
+      "title": "Array Processing",
+      "level": "G",
+      "subarea": "Signal Processing"
+    },
+    {
+      "oldnum": "6.347",
+      "newnum": "6.7050",
+      "title": "Advanced Topics in Signals and Systems",
+      "level": "G",
+      "subarea": "Signal Processing",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.348",
+      "newnum": "6.7060",
+      "title": "Advanced Topics in Signals and Systems",
+      "level": "G",
+      "subarea": "Signal Processing",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.241",
+      "newnum": "6.7100",
+      "title": "Dynamic Systems and Control",
+      "level": "G",
+      "subarea": "Control"
+    },
+    {
+      "oldnum": "6.245",
+      "newnum": "6.7110",
+      "title": "Multivariable Control Systems",
+      "level": "G",
+      "subarea": "Control"
+    },
+    {
+      "oldnum": "6.247",
+      "newnum": "6.7120",
+      "title": "Advanced Topics in Control",
+      "level": "G",
+      "subarea": "Control",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.255",
+      "newnum": "6.7200",
+      "title": "Optimization Methods",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.215",
+      "newnum": "6.7201",
+      "title": "Optimization Methods",
+      "level": "U",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.251",
+      "newnum": "6.7210",
+      "title": "Introduction to Mathematical Programming",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.252",
+      "newnum": "6.7220",
+      "title": "Nonlinear Optimization",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.256",
+      "newnum": "6.7230",
+      "title": "Algebraic Techniques and Semidefinite Optimization",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.254",
+      "newnum": "6.7240",
+      "title": "Game Theory with Engineering Applications",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.485",
+      "newnum": "6.7250",
+      "title": "Optimization for Machine Learning",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.268",
+      "newnum": "6.7260",
+      "title": "Network Science and Models",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.336",
+      "newnum": "6.7300",
+      "title": "Introduction to Modeling and Simulation",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.337",
+      "newnum": "6.7310",
+      "title": "Introduction to Numerical Methods",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.338",
+      "newnum": "6.7320",
+      "title": "Parallel Computing and Scientific Machine Learning",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.339",
+      "newnum": "6.7330",
+      "title": "Numerical Methods for Partial Differential Equations",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.335",
+      "newnum": "6.7340",
+      "title": "Fast Methods for Partial Differential and Integral Equations",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics"
+    },
+    {
+      "oldnum": "6.248",
+      "newnum": "6.7380",
+      "title": "Advanced Topics in Numerical Methods",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.249",
+      "newnum": "6.7390",
+      "title": "Advanced Topics in Numerical Methods",
+      "level": "G",
+      "subarea": "Optimization & Engineering Mathematics",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.450",
+      "newnum": "6.7410",
+      "title": "Principles of Digital Communication",
+      "level": "G",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.405",
+      "newnum": "6.7411",
+      "title": "Principles of Digital Communication",
+      "level": "U",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.267",
+      "newnum": "6.7420",
+      "title": "Heterogeneous Networks: Architecture, Transport, Proctocols, and Management",
+      "level": "G",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.442",
+      "newnum": "6.7430",
+      "title": "Optical Networks",
+      "level": "G",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.452",
+      "newnum": "6.7440",
+      "title": "Principles of Wireless Communication",
+      "level": "G",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.263",
+      "newnum": "6.7450",
+      "title": "Data-Communication Networks",
+      "level": "G",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.440",
+      "newnum": "6.7460",
+      "title": "Essential Coding Theory",
+      "level": "G",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.441",
+      "newnum": "6.7470",
+      "title": "Information Theory",
+      "level": "G",
+      "subarea": "Communications"
+    },
+    {
+      "oldnum": "6.260",
+      "newnum": "6.7480",
+      "title": "Advanced Topics in Communications",
+      "level": "G",
+      "subarea": "Communications",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.261",
+      "newnum": "6.7490",
+      "title": "Advanced Topics in Communications",
+      "level": "G",
+      "subarea": "Communications",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.436",
+      "newnum": "6.7700",
+      "title": "Fundamentals of Probability",
+      "level": "G",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.262",
+      "newnum": "6.7710",
+      "title": "Discrete Stochastic Processes",
+      "level": "G",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.265",
+      "newnum": "6.7720",
+      "title": "Discrete Probability and Stochastic Processes",
+      "level": "G",
+      "subarea": "Probability & Statistics"
+    },
+    {
+      "oldnum": "6.434",
+      "newnum": "6.7730",
+      "title": "Statistics for Engineers and Scientists",
+      "level": "G",
+      "subarea": "Probability & Statistics",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.437",
+      "newnum": "6.7800",
+      "title": "Inference and Information",
+      "level": "G",
+      "subarea": "Inference"
+    },
+    {
+      "oldnum": "6.438",
+      "newnum": "6.7810",
+      "title": "Algorithms for Inference",
+      "level": "G",
+      "subarea": "Inference"
+    },
+    {
+      "oldnum": "6.244",
+      "newnum": "6.7820",
+      "title": "Graphical Models: A Geometric, Algebraic, and Combinatorial Perspective",
+      "level": "G",
+      "subarea": "Inference"
+    },
+    {
+      "oldnum": "6.435",
+      "newnum": "6.7830",
+      "title": "Bayesian Modeling and Inference",
+      "level": "G",
+      "subarea": "Inference"
+    },
+    {
+      "oldnum": "6.867",
+      "newnum": "6.7900",
+      "title": "Machine Learning",
+      "level": "G",
+      "subarea": "Machine Learning"
+    },
+    {
+      "oldnum": "6.860",
+      "newnum": "6.7910",
+      "title": "Statistical Learning Theory and Applications",
+      "level": "G",
+      "subarea": "Machine Learning"
+    },
+    {
+      "oldnum": "6.871",
+      "newnum": "6.7930",
+      "title": "Machine Learning for Healthcare",
+      "level": "G",
+      "subarea": "Machine Learning"
+    },
+    {
+      "oldnum": "6.231",
+      "newnum": "6.7940",
+      "title": "Dynamic Programming and Reinforcement Learning",
+      "level": "G",
+      "subarea": "Machine Learning"
+    },
+    {
+      "oldnum": "6.246",
+      "newnum": "6.7950",
+      "title": "Advanced Topics in Control",
+      "level": "G",
+      "subarea": "Machine Learning"
+    },
+    {
+      "oldnum": "6.834",
+      "newnum": "6.8110",
+      "title": "Cognitive Robotics",
+      "level": "G",
+      "subarea": "Artificial Intelligence"
+    },
+    {
+      "oldnum": "6.861",
+      "newnum": "6.8150",
+      "title": "Aspects of a Computational Theory of Intelligence",
+      "level": "G",
+      "subarea": "Artificial Intelligence",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.881",
+      "newnum": "6.8160",
+      "title": "Advanced Topics in Artificial Intelligence",
+      "level": "G",
+      "subarea": "Artificial Intelligence",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.882",
+      "newnum": "6.8170",
+      "title": "Advanced Topics in Artificial Intelligence",
+      "level": "G",
+      "subarea": "Artificial Intelligence",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.883",
+      "newnum": "6.8180",
+      "title": "Advanced Topics in Artificial Intelligence",
+      "level": "G",
+      "subarea": "Artificial Intelligence",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.884",
+      "newnum": "6.8190",
+      "title": "Advanced Topics in Artificial Intelligence",
+      "level": "G",
+      "subarea": "Artificial Intelligence",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.484",
+      "newnum": "6.8200",
+      "title": "Sensorimotor Learning",
+      "level": "G",
+      "subarea": "Robotics"
+    },
+    {
+      "oldnum": "6.832",
+      "newnum": "6.8210",
+      "title": "Underactuated Robotics",
+      "level": "G",
+      "subarea": "Robotics"
+    },
+    {
+      "oldnum": "6.869",
+      "newnum": "6.8300",
+      "title": "Advances in Computer Vision",
+      "level": "G",
+      "subarea": "Vision"
+    },
+    {
+      "oldnum": "6.819",
+      "newnum": "6.8301",
+      "title": "Advances in Computer Vision",
+      "level": "U",
+      "subarea": "Vision"
+    },
+    {
+      "oldnum": "6.870",
+      "newnum": "6.8320",
+      "title": "Advanced Topics in Computer Vision",
+      "level": "G",
+      "subarea": "Vision",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.865",
+      "newnum": "6.8370",
+      "title": "Advanced Computational Photography",
+      "level": "G",
+      "subarea": "Vision"
+    },
+    {
+      "oldnum": "6.815",
+      "newnum": "6.8371",
+      "title": "Digital and Computational Photography",
+      "level": "U",
+      "subarea": "Vision"
+    },
+    {
+      "oldnum": "6.866",
+      "newnum": "6.8390",
+      "title": "Machine Vision",
+      "level": "G",
+      "subarea": "Vision",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.801",
+      "newnum": "6.8391",
+      "title": "Machine Vision",
+      "level": "U",
+      "subarea": "Vision",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.838",
+      "newnum": "6.8410",
+      "title": "Shape Analysis",
+      "level": "G",
+      "subarea": "Graphics"
+    },
+    {
+      "oldnum": "6.839",
+      "newnum": "6.8420",
+      "title": "Computational Design and Fabrication",
+      "level": "G",
+      "subarea": "Graphics"
+    },
+    {
+      "oldnum": "6.896",
+      "newnum": "6.8480",
+      "title": "Advanced Topics in Graphics and Human-Computer Interfaces",
+      "level": "G",
+      "subarea": "Graphics",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.897",
+      "newnum": "6.8490",
+      "title": "Advanced Topics in Computer Graphics",
+      "level": "G",
+      "subarea": "Graphics",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.835",
+      "newnum": "6.8510",
+      "title": "Intelligent Multimodal User Interfaces",
+      "level": "G",
+      "subarea": "Human-Computer Interaction & Society"
+    },
+    {
+      "oldnum": "6.859",
+      "newnum": "6.8530",
+      "title": "Interactive Data Visualization",
+      "level": "G",
+      "subarea": "Human-Computer Interaction & Society"
+    },
+    {
+      "oldnum": "6.894",
+      "newnum": "6.8580",
+      "title": "Advanced Topics in Graphics and Human-Computer Interfaces",
+      "level": "G",
+      "subarea": "Human-Computer Interaction & Society",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.895",
+      "newnum": "6.8590",
+      "title": "Advanced Topics in Graphics and Human-Computer Interfaces",
+      "level": "G",
+      "subarea": "Human-Computer Interaction & Society",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.864",
+      "newnum": "6.8610",
+      "title": "Quantitative Methods for Natural Language Processing",
+      "level": "G",
+      "subarea": "Natural Language Processing & Speech"
+    },
+    {
+      "oldnum": "6.806",
+      "newnum": "6.8611",
+      "title": "Quantitative Methods for Natural Language Processing",
+      "level": "U",
+      "subarea": "Natural Language Processing & Speech"
+    },
+    {
+      "oldnum": "6.345",
+      "newnum": "6.8620",
+      "title": "Spoken Language Processing",
+      "level": "G",
+      "subarea": "Natural Language Processing & Speech"
+    },
+    {
+      "oldnum": "6.863",
+      "newnum": "6.8630",
+      "title": "Natural Language and the Computer Representation of Knowledge",
+      "level": "G",
+      "subarea": "Natural Language Processing & Speech"
+    },
+    {
+      "oldnum": "6.878",
+      "newnum": "6.8700",
+      "title": "Advanced Computational Biology: Genomes, Networks, Evolution",
+      "level": "G",
+      "subarea": "Computational Biology"
+    },
+    {
+      "oldnum": "6.047",
+      "newnum": "6.8701",
+      "title": "Computational Biology: Genomes, Networks, Evolution",
+      "level": "U",
+      "subarea": "Computational Biology"
+    },
+    {
+      "oldnum": "6.874",
+      "newnum": "6.8710",
+      "title": "Computational Systems Biology: Deep Learning in the Life Sciences",
+      "level": "G",
+      "subarea": "Computational Biology"
+    },
+    {
+      "oldnum": "6.802",
+      "newnum": "6.8711",
+      "title": "Computational Systems Biology: Deep Learning in the Life Sciences",
+      "level": "U",
+      "subarea": "Computational Biology"
+    },
+    {
+      "oldnum": "6.589",
+      "newnum": "6.8720",
+      "title": "Principles of Synthetic Biology",
+      "level": "G",
+      "subarea": "Computational Biology"
+    },
+    {
+      "oldnum": "6.580",
+      "newnum": "6.8721",
+      "title": "Principles of Synthetic Biology",
+      "level": "U",
+      "subarea": "Computational Biology"
+    },
+    {
+      "oldnum": "6.555",
+      "newnum": "6.8800",
+      "title": "Biomedical Signal and Image Processing",
+      "level": "G",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.026",
+      "newnum": "6.8801",
+      "title": "Biomedical Signal and Image Processing",
+      "level": "U",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.556",
+      "newnum": "6.8810",
+      "title": "Data Acquisition and Image Reconstruction in MRI",
+      "level": "G",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.542",
+      "newnum": "6.8820",
+      "title": "Laboratory on the Physiology, Acoustics, and Perception of Speech",
+      "level": "G",
+      "subarea": "Biomedical & Health",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.552",
+      "newnum": "6.8830",
+      "title": "Signal Processing by the Auditory System: Perception",
+      "level": "G",
+      "subarea": "Biomedical & Health"
+    },
+    {
+      "oldnum": "6.544",
+      "newnum": "6.8880",
+      "title": "Advanced Topics in BioEECS",
+      "level": "G",
+      "subarea": "Biomedical & Health",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.545",
+      "newnum": "6.8890",
+      "title": "Advanced Topics in BioEECS",
+      "level": "G",
+      "subarea": "Biomedical & Health",
+      "removed": true,
+      "reason": "will use 6.Sxxx number in future"
+    },
+    {
+      "oldnum": "6.010",
+      "newnum": "6.9000",
+      "title": "Engineering for Impact",
+      "level": "",
+      "subarea": "Cross-cutting EECS subjects"
+    },
+    {
+      "oldnum": "6.08",
+      "newnum": "6.9010",
+      "title": "Introduction to EECS via Interconnected Embedded Systems",
+      "level": "",
+      "subarea": "Cross-cutting EECS subjects"
+    },
+    {
+      "oldnum": "6.943",
+      "newnum": "6.9020",
+      "title": "How to Make (Almost) Anything",
+      "level": "",
+      "subarea": "Cross-cutting EECS subjects"
+    },
+    {
+      "oldnum": "6.163",
+      "newnum": "6.9030",
+      "title": "Strobe Project Laboratory",
+      "level": "",
+      "subarea": "Cross-cutting EECS subjects"
+    },
+    {
+      "oldnum": "6.01",
+      "newnum": "6.9080",
+      "title": "Introduction to EECS via Robotics",
+      "level": "",
+      "subarea": "Cross-cutting EECS subjects"
+    },
+    {
+      "oldnum": "6.454",
+      "newnum": "6.9090",
+      "title": "Graduate Seminar in Area I",
+      "level": "",
+      "subarea": "Cross-cutting EECS subjects",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.9021",
+      "newnum": "6.9101",
+      "title": "Introduction to Design Thinking and Innovation in Engineering",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.902A",
+      "newnum": "6.910A",
+      "title": "Design Thinking and Innovation Leadership for Engineers",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.902B",
+      "newnum": "6.910B",
+      "title": "Design Thinking and Innovation Project",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.911",
+      "newnum": "6.9110",
+      "title": "Engineering Leadership Lab",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.912",
+      "newnum": "6.9120",
+      "title": "Engineering Leadership",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.913",
+      "newnum": "6.9130",
+      "title": "Engineering Leadership Lab",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.914",
+      "newnum": "6.9140",
+      "title": "Project Engineering",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.915",
+      "newnum": "6.9150",
+      "title": "Leading Innovation in Teams",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.901",
+      "newnum": "6.9160",
+      "title": "Engineering Innovation: Moving Ideas to Impact",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.926",
+      "newnum": "6.9260",
+      "title": "Multistakeholder Negotiation for Tech Experts",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.927",
+      "newnum": "6.9270",
+      "title": "Negotiation and Influence Skills for Technical Leaders",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.928",
+      "newnum": "6.9280",
+      "title": "Leading Creative Teams",
+      "level": "",
+      "subarea": "Gordon Engineering Leadership Program"
+    },
+    {
+      "oldnum": "6.906",
+      "newnum": "6.9300",
+      "title": "StartMIT: Workshop for Entrepreneurs and Innovators",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.936",
+      "newnum": "6.9302",
+      "title": "StartMIT: Workshop for Entrepreneurs and Innovators",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.903",
+      "newnum": "6.9310",
+      "title": "Patents, Copyrights, and the Law of Intellectual Property",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.904",
+      "newnum": "6.9320",
+      "title": "Ethics for Engineers",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.9041",
+      "newnum": "6.9321",
+      "title": "Ethics for Engineers - Independent Inquiry",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.935",
+      "newnum": "6.9350",
+      "title": "Financial Market Dynamics and Human Behavior",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.930",
+      "newnum": "6.9360",
+      "title": "Management in Engineering",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.934",
+      "newnum": "6.9370",
+      "title": "Engineering, Economics and Regulation for Energy Access in Developing Countries",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.929",
+      "newnum": "6.9380",
+      "title": "Energy Technology and Policy:  From Principles to Practice",
+      "level": "",
+      "subarea": "EECS and Beyond",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.941",
+      "newnum": "6.9390",
+      "title": "Statistics for Research Projects: Statistical Modeling and Experiment Design",
+      "level": "",
+      "subarea": "EECS and Beyond"
+    },
+    {
+      "oldnum": "6.057",
+      "newnum": "6.9500",
+      "title": "Introduction to MATLAB",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.058",
+      "newnum": "6.9510",
+      "title": "Introduction to Signals and Systems, and Feedback Control",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.117",
+      "newnum": "6.9520",
+      "title": "Introduction to Electrical Engineering Lab Skills",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.037",
+      "newnum": "6.9550",
+      "title": "Structure and Interpretation of Computer Programs",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.178",
+      "newnum": "6.9560",
+      "title": "Introduction to Software Engineering in Java",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.179",
+      "newnum": "6.9570",
+      "title": "Introduction to C and C++",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.146",
+      "newnum": "6.9600",
+      "title": "Mobile Autonomous Systems Laboratory: MASLAB",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.147",
+      "newnum": "6.9610",
+      "title": "The Battlecode Programming Competition",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.148",
+      "newnum": "6.9620",
+      "title": "Web Lab: A Web Programming Class and Competition",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.176",
+      "newnum": "6.9630",
+      "title": "Pokerbots Competition",
+      "level": "",
+      "subarea": "Independent Activities Period"
+    },
+    {
+      "oldnum": "6.150",
+      "newnum": "6.9640",
+      "title": "Mobile Applications Competition",
+      "level": "",
+      "subarea": "Independent Activities Period",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.151",
+      "newnum": "6.9650",
+      "title": "iOS Game Design and Development Competition",
+      "level": "",
+      "subarea": "Independent Activities Period",
+      "removed": true,
+      "reason": "no longer offered"
+    },
+    {
+      "oldnum": "6.910",
+      "newnum": "6.9800",
+      "title": "Independent Study in Electrical Engineering and Computer Science",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.100",
+      "newnum": "6.9801",
+      "title": "Electrical Engineering and Computer Science Project",
+      "level": "",
+      "subarea": "Nonclassroom & Career",
+      "removed": true,
+      "reason": "consolidated with 6.9800"
+    },
+    {
+      "oldnum": "6.920",
+      "newnum": "6.9820",
+      "title": "Practical Internship Experience",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.997",
+      "newnum": "6.9830",
+      "title": "Professional Perspective Internship",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.998",
+      "newnum": "6.9840",
+      "title": "Practical Experience in EECS",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.921",
+      "newnum": "6.9850",
+      "title": "6-A Internship",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.922",
+      "newnum": "6.9860",
+      "title": "Advanced 6-A Internship",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.951",
+      "newnum": "6.9870",
+      "title": "Graduate 6-A Internship",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.952",
+      "newnum": "6.9880",
+      "title": "Graduate 6-A Internship",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.980",
+      "newnum": "6.9902",
+      "title": "Teaching Electrical Engineering and Computer Science",
+      "level": "",
+      "subarea": "Nonclassroom & Career",
+      "removed": true,
+      "reason": "consolidated with 6.9900"
+    },
+    {
+      "oldnum": "6.981",
+      "newnum": "6.9900",
+      "title": "Teaching Electrical Engineering and Computer Science",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.991",
+      "newnum": "6.9910",
+      "title": "Research in Electrical Engineering and Computer Science",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.960",
+      "newnum": "6.9920",
+      "title": "Introductory Research in Electrical Engineering and Computer Science",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.963",
+      "newnum": "6.9930",
+      "title": "Networking Seminars in EECS",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.961",
+      "newnum": "6.9932",
+      "title": "Introduction to Research in Electrical Engineering and Computer Science",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.994",
+      "newnum": "6.9940",
+      "title": "Professional Perspective I",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.995",
+      "newnum": "6.9950",
+      "title": "Professional Perspective II",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.932",
+      "newnum": "6.9970",
+      "title": "Academic Job Search",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    },
+    {
+      "oldnum": "6.962",
+      "newnum": "6.9990",
+      "title": "Independent Study in Electrical Engineering and Computer Science",
+      "level": "",
+      "subarea": "Nonclassroom & Career"
+    }
+  ]
+}

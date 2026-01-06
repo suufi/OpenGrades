@@ -3,21 +3,21 @@ import { AppProps } from 'next/app'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { ReactNode, useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 
-import { ActionIcon, Anchor, AppShell, Avatar, Badge, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Modal, NumberInput, Stack, Switch, Text, TextInput, ThemeIcon, Tooltip, UnstyledButton, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
+import { ActionIcon, AppShell, Badge, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Modal, NumberInput, Stack, Switch, Text, TextInput, Tooltip, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications, notifications } from '@mantine/notifications'
-import { Books, ChevronRight, FireHydrant, Graph, History, Home, InfoCircle, Key, Logout, Mail, Moon, Road, Settings, Shield, Star, Sun, User as UserIcon } from 'tabler-icons-react'
+import { Moon, Sun } from 'tabler-icons-react'
 
-// import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 
 import ErrorBoundary from '@/components/ErrorBoundary'
 import LockdownModule from '@/components/LockdownModule'
 import NotLoggedIn from '@/components/NotLoggedIn'
 import { UserContext, UserContextProvider } from '@/components/UserContextProvider'
+import { NavigationLinks, UserSection } from '@/components/Navbar'
 
 import PlausibleProvider from 'next-plausible'
 
@@ -32,7 +32,6 @@ import 'primeicons/primeicons.css'
 import 'primereact/resources/primereact.min.css' // core css
 
 import mainClasses from '@/styles/Main.module.css'
-import { IconQuestionCircle } from '@tabler/icons'
 
 const availableAcademicYears = [
   '2021-2022',
@@ -41,14 +40,7 @@ const availableAcademicYears = [
   '2024-2025'
 ]
 
-interface MainLinkProps {
-  icon: ReactNode,
-  color: string,
-  label: string,
-  href: string,
-  active: boolean,
-  target?: string
-}
+
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -66,61 +58,6 @@ const theme = createTheme({
   // shade text colors lighter on dark theme
 
 })
-
-function MainLink({ icon, color, label, href, active, target }: MainLinkProps) {
-  return (
-    <Link href={href} passHref style={{ textDecoration: 'none' }} target={target}>
-      <UnstyledButton
-        className={mainClasses.mainLink}
-      >
-        <Group>
-          <ThemeIcon color={color} variant="light">
-            {icon}
-          </ThemeIcon>
-
-          <Text className={mainClasses.mainLinkText} size="sm" fw={active ? 'bold' : undefined}>{label}</Text>
-        </Group>
-      </UnstyledButton>
-    </Link>
-  )
-}
-
-function NavigationLinks() {
-  const { status } = useSession()
-  const { pathname } = useRouter()
-
-  const { userProfile } = useContext(UserContext)
-
-  return status === 'authenticated'
-    ? (
-      <>
-        <MainLink color='blue' label="Dashboard" icon={<Home />} href="/" active={pathname === '/'} />
-        <MainLink label="Classes" icon={<Books />} color="orange" href="/classes" active={pathname === '/classes'} />
-        {/* <MainLink label="Leaderboard" icon={<Medal />} color="indigo" href="/leaderboard" active={pathname === '/leaderboard'} /> */}
-        {userProfile && userProfile.trustLevel > 1 && <MainLink label="Reports" icon={<Shield />} color="green" href="/reports" active={pathname === '/reports'} />}
-        {userProfile && userProfile.trustLevel > 1 && <MainLink label="Settings" icon={<Settings />} color="yellow" href="/settings" active={pathname === '/settings'} />}
-        {userProfile && userProfile.trustLevel > 1 && <MainLink label="Audit Logs" icon={<History />} color="red" href="/auditlogs" active={pathname === '/auditlogs'} />}
-        <MainLink label="About" icon={<InfoCircle />} color="purple" href="/about" active={pathname === '/about'} />
-        <MainLink label="Statistics" icon={<Graph />} color="cyan" href="/statistics" active={pathname === '/statistics'} />
-        <MainLink label="Who's Taken What?" icon={<IconQuestionCircle />} color="cyan" href="/ofcourse" active={pathname === '/ofcourse'} />
-        {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Projects by SIPB" />}
-        <MainLink label="Hydrant" icon={<FireHydrant />} color="orange" href="https://hydrant.mit.edu/" target="_blank" active={false} />
-        <MainLink label="CourseRoad" icon={<Road />} color="blue" href="https://courseroad.mit.edu/" target="_blank" active={false} />
-        <MainLink label="DormSoup" icon={<Mail />} color="green" href="https://dormsoup.mit.edu/" target="_blank" active={false} />
-        {<Divider style={{ margin: 'var(--mantine-spacing-xs) 0' }} label="Other Links" />}
-        <MainLink label="Feedback" icon={<Star />} color="cyan" href="https://forms.gle/pyj7zY45AVnjX2Nc8" target="_blank" active={false} />
-        <MainLink label="Affiliate Access" icon={<Key />} color="cyan" href="https://forms.gle/8iandxQpc6abmQtZA" target="_blank" active={false} />
-
-      </>
-    )
-    : (
-      <>
-        <MainLink label="About" icon={<InfoCircle />} color="purple" href="/about" active={pathname === '/about'} />
-        <MainLink label="Feedback" icon={<Star />} color="cyan" href="https://forms.gle/pyj7zY45AVnjX2Nc8" target="_blank" active={false} />
-        <MainLink label="Affiliate Access" icon={<Key />} color="cyan" href="https://forms.gle/8iandxQpc6abmQtZA" target="_blank" active={false} />
-      </>
-    )
-}
 
 function useEditProfileModal() {
   const [opened, { open, close }] = useDisclosure(false)
@@ -441,78 +378,13 @@ function useEditProfileModal() {
   return { modal, open }
 }
 
-function UserNavBarSection() {
-  const theme = useMantineTheme()
+function UserNavBarSectionWrapper() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
-  const { data: session, status } = useSession()
   const { modal, open } = useEditProfileModal()
 
   useHotkeys([['mod+J', () => toggleColorScheme()]])
 
-
-  return status === 'authenticated'
-    ? (
-      <>
-        {modal}
-        <Menu
-          withArrow
-          position='right'
-        >
-          <Menu.Target>
-            <Box
-              style={{
-                paddingTop: 'var(--mantine-spacing-sm)',
-                borderTop: "1px solid light-dark(--mantine-color-dark-4, --mantine-color-gray-2)"
-              }}
-            >
-              <UnstyledButton
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: 'var(--mantine-spacing-xs)',
-                  borderRadius: 'var(--mantine-radius-sm)',
-                  color: 'light-dark(--mantine-color-dark-0, --mantine-black)',
-
-                  '&:hover': {
-                    backgroundColor: 'light-dark(--mantine-color-dark-6, --mantine-gray-0)'
-                  }
-                }}
-              >
-                <Group>
-                  <Avatar radius="xl" color="cyan"> {session?.user?.name?.substring(0, 1)} </Avatar>
-                  <Box style={{ flex: 1 }}>
-                    <Text className={mainClasses.mainLinkText} size="sm" fw={500}>
-                      {session?.user?.name}
-                    </Text>
-                    <Text className={mainClasses.mainLinkText} c="dimmed" size="xs">
-                      {session?.user?.email}
-                    </Text>
-                  </Box>
-                  <ChevronRight size={16} />
-
-                </Group>
-              </UnstyledButton>
-            </Box>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item
-              leftSection={<UserIcon />}
-              onClick={open}
-            >
-              Edit Profile
-            </Menu.Item>
-            <Menu.Item leftSection={<Logout> </Logout>} onClick={() => signOut()}>
-              Sign Out
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </>
-    )
-    : (
-      <Button onClick={() => signIn('mit-oidc')} loading={status === 'loading'}>
-        Sign In
-      </Button>
-    )
+  return <UserSection onEditProfile={open} modal={modal} />
 }
 
 function ContentFetcher(props: AppProps) {
@@ -573,15 +445,7 @@ function ContentFetcher(props: AppProps) {
 function App({ pageProps, Component }: AppProps) {
   const [opened, { toggle }] = useDisclosure()
   console.log("App.props", pageProps)
-  // const [colorScheme, setColorScheme] = useLocalStorage<ColorScheme>({
-  //   key: 'mantine-color-scheme',
-  //   defaultValue: 'light',
-  //   getInitialValueInEffect: true
-  // })
 
-
-  // const toggleColorScheme = (value?: ColorScheme) =>
-  //   setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'))
 
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const theme = useMantineTheme()
@@ -603,7 +467,7 @@ function App({ pageProps, Component }: AppProps) {
           <AppShell.Section grow>
             <NavigationLinks />
           </AppShell.Section>
-          <UserNavBarSection />
+          <UserNavBarSectionWrapper />
         </AppShell.Navbar>
         {/* <AppShell.Footer>
           <p> Footer </p>
@@ -624,11 +488,6 @@ function App({ pageProps, Component }: AppProps) {
               <Text fw={'bold'} size={'xl'} variant="gradient" gradient={{ from: 'orange', to: 'yellow', deg: 45 }}>
                 MIT OpenGrades
               </Text>
-
-              {/* <Button onClick={toggleColorScheme} variant='transparent' color='gray' size='sm'> */}
-              {/* {colorScheme === 'dark' ? <Sun /> : <Moon />} */}
-              {/* </Button> */}
-
               <Tooltip label="Alt J" position="left" withArrow>
                 <ActionIcon onClick={toggleColorScheme} variant='transparent' color='gray' size='sm'>
                   {isMounted ? colorScheme === 'dark' ? <Sun /> : <Moon /> : <Loader />}

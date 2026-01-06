@@ -87,17 +87,21 @@ const ClassSchema = new mongoose.Schema<IClass>({
     type: Boolean,
     default: true
   },
+  classTags: [{
+    type: String
+  }],
   offered: {
     type: Boolean,
     required: true
   }
 }, { timestamps: true })
 
-// Add indexes for better query performance
 ClassSchema.index({ term: 1, subjectNumber: 1 })
 ClassSchema.index({ 'instructorDetails.kerbId': 1 })
 ClassSchema.index({ department: 1, term: 1 })
 ClassSchema.index({ hassAttribute: 1 })
 ClassSchema.index({ girAttribute: 1 })
+ClassSchema.index({ communicationRequirement: 1 })
+ClassSchema.index({ classTags: 1 })
 
 export default (mongoose.models.Class || mongoose.model('Class', ClassSchema))

@@ -11,7 +11,7 @@ import mongoConnection from '../utils/mongoConnection'
 // eslint-disable-next-line camelcase
 import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth/next'
-import authOptions from "pages/api/auth/[...nextauth]"
+import authOptions from "@/pages/api/auth/[...nextauth]"
 
 const AuditLogs: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ auditLogsProp }) => {
   return (

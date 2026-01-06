@@ -10,13 +10,13 @@ import { auth } from '@/utils/auth'
 
 import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
-import { Client } from '@elastic/elasticsearch'
+import { getESClient } from '@/utils/esClient'
 import { decode } from 'html-entities'
 import mongoose from 'mongoose'
+import { parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
+import eecsRenumbering from '@/utils/eecs-renumbering.json'
 
-const client = new Client({
-  node: process.env.ELASTIC_SEARCH_URI
-})
+const client = getESClient()
 
 type Data = {
   success: boolean,
@@ -30,7 +30,7 @@ type ClassQuery = {
   term?: string
 }
 
-function parseClassName (subjectNumber: string) {
+function parseClassName(subjectNumber: string) {
   if (subjectNumber.slice(-1) === 'J') {
     return subjectNumber.substring(0, subjectNumber.length - 1)
   } else {
@@ -38,7 +38,7 @@ function parseClassName (subjectNumber: string) {
   }
 }
 
-function parseDepartment (subjectNumber) {
+function parseDepartment(subjectNumber) {
   return subjectNumber.split('.')[0]
 }
 
@@ -50,7 +50,7 @@ export const config = {
   },
 }
 
-export default async function handler (
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
@@ -77,7 +77,10 @@ export default async function handler (
           sortField = '',
           sortOrder = 'asc', // Default to ascending order
           all = 'false',
-          useDescription = 'false'
+          useDescription = 'false',
+          communicationRequirements = '', // CI-H, CI-HW
+          girAttributes = '', // REST, LAB, etc.
+          hassAttributes = '' // HASS-A, HASS-E, HASS-H, HASS-S
         } = req.query
 
         // Build the query object
@@ -115,6 +118,21 @@ export default async function handler (
           }
         } else if (term) {
           query.term = term
+        }
+
+        if (communicationRequirements) {
+          const ciValues = (communicationRequirements as string).split(',')
+          query.communicationRequirement = { $in: ciValues }
+        }
+
+        if (girAttributes) {
+          const girValues = (girAttributes as string).split(',')
+          query.girAttribute = { $in: girValues }
+        }
+
+        if (hassAttributes) {
+          const hassValues = (hassAttributes as string).split(',')
+          query.hassAttribute = { $in: hassValues }
         }
 
         const tokens = search.split(/\s+/).filter(Boolean)
@@ -166,7 +184,7 @@ export default async function handler (
                   term: {
                     "subjectNumber": {
                       value: search,
-                      boost: 3
+                      boost: 6
                     }
                   }
                 },
@@ -406,11 +424,13 @@ export default async function handler (
           })
         }
 
-        const sendComplete = (newClasses: number, updatedClasses: number) => {
+        const sendComplete = (newClasses: number, updatedClasses: number, failedDeps: string[] = [], duration: number = 0) => {
           sendMessage({
             type: 'complete',
             newClasses,
-            updatedClasses
+            updatedClasses,
+            failedDepartments: failedDeps,
+            totalDuration: duration
           })
         }
 
@@ -421,7 +441,26 @@ export default async function handler (
           })
         }
 
-        // console.log('actor', session.user)
+        const parseDepartment = (classNumber: string) => {
+          const match = classNumber.match(/^([A-Z0-9]+)/)
+          return match ? match[1] : ''
+        }
+
+        // Get EECS renumbering aliases for a subject number
+        const getEecsRenumberingAliases = (subjectNumber: string): string[] => {
+          const aliases: string[] = []
+          const oldToNew = eecsRenumbering.oldToNew as Record<string, string>
+          const newToOld = eecsRenumbering.newToOld as Record<string, string>
+
+          if (oldToNew[subjectNumber]) {
+            aliases.push(oldToNew[subjectNumber])
+          }
+          if (newToOld[subjectNumber]) {
+            aliases.push(newToOld[subjectNumber])
+          }
+          return aliases
+        }
+
         await AuditLog.create({
           actor: session.user._id,
           type: 'FetchDepartment',
@@ -432,7 +471,7 @@ export default async function handler (
         requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
         requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
 
-        async function fetchDescription (description) {
+        async function fetchDescription(description) {
           if (!description.includes("See description under subject")) {
             return description
           }
@@ -474,30 +513,83 @@ export default async function handler (
 
         const allClasses: IClass[] = []
         const totalDepartments = body.selectedDepartments.length
+        const failedDepartments: Array<{ department: string, error: string }> = []
+        const CONCURRENT_REQUESTS = 5
+        const startTime = Date.now()
 
-        // Send initial status
-        sendProgress(0, totalDepartments, 'Gathering departments')
+        sendProgress(0, totalDepartments, 'Starting fetch operation')
 
-        // Process departments sequentially with progress updates
-        for (let i = 0; i < body.selectedDepartments.length; i++) {
-          const department = body.selectedDepartments[i]
-
-          sendProgress(i + 1, totalDepartments, department)
-
+        const fetchDepartment = async (department: string, index: number) => {
           try {
             const apiFetch = await fetch(`https://mit-course-catalog-v2.cloudhub.io/coursecatalog/v2/terms/${body.term}/subjects?dept=${department}`, {
               headers: requestHeaders
             }).then(async (response) => {
               const res = await response.json()
               if (response.ok) return res
-              throw new Error(res.errorDescription)
+              throw new Error(res.errorDescription || 'Failed to fetch department')
             })
 
-            const classMatchRegex = /(\w{1,3}\.[\w]{1,5})/g
+            const classMatchRegex = /((?:\d+[A-Z]?|[A-Z]+)\.\w+)/g
+            const departmentClasses: IClass[] = []
 
             for (const apiClassEntry of apiFetch.items) {
-              const aliases = [...apiClassEntry.cluster.matchAll(classMatchRegex)].map(match => parseClassName(match[0]))
-              allClasses.push({
+              let aliases: string[] = []
+
+              if (apiClassEntry.cluster) {
+                const aliasPatterns = [
+                  /\(Same subject as ([^)]+)\)/gi,
+                  /\(Subject meets with ([^)]+)\)/gi
+                ]
+
+                const aliasTexts: string[] = []
+
+                for (const pattern of aliasPatterns) {
+                  const matches = [...apiClassEntry.cluster.matchAll(pattern)]
+                  matches.forEach(match => {
+                    if (match[1]) aliasTexts.push(match[1])
+                  })
+                }
+
+                if (aliasTexts.length > 0) {
+                  const allAliasNumbers = new Set<string>()
+                  aliasTexts.forEach(text => {
+                    const numbers = [...text.matchAll(classMatchRegex)].map(m => m[0])
+                    numbers.forEach(num => {
+                      const cleanNum = num.endsWith('J') ? num.slice(0, -1) : num
+                      allAliasNumbers.add(cleanNum)
+                    })
+                  })
+                  aliases = Array.from(allAliasNumbers)
+                } else {
+                  aliases = [...apiClassEntry.cluster.matchAll(classMatchRegex)]
+                    .map(match => match[0])
+                    .map(num => num.endsWith('J') ? num.slice(0, -1) : num)
+                }
+              }
+
+              // Add EECS renumbering aliases (old to new and new to old)
+              const subjectNumber = apiClassEntry.subjectId
+              const eecsAliases = getEecsRenumberingAliases(subjectNumber)
+              eecsAliases.forEach(alias => {
+                if (!aliases.includes(alias)) {
+                  aliases.push(alias)
+                }
+              })
+
+              const parsedUnits = parseUnitsField(apiClassEntry.units)
+
+              const instructorDetails = parseInstructors(
+                apiClassEntry.instructors,
+                apiClassEntry.instructorDetails
+              )
+
+              const instructorNames = instructorDetails.length > 0
+                ? instructorDetails.map(i => i.name)
+                : decode(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
+
+              const parsedPrereqs = parsePrerequisites(apiClassEntry.prerequisites || '')
+
+              departmentClasses.push({
                 term: apiClassEntry.termCode,
                 subjectNumber: apiClassEntry.subjectId,
                 aliases,
@@ -506,19 +598,84 @@ export default async function handler (
                 department: department,
                 crossListedDepartments: aliases.map(parseDepartment).filter(aliasDep => aliasDep !== department),
                 units: apiClassEntry.units,
+                unitHours: parsedUnits.unitHours,
+                communicationRequirement: parsedUnits.communicationRequirement,
+                hassAttribute: parsedUnits.hassAttribute,
+                girAttribute: parsedUnits.girAttributes,
+                prerequisites: parsedPrereqs.prerequisites,
+                corequisites: parsedPrereqs.corequisites,
                 description: await fetchDescription(apiClassEntry.description),
                 offered: apiClassEntry.offered,
                 display: apiClassEntry.offered,
                 reviewable: body.reviewable,
-                instructors: decode(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
+                instructors: instructorNames,
+                instructorDetails: instructorDetails.length > 0 ? instructorDetails : undefined,
+                has_final: determineHasFinal(apiClassEntry)
               })
             }
+
+            return { department, classes: departmentClasses, error: null }
           } catch (error) {
             console.error(`Error fetching department ${department}:`, error)
+            return {
+              department,
+              classes: [],
+              error: error instanceof Error ? error.message : 'Unknown error'
+            }
           }
         }
 
-        // const bulkAddResult = await Class.insertMany(allClasses.filter(classEntry => !classEntry.aliases || classEntry.aliases.length === 0))
+        let completedCount = 0
+        for (let i = 0; i < totalDepartments; i += CONCURRENT_REQUESTS) {
+          const batch = body.selectedDepartments.slice(i, Math.min(i + CONCURRENT_REQUESTS, totalDepartments))
+
+          const results = await Promise.allSettled(
+            batch.map((dept, batchIndex) => fetchDepartment(dept, i + batchIndex))
+          )
+
+          results.forEach((result, batchIndex) => {
+            completedCount++
+            const department = batch[batchIndex]
+
+            if (result.status === 'fulfilled') {
+              const { department: dept, classes, error } = result.value
+
+              if (error) {
+                failedDepartments.push({ department: dept, error })
+                sendMessage({
+                  type: 'departmentError',
+                  department: dept,
+                  error,
+                  canRetry: true
+                })
+              } else {
+                allClasses.push(...classes)
+              }
+
+              const percentage = Math.round((completedCount / totalDepartments) * 100)
+              const elapsed = Date.now() - startTime
+              const estimatedTotal = (elapsed / completedCount) * totalDepartments
+              const estimatedRemaining = Math.round((estimatedTotal - elapsed) / 1000)
+
+              sendMessage({
+                type: 'progress',
+                current: completedCount,
+                total: totalDepartments,
+                percentage,
+                department: dept,
+                classCount: classes.length,
+                estimatedTimeRemaining: estimatedRemaining
+              })
+            } else {
+              failedDepartments.push({
+                department,
+                error: result.reason?.message || 'Unknown error'
+              })
+              completedCount++
+            }
+          })
+        }
+
         const bulkAddResult = await Class.bulkWrite(
           allClasses.map((classEntry) => ({
             updateOne: {
@@ -535,38 +692,6 @@ export default async function handler (
           }))
         )
 
-        // const aliasedClasses = allClasses.filter(classEntry => classEntry.aliases && classEntry.aliases.length > 0)
-
-        // const aliasedClassesWriteOps = aliasedClasses.map((classEntry) => {
-        //   // console.log({
-        //   //   filter: {
-        //   //     $or: [{ subjectNumber: classEntry.subjectNumber },
-        //   //     { aliases: classEntry.subjectNumber }],
-        //   //     term: classEntry.term
-        //   //   }
-        //   // })
-
-        //   return ({
-        //     updateOne: {
-        //       filter: {
-        //         $or: [{ subjectNumber: classEntry.subjectNumber },
-        //         { aliases: classEntry.subjectNumber }],
-        //         term: classEntry.term
-        //       },
-        //       update: {
-        //         $setOnInsert: classEntry
-        //       },
-        //       upsert: true
-        //     }
-        //   })
-        // })
-
-        // const bulkWriteAliasResults = await Class.bulkWrite(aliasedClassesWriteOps)
-
-        // console.log(bulkWriteAliasResults)
-        // console.log(bulkAddResult)
-
-        // If the classes already exist, update only description, instructors, and cross-listed departments
         const bulkWriteUpdate = await Class.bulkWrite(
           allClasses.map((classEntry) => ({
             updateOne: {
@@ -603,7 +728,13 @@ export default async function handler (
           }))
         )
 
-        sendComplete(bulkAddResult.insertedCount, bulkWriteUpdate.modifiedCount + bulkWriteCrossListedUpdate.modifiedCount)
+        const totalDuration = Math.round((Date.now() - startTime) / 1000)
+        sendComplete(
+          bulkAddResult.insertedCount,
+          bulkWriteUpdate.modifiedCount + bulkWriteCrossListedUpdate.modifiedCount,
+          failedDepartments.map(f => f.department),
+          totalDuration
+        )
         res.end()
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -618,16 +749,13 @@ export default async function handler (
       break
     case 'DELETE':
       try {
-        // const classExists = await Class.exists()
         console.log(body)
         console.log(typeof body)
-        // console.log(session)
 
         if (session.user && session.user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        // console.log(allClasses)
 
         const bulkDeleteResults = await Class.deleteMany({
           _id: {
@@ -650,16 +778,12 @@ export default async function handler (
       break
     case 'PUT':
       try {
-        // const classExists = await Class.exists()
         console.log(body)
         console.log(typeof body)
-        // console.log(session)
 
         if (session.user && session.user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
-
-        // console.log(allClasses)
 
         const bulkWriteUpdate = await Class.bulkWrite(
           body.classes.map((classId: string, index: number) => ({

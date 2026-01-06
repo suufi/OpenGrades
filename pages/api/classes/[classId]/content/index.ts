@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../../../utils/mongoConnection'
@@ -29,7 +29,7 @@ const minioClient = new Minio.Client({
 })
 
 
-export default async function handler (
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
@@ -53,17 +53,16 @@ export default async function handler (
       return res.status(200).json({ success: true, data: {} })
     case 'POST':
       try {
-        const user = await User.findOne({ email: session.user?.email }).lean()
+        const user = await User.findOne({ email: session.user?.email }).lean() as { _id: any; kerb: string; trustLevel: number } | null
         if (!user || user.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const classDoc = await Class.findById(req.query.classId).lean()
+        const classDoc = await Class.findById(req.query.classId).lean() as { _id: any; subjectNumber: string; term: string } | null
         if (!classDoc) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
 
-        // Parse multipart form data
         const form = formidable({ multiples: false })
 
         const parsed = await new Promise<{ fields: any; files: any }>((resolve, reject) => {

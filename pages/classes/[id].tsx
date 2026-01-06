@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Rating, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, UnstyledButton, em } from '@mantine/core'
-import { useForm, zodResolver } from '@mantine/form'
+import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Progress, Rating, RingProgress, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, Tooltip, UnstyledButton, em } from '@mantine/core'
+import { useForm } from '@mantine/form'
+import { zod4Resolver } from 'mantine-form-zod-resolver'
 import { useLocalStorage, useMediaQuery } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
 import type { InferGetServerSidePropsType, NextPage } from 'next'
@@ -24,15 +25,17 @@ import ClassReview from '../../models/ClassReview'
 import ContentSubmission from '../../models/ContentSubmission'
 import Report from '../../models/Report'
 import User from '../../models/User'
+import CourseEmbedding from '../../models/CourseEmbedding'
 
 import { IClass, IClassReview, IContentSubmission, IParams, IReport, IUser, LetterGrade, TimeRange } from '../../types'
 
 import GradeChart from '../../components/GradeChart'
+import RelatedClasses from '../../components/RelatedClasses'
 
 
 import GradeReportModal from '@/components/GradeReportModal'
 import { DonutChart } from '@mantine/charts'
-import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle, IconGraph, IconPhoto, IconTrash, IconUpload, IconX } from '@tabler/icons'
+import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle, IconClock, IconGraph, IconMessage, IconPhoto, IconStar, IconThumbUp, IconTrash, IconUpload, IconX, IconDatabase } from '@tabler/icons'
 import moment from 'moment-timezone'
 import mongoose from 'mongoose'
 import { Session, getServerSession } from 'next-auth'
@@ -40,6 +43,9 @@ import Link from 'next/link'
 import authOptions from "pages/api/auth/[...nextauth]"
 import { Eye, EyeOff, Flag2, Pencil, Plus } from 'tabler-icons-react'
 import styles from '../../styles/ClassPage.module.css'
+import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
+import { usePlausibleTracker } from '@/utils/plausible'
+import { extractCourseNumbers } from '@/utils/prerequisiteGraph'
 
 const RecommendationLevels: Record<number, string> = {
   1: 'Definitely not recommend',
@@ -70,19 +76,20 @@ interface ClassReviewCommentProps {
   upvotes: number
   downvotes: number
   onVoteChange: (vote: number) => void // Function to change the vote
+  isEmbedded?: boolean // Whether this review has an embedding
 }
 
 interface ContentSubmissionForm extends Omit<IContentSubmission, 'class' | 'author' | 'approved' | 'createdAt' | 'updatedAt'> { }
 
 interface ClassReviewForm extends Omit<IClassReview, 'class' | 'author' | 'createdAt' | 'updatedAt' | 'approved' | 'display' | 'verified'> { }
 
-function HideContent ({ classId, classReview, contentSubmission, callback, hidden }: { classId?: string, classReview?: IClassReview, contentSubmission?: IContentSubmission, callback: Function, hidden: boolean }) {
+function HideContent({ classId, classReview, contentSubmission, callback, hidden }: { classId?: string, classReview?: IClassReview, contentSubmission?: IContentSubmission, callback: Function, hidden: boolean }) {
   const [opened, setOpened] = useState(false)
 
   const goal = hidden ? 'Unhide' : 'Hide'
 
-  async function toggleHide () {
-    const url = contentSubmission ? `/api/classes/${classId}/content/${contentSubmission._id}` : `/api/classes/${classId}/reviews/${classReview?._id}`
+  async function toggleHide() {
+    const url = contentSubmission ? `/ api / classes / ${classId} /content/${contentSubmission._id} ` : ` / api / classes / ${classId} /reviews/${classReview?._id} `
     const body = contentSubmission ? {
       approved: hidden
     } : {
@@ -99,7 +106,7 @@ function HideContent ({ classId, classReview, contentSubmission, callback, hidde
       if (res.ok) {
         showNotification({
           title: 'Success!',
-          message: `${goal.substring(0, goal.length - 1)} ${contentSubmission ? 'content submission' : 'class review'}`
+          message: `${goal.substring(0, goal.length - 1)} ${contentSubmission ? 'content submission' : 'class review'} `
         })
         callback(!hidden)
         setOpened(false)
@@ -117,7 +124,7 @@ function HideContent ({ classId, classReview, contentSubmission, callback, hidde
       <ActionIcon variant='outline' radius='xl' color='red' onClick={() => setOpened(true)}>
         {!hidden ? <EyeOff size={20} /> : <Eye size={20} />}
       </ActionIcon>
-      <Modal title={`${goal} this post?`} size='lg' centered opened={opened} onClose={() => setOpened(false)}>
+      <Modal title={`${goal} this post ? `} size='lg' centered opened={opened} onClose={() => setOpened(false)}>
         <Stack>
           <Text size='sm'> Are you sure you want to {goal.toLowerCase()} this post? </Text>
           <Group justify='flex-end'>
@@ -130,7 +137,7 @@ function HideContent ({ classId, classReview, contentSubmission, callback, hidde
   )
 }
 
-function ClassReviewComment ({ classReview,
+function ClassReviewComment({ classReview,
   author,
   reported,
   trustLevel,
@@ -138,6 +145,7 @@ function ClassReviewComment ({ classReview,
   upvotes,
   downvotes,
   onVoteChange,
+  isEmbedded,
 }: ClassReviewCommentProps) {
   const [showName, setShowName] = useState(false)
   const [hidden, setHidden] = useState(!classReview.display)
@@ -153,7 +161,7 @@ function ClassReviewComment ({ classReview,
     }
 
     // Send the vote request to the API to register or update the vote
-    const response = await fetch(`/api/classes/${classReview.class.toString()}/reviews/${classReview._id}/vote`, {
+    const response = await fetch(`/ api / classes / ${classReview.class.toString()} /reviews/${classReview._id}/vote`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -175,7 +183,7 @@ function ClassReviewComment ({ classReview,
   }
 
 
-  async function deanon () {
+  async function deanon() {
     console.log("Denaonymizing user")
     if (!showName) {
       await fetch(`/api/auditlogs`, {
@@ -193,75 +201,196 @@ function ClassReviewComment ({ classReview,
     setShowName(!showName)
   }
 
-  return (
-    <Paper className={styles.comment} withBorder radius="md" >
-      <Group>
-        <Avatar alt={author.name} radius="xl" />
-        <div>
-          {
-            trustLevel && trustLevel >= 2 ? <Text size="sm" className={styles.text} onClick={() => deanon()}>{showName ? author.hiddenName : author.name}</Text> : <Text size="sm" className={styles.text}>{author.name}</Text>
-          }
-          <Text size="xs" c="dimmed">
-            {moment(classReview.createdAt).tz('America/New_York').format('MMMM DD, YYYY hh:mm a')}
-          </Text>
-          {(classReview.firstYear || classReview.retaking || classReview.droppedClass || trustLevel && trustLevel >= 2 && (reported || hidden)) && <Space h='sm' />}
-          <Group gap='xs'>
-            {classReview.firstYear && <Badge color={'indigo'} variant="filled">First Year</Badge>}
-            {classReview.retaking && <Badge color={'green'} variant="filled">Retake</Badge>}
-            {classReview.droppedClass && <Badge color={'yellow'} variant="filled">Dropped</Badge>}
-            {
-              trustLevel && trustLevel >= 2 && reported && <Badge color={'red'} variant="filled">Reported</Badge>
-            }
-            {
-              trustLevel && trustLevel >= 2 && hidden && <Badge color={'orange'} variant="filled">Hidden</Badge>
-            }
-          </Group>
-        </div>
-      </Group>
-      <Text className={`${styles.text} ${styles.commentBody}`} size="sm">
-        <b> Overall Rating: </b> {classReview.overallRating}/7 <br />
-        <b> Hours Per Week: </b> {classReview.hoursPerWeek} <br />
-        <b> Recommendation: </b> {classReview.recommendationLevel} - {RecommendationLevels[classReview.recommendationLevel]} <br />
-      </Text>
-      <Text className={`${styles.text} ${styles.commentBody}`} size="sm">
-        <Divider mb='sm' />
-        Class Comments: <em> &ldquo;{classReview.classComments}&rdquo; </em> <br />
-        Background Comments: <em> &ldquo;{classReview.backgroundComments}&rdquo; </em>
-        {/* {body} */}
-      </Text>
-      {/* <Divider p='sm' /> */}
-      <Group justify='flex-end'>
-        {trustLevel && trustLevel >= 2 && <HideContent classId={classReview.class.toString()} hidden={hidden} classReview={classReview} callback={(val: boolean) => { setHidden(val) }} />}
-        {(trustLevel && trustLevel >= 2) ? <ReportField classReview={classReview} callback={(val: boolean) => { setHidden(val) }} /> : <ReportField classReview={classReview} callback={() => { }} />}
-        <Group gap="xs">
-          <ActionIcon
-            onClick={() => handleVote(1)}
-            variant="transparent"
-            color={userVote === 1 ? 'green' : 'gray'}
-          >
-            <IconArrowUpCircle size={20} />
-          </ActionIcon>
-          <Text>{upvotes - downvotes}</Text>
-          <ActionIcon
-            onClick={() => handleVote(-1)}
-            variant="transparent"
-            color={userVote === -1 ? 'red' : 'gray'}
-          >
-            <IconArrowDownCircle size={20} />
-          </ActionIcon>
-        </Group>
+  // Helper function to get workload label and color
+  const getWorkloadInfo = (hours: number) => {
+    if (hours <= 6) return { label: 'Light', color: 'green' }
+    if (hours <= 12) return { label: 'Moderate', color: 'yellow' }
+    if (hours <= 18) return { label: 'Heavy', color: 'orange' }
+    return { label: 'Very Heavy', color: 'red' }
+  }
 
-        {/* {trustLevel && trustLevel >= 2 && <DeleteContent classReview={id} />} */}
+  // Helper function to get recommendation color
+  const getRecommendationColor = (level: number) => {
+    if (level >= 6) return 'green'
+    if (level >= 4) return 'yellow'
+    return 'red'
+  }
+
+  const workloadInfo = getWorkloadInfo(classReview.hoursPerWeek || 0)
+  const ratingPercent = ((classReview.overallRating || 0) / 7) * 100
+
+  return (
+    <Paper className={styles.comment} withBorder radius="md" p="md">
+      {/* Header: Author info and badges */}
+      <Group justify="space-between" mb="sm">
+        <Group>
+          <Avatar alt={author.name} radius="xl" />
+          <div>
+            {
+              trustLevel && trustLevel >= 2
+                ? <Text size="sm" fw={500} className={styles.text} style={{ cursor: 'pointer' }} onClick={() => deanon()}>{showName ? author.hiddenName : author.name}</Text>
+                : <Text size="sm" fw={500} className={styles.text}>{author.name}</Text>
+            }
+            <Text size="xs" c="dimmed">
+              {moment(classReview.createdAt).tz('America/New_York').format('MMMM DD, YYYY')}
+            </Text>
+          </div>
+        </Group>
+        <Group gap='xs'>
+          {classReview.firstYear && <Badge size="sm" color='indigo' variant="light">First Year</Badge>}
+          {classReview.retaking && <Badge size="sm" color='green' variant="light">Retake</Badge>}
+          {classReview.droppedClass && <Badge size="sm" color='yellow' variant="light">Dropped</Badge>}
+          {trustLevel && trustLevel >= 2 && reported && <Badge size="sm" color='red' variant="filled">Reported</Badge>}
+          {trustLevel && trustLevel >= 2 && hidden && <Badge size="sm" color='orange' variant="filled">Hidden</Badge>}
+          {trustLevel && trustLevel >= 2 && isEmbedded && (
+            <Badge size="sm" color='cyan' variant="light" leftSection={<IconDatabase size={10} />}>Embedded</Badge>
+          )}
+        </Group>
+      </Group>
+
+      {/* Metrics Grid */}
+      <Grid mb="md" gutter="md">
+        {/* Overall Rating */}
+        <Grid.Col span={{ base: 4, sm: 4 }}>
+          <Group gap="xs" align="center">
+            <Tooltip label={`${classReview.overallRating}/7 overall rating`}>
+              <RingProgress
+                size={50}
+                thickness={5}
+                roundCaps
+                sections={[{ value: ratingPercent, color: ratingPercent >= 70 ? 'green' : ratingPercent >= 40 ? 'yellow' : 'red' }]}
+                label={
+                  <Text size="xs" ta="center" fw={700}>
+                    {classReview.overallRating}
+                  </Text>
+                }
+              />
+            </Tooltip>
+            <div>
+              <Text size="xs" c="dimmed">Rating</Text>
+              <Text size="sm" fw={500}>{classReview.overallRating}/7</Text>
+            </div>
+          </Group>
+        </Grid.Col>
+
+        {/* Hours Per Week */}
+        <Grid.Col span={{ base: 4, sm: 4 }}>
+          <Group gap="xs" align="center">
+            <Tooltip label={`${classReview.hoursPerWeek} hours per week (${workloadInfo.label})`}>
+              <RingProgress
+                size={50}
+                thickness={5}
+                roundCaps
+                sections={[{ value: Math.min((classReview.hoursPerWeek || 0) / 25 * 100, 100), color: workloadInfo.color }]}
+                label={
+                  <Center>
+                    <IconClock size={16} />
+                  </Center>
+                }
+              />
+            </Tooltip>
+            <div>
+              <Text size="xs" c="dimmed">Hours/Week</Text>
+              <Text size="sm" fw={500}>{classReview.hoursPerWeek} <Text component="span" size="xs" c="dimmed">({workloadInfo.label})</Text></Text>
+            </div>
+          </Group>
+        </Grid.Col>
+
+        {/* Recommendation */}
+        <Grid.Col span={{ base: 4, sm: 4 }}>
+          <Group gap="xs" align="center">
+            <Tooltip label={RecommendationLevels[classReview.recommendationLevel]}>
+              <RingProgress
+                size={50}
+                thickness={5}
+                roundCaps
+                sections={[{ value: (classReview.recommendationLevel / 7) * 100, color: getRecommendationColor(classReview.recommendationLevel) }]}
+                label={
+                  <Center>
+                    <IconThumbUp size={16} />
+                  </Center>
+                }
+              />
+            </Tooltip>
+            <div>
+              <Text size="xs" c="dimmed">Would Recommend</Text>
+              <Text size="sm" fw={500}>{classReview.recommendationLevel}/7</Text>
+            </div>
+          </Group>
+        </Grid.Col>
+      </Grid>
+
+      {/* Comments Section - Only show if there's content */}
+      {(classReview.classComments || classReview.backgroundComments) && (
+        <Stack gap="xs">
+          {classReview.classComments && (
+            <Box>
+              <Group gap="xs" mb={4}>
+                <IconMessage size={14} color="gray" />
+                <Text size="xs" fw={600} c="dimmed">Class Comments</Text>
+              </Group>
+              <Text size="sm" style={{ fontStyle: 'italic', lineHeight: 1.5 }}>
+                "{classReview.classComments}"
+              </Text>
+            </Box>
+          )}
+
+          {classReview.backgroundComments && (
+            <Box>
+              <Group gap="xs" mb={4}>
+                <IconMessage size={14} color="gray" />
+                <Text size="xs" fw={600} c="dimmed">Background & Tips</Text>
+              </Group>
+              <Text size="sm" style={{ fontStyle: 'italic', lineHeight: 1.5 }}>
+                "{classReview.backgroundComments}"
+              </Text>
+            </Box>
+          )}
+        </Stack>
+      )}
+
+      {/* Actions Footer */}
+      <Divider my="sm" />
+      <Group justify='space-between'>
+        <Group gap="xs">
+          {trustLevel && trustLevel >= 2 && <HideContent classId={classReview.class.toString()} hidden={hidden} classReview={classReview} callback={(val: boolean) => { setHidden(val) }} />}
+          {(trustLevel && trustLevel >= 2) ? <ReportField classReview={classReview} callback={(val: boolean) => { setHidden(val) }} /> : <ReportField classReview={classReview} callback={() => { }} />}
+        </Group>
+        <Group gap="xs">
+          <Tooltip label="Helpful">
+            <ActionIcon
+              onClick={() => handleVote(1)}
+              variant={userVote === 1 ? "filled" : "light"}
+              color={userVote === 1 ? 'green' : 'gray'}
+              size="sm"
+            >
+              <IconArrowUpCircle size={16} />
+            </ActionIcon>
+          </Tooltip>
+          <Text size="sm" fw={500} c={upvotes - downvotes > 0 ? 'green' : upvotes - downvotes < 0 ? 'red' : 'gray'}>
+            {upvotes - downvotes}
+          </Text>
+          <Tooltip label="Not helpful">
+            <ActionIcon
+              onClick={() => handleVote(-1)}
+              variant={userVote === -1 ? "filled" : "light"}
+              color={userVote === -1 ? 'red' : 'gray'}
+              size="sm"
+            >
+              <IconArrowDownCircle size={16} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
       </Group>
     </Paper>
   )
 }
 
-function ReportField ({ contentSubmission, classReview, callback }: { contentSubmission?: IContentSubmission, classReview?: Partial<IClassReview>, callback: Function }) {
+function ReportField({ contentSubmission, classReview, callback }: { contentSubmission?: IContentSubmission, classReview?: Partial<IClassReview>, callback: Function }) {
   const [opened, setOpened] = useState(false)
   const [reason, setReason] = useState('')
 
-  async function report () {
+  async function report() {
     await fetch(`/api/reports`, {
       method: 'POST',
       headers: {
@@ -315,7 +444,8 @@ interface AddReviewProps {
   editData?: IClassReview
 }
 
-function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
+function AddReview({ classData, refreshData, editData }: AddReviewProps) {
+  const plausible = usePlausibleTracker()
   const [opened, setOpened] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [error, setError] = useState('')
@@ -385,7 +515,7 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
       },
 
     validateInputOnBlur: true,
-    validate: zodResolver(schema),
+    validate: zod4Resolver(schema),
 
     transformValues: (values) => ({
       ...values,
@@ -421,6 +551,14 @@ function AddReview ({ classData, refreshData, editData }: AddReviewProps) {
           title: 'Success!',
           message: `${editData ? 'Edited' : 'Posted'} your review for ${classData.subjectNumber}`
         })
+        if (!editData) {
+          plausible('Review Submit', {
+            props: {
+              classNumber: classData.subjectNumber,
+              hasNumericGrade: (values.numericGrade !== null && values.numericGrade !== undefined).toString()
+            }
+          })
+        }
         refreshData()
         setOpened(false)
       } else {
@@ -511,7 +649,8 @@ interface AddContentProps {
   refreshData: () => void
 }
 
-function AddContent ({ classData, refreshData }: AddContentProps) {
+function AddContent({ classData, refreshData }: AddContentProps) {
+  const plausible = usePlausibleTracker()
   const [opened, setOpened] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [error, setError] = useState('')
@@ -529,7 +668,7 @@ function AddContent ({ classData, refreshData }: AddContentProps) {
     },
 
     validateInputOnBlur: true,
-    validate: zodResolver(schema)
+    validate: zod4Resolver(schema)
   })
 
   useEffect(() => {
@@ -565,6 +704,12 @@ function AddContent ({ classData, refreshData }: AddContentProps) {
         showNotification({
           title: 'Success!',
           message: `Posted your content for ${classData.subjectNumber}`
+        })
+        plausible('Content Upload', {
+          props: {
+            contentType: values.type,
+            classNumber: classData.subjectNumber
+          }
         })
         setOpened(false)
         refreshData()
@@ -686,6 +831,16 @@ interface ClassPageProps {
   gradePointsProp: IClassReview[]
   myReview: IClassReview
   reportsProp: IReport[]
+  embeddingStatus?: {
+    hasDescriptionEmbedding: boolean
+    embeddedReviewIds: string[]
+    embeddedContentIds: string[]
+  }
+  relatedClasses?: {
+    prerequisites: { subjectNumber: string; subjectTitle: string }[]
+    corequisites: { subjectNumber: string; subjectTitle: string }[]
+    requiredBy: { subjectNumber: string; subjectTitle: string }[]
+  }
 }
 
 // const ContentSubmissionCard = ({ classId, contentSubmission, refreshData, reportsProp }: { classId: string, contentSubmission: IContentSubmission, refreshData: Function, reportsProp: IReport[] }) => {
@@ -709,17 +864,22 @@ interface ClassPageProps {
 
 const ContentSubmissionCard = ({
   classId,
+  subjectNumber,
   contentSubmission,
   refreshData,
   reportsProp,
-  trustLevel = 0
+  trustLevel = 0,
+  isEmbedded = false
 }: {
   classId: string
+  subjectNumber: string
   contentSubmission: IContentSubmission
   refreshData: Function
   reportsProp: IReport[]
   trustLevel?: number
+  isEmbedded?: boolean
 }) => {
+  const plausible = usePlausibleTracker()
   const [hidden, setHidden] = useState(!contentSubmission.approved)
   const [signedURL, setSignedURL] = useState<string | null>(null)
 
@@ -761,7 +921,29 @@ const ContentSubmissionCard = ({
         {contentSubmission.contentTitle}
       </Text>
 
-      <Text mt="xs" c="blue" size="sm" component={Link} href={signedURL || '#'} target="_blank">
+      {trustLevel && trustLevel >= 2 && isEmbedded && (
+        <Badge color={'cyan'} variant="light" leftSection={<IconDatabase size={12} />} mt="xs" size="sm">Embedded</Badge>
+      )}
+
+      <Text
+        mt="xs"
+        c="blue"
+        size="sm"
+        component={Link}
+        href={signedURL || '#'}
+        target="_blank"
+        onClick={() => {
+          if (signedURL) {
+            plausible('File Open', {
+              props: {
+                contentType: contentSubmission.type || 'Unknown',
+                classNumber: subjectNumber,
+                fileName: contentSubmission.contentTitle
+              }
+            })
+          }
+        }}
+      >
         {signedURL ? new URL(signedURL).hostname : 'Unavailable'}
       </Text>
 
@@ -783,7 +965,7 @@ const ContentSubmissionCard = ({
 }
 
 
-const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter()
 
   const refreshData = () => {
@@ -926,18 +1108,46 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
       </Title>
 
       <Space h="sm" />
+      <Group>
+        {
+          classProp.units.includes('P/D/F') && <Badge color='blue' variant='filled'> P/D/F </Badge>
+        }
 
-      {
-        classProp.units.includes('P/D/F') && <Badge color='blue' variant='filled'> P/D/F </Badge>
-      }
+        {
+          !classProp.offered && <Badge color='red' variant='filled'> Not Offered </Badge>
+        }
 
-      {
-        !classProp.offered && <Badge color='red' variant='filled'> Not Offered </Badge>
-      }
+        {
+          !classProp.display && <Badge color='orange' variant='filled'> Hidden </Badge>
+        }
 
-      {
-        !classProp.display && <Badge color='orange' variant='filled'> Hidden </Badge>
-      }
+        {/* GIR Attributes */}
+        {
+          classProp.girAttribute && classProp.girAttribute.length > 0 && classProp.girAttribute.map((gir: string) => (
+            <Badge key={gir} color='grape' variant='light'> GIR: {gir} </Badge>
+          ))
+        }
+
+        {/* HASS Attribute */}
+        {
+          classProp.hassAttribute && (
+            <Badge color='teal' variant='light'> {classProp.hassAttribute} </Badge>
+          )
+        }
+
+        {/* Communication Requirement */}
+        {
+          classProp.communicationRequirement && (
+            <Badge color='violet' variant='light'> {classProp.communicationRequirement} </Badge>
+          )
+        }
+
+        {
+          userProp.trustLevel && userProp.trustLevel >= 2 && embeddingStatus?.hasDescriptionEmbedding && (
+            <Badge color='cyan' variant='light' leftSection={<IconDatabase size={12} />}> Description Embedded </Badge>
+          )
+        }
+      </Group>
 
       <Space h="lg" />
       <Card withBorder shadow="sm" p='lg' >
@@ -1001,10 +1211,28 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         <Title order={3}> Content Submissions </Title>
         <Group>
           {
-            contentSubmissionProp.map((contentSubmission: IContentSubmission) => <ContentSubmissionCard key={contentSubmission._id} contentSubmission={contentSubmission} refreshData={refreshData} reportsProp={reportsProp} classId={classProp._id || "None"} />)
+            contentSubmissionProp.map((contentSubmission: IContentSubmission) => <ContentSubmissionCard
+              key={contentSubmission._id}
+              contentSubmission={contentSubmission}
+              refreshData={refreshData}
+              reportsProp={reportsProp}
+              classId={classProp._id || "None"}
+              subjectNumber={classProp.subjectNumber}
+              trustLevel={userProp.trustLevel}
+              isEmbedded={embeddingStatus?.embeddedContentIds?.includes(contentSubmission._id?.toString() || '')}
+            />)
           }
           <AddContent classData={classProp} refreshData={refreshData} />
         </Group>
+
+        {relatedClasses && (
+          <RelatedClasses
+            subjectNumber={classProp.subjectNumber}
+            prerequisites={relatedClasses.prerequisites}
+            corequisites={relatedClasses.corequisites}
+            requiredBy={relatedClasses.requiredBy}
+          />
+        )}
 
         <Title order={3}> Reviews </Title>
 
@@ -1023,6 +1251,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
                 upvotes={classReview.upvotes}
                 downvotes={classReview.downvotes}
                 onVoteChange={(vote) => handleVoteChange(classReview._id, vote, classReview.userVote)}
+                isEmbedded={embeddingStatus?.embeddedReviewIds?.includes(classReview._id?.toString() || '')}
               />
             ))
             : (<Box>  No class reviews yet. Please check back later or be the first one if you have taken this class. Thank you! </Box>)
@@ -1037,7 +1266,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
 export const getServerSideProps = (async (context) => {
   const { id } = context.params as IParams
 
-  function shuffleArray (array: unknown[]) {
+  function shuffleArray(array: unknown[]) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [array[i], array[j]] = [array[j], array[i]]
@@ -1166,7 +1395,83 @@ export const getServerSideProps = (async (context) => {
       // console.log('reviewsData', reviewsData)
 
       // check if last grade report upload was made in last 4 months
-      const lastGradeReportUpload = user.lastGradeReportUpload && (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) < 1000 * 60 * 60 * 24 * 30 * 4
+      const lastGradeReportUpload = hasRecentGradeReport(user.lastGradeReportUpload, 4)
+
+      // Query embedding status for trust level >= 2 users
+      let embeddingStatus = null
+      if (user.trustLevel >= 2) {
+        const embeddings = await CourseEmbedding.find({ class: id }).select('embeddingType sourceId').lean()
+
+        const hasDescriptionEmbedding = embeddings.some((e: any) => e.embeddingType === 'description')
+        const embeddedReviewIds = embeddings
+          .filter((e: any) => e.embeddingType === 'reviews' && e.sourceId)
+          .map((e: any) => e.sourceId.toString())
+        const embeddedContentIds = embeddings
+          .filter((e: any) => e.embeddingType === 'content' && e.sourceId)
+          .map((e: any) => e.sourceId.toString())
+
+        embeddingStatus = {
+          hasDescriptionEmbedding,
+          embeddedReviewIds: [...new Set(embeddedReviewIds)], // Dedupe
+          embeddedContentIds: [...new Set(embeddedContentIds)] // Dedupe
+        }
+      }
+
+      // Fetch related classes data
+      const prereqNumbers = extractCourseNumbers(classData.prerequisites || '')
+      const coreqNumbers = extractCourseNumbers(classData.corequisites || '')
+
+      const [prerequisiteClasses, corequisiteClasses, requiredByClasses] = await Promise.all([
+        Class.find({
+          subjectNumber: { $in: prereqNumbers },
+          offered: true,
+          academicYear: classData.academicYear
+        }).select('subjectNumber subjectTitle department academicYear').lean(),
+
+        Class.find({
+          subjectNumber: { $in: coreqNumbers },
+          offered: true,
+          academicYear: classData.academicYear
+        }).select('subjectNumber subjectTitle department academicYear').lean(),
+
+        Class.find({
+          offered: true,
+          academicYear: classData.academicYear,
+          $or: [
+            { prerequisites: { $regex: new RegExp(`\\b${classData.subjectNumber}\\b`, 'i') } },
+            { corequisites: { $regex: new RegExp(`\\b${classData.subjectNumber}\\b`, 'i') } }
+          ]
+        }).select('subjectNumber subjectTitle department academicYear').lean()
+      ])
+
+      // Helper to deduplicate by subjectNumber within each related list
+      const dedupeBySubjectNumber = (items: any[]) => {
+        const seen = new Set<string>()
+        return items.filter((c) => {
+          if (!c?.subjectNumber) return false
+          if (seen.has(c.subjectNumber)) return false
+          seen.add(c.subjectNumber)
+          return true
+        })
+      }
+
+      const relatedClasses = {
+        prerequisites: dedupeBySubjectNumber(prerequisiteClasses).map((c: any) => ({
+          subjectNumber: c.subjectNumber,
+          subjectTitle: c.subjectTitle,
+          department: c.department
+        })),
+        corequisites: dedupeBySubjectNumber(corequisiteClasses).map((c: any) => ({
+          subjectNumber: c.subjectNumber,
+          subjectTitle: c.subjectTitle,
+          department: c.department
+        })),
+        requiredBy: dedupeBySubjectNumber(requiredByClasses).map((c: any) => ({
+          subjectNumber: c.subjectNumber,
+          subjectTitle: c.subjectTitle,
+          department: c.department
+        }))
+      }
 
       return {
         props: {
@@ -1177,7 +1482,9 @@ export const getServerSideProps = (async (context) => {
           gradePointsProp: lastGradeReportUpload ? JSON.parse(JSON.stringify(shuffleArray((gradePointsData.length > 3 || user.trustLevel >= 2) ? gradePointsData : []))) : [],
           myReview: JSON.parse(JSON.stringify(myReview)),
           reportsProp: JSON.parse(JSON.stringify(reports)),
-          lastGradeReportUpload
+          lastGradeReportUpload,
+          embeddingStatus,
+          relatedClasses: JSON.parse(JSON.stringify(relatedClasses))
         }
       }
     }

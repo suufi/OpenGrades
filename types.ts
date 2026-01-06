@@ -95,6 +95,7 @@ export interface IClass {
     prerequisites?: string
     corequisites?: string
     has_final?: boolean | null
+    classTags?: string[]
     reviewable: boolean
     offered: boolean
     createdAt?: Date

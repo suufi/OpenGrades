@@ -4,6 +4,7 @@ import ClassReview from "@/models/ClassReview"
 import User from "@/models/User"
 import { IUser } from "@/types"
 import mongoConnection from "@/utils/mongoConnection"
+import { hasRecentGradeReport } from "@/utils/hasRecentGradeReport"
 import { Container, Group, SegmentedControl, Space, Text, Title, UnstyledButton } from "@mantine/core"
 import { showNotification } from "@mantine/notifications"
 import { Chart as ChartJS, registerables } from "chart.js"
@@ -291,9 +292,10 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         ...(review.class?.aliases || [])
     ]
 
+    // Get unique departments from reviews
     const uniqueDepartments = Array.from(
         new Set(classReviews.flatMap(extractDepartments))
-    ).filter(Boolean)
+    ).filter(Boolean).sort((a, b) => departmentsSorted.indexOf(a) - departmentsSorted.indexOf(b))
 
     const validReviews = classReviews.filter(r => r.overallRating && r.recommendationLevel)
 
@@ -304,11 +306,14 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         })
     })
 
-    const generateBarData = (valueExtractor, colorScheme) => {
-        const uniqueValues = Array.from(new Set(validReviews.map(valueExtractor).filter(Boolean))).sort((a, b) => Number(b) - Number(a))
+    const generateBarData = (valueExtractor, colorScheme, sortFunction) => {
+        if (!sortFunction) {
+            sortFunction = (a, b) => Number(b) - Number(a)
+        }
+        const uniqueValues = Array.from(new Set(validReviews.map(valueExtractor).filter(Boolean))).sort(sortFunction)
 
         return {
-            labels: uniqueDepartments.sort((a, b) => departmentsSorted.indexOf(a) - departmentsSorted.indexOf(b)),
+            labels: uniqueDepartments, // Use the pre-sorted department list
             datasets: uniqueValues.map((value) => ({
                 label: value.toString(),
                 data: uniqueDepartments.map(dept => {
@@ -415,9 +420,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 }
             }
 
-            // if the user.lastGradeReportUpload is null or the lastGradeReportUpload is more than 4 months ago then redirect to /
-            // mandates that the user uploads a grade report every 4 months to access statistics
-            if (!user.lastGradeReportUpload || (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) > 1000 * 60 * 60 * 24 * 30 * 4) {
+            if (!hasRecentGradeReport(user.lastGradeReportUpload, 4)) {
                 return {
                     props: {
                         access: false,

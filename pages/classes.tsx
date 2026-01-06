@@ -137,6 +137,9 @@ const Classes: NextPage = () => {
     academicYearFilter: [],
     departmentFilter: [],
     termFilter: [],
+    communicationFilter: [],
+    girFilter: [],
+    hassFilter: [],
     currentPage: 1,
   }
 
@@ -161,6 +164,9 @@ const Classes: NextPage = () => {
   const [academicYearFilter, setAcademicYearFilter] = useState<string[]>(initialState.academicYearFilter)
   const [departmentFilter, setDepartmentFilter] = useState<string[]>(initialState.departmentFilter)
   const [termFilter, setTermFilter] = useState<string[]>(initialState.termFilter)
+  const [communicationFilter, setCommunicationFilter] = useState<string[]>(initialState.communicationFilter)
+  const [girFilter, setGirFilter] = useState<string[]>(initialState.girFilter)
+  const [hassFilter, setHassFilter] = useState<string[]>(initialState.hassFilter)
 
   const [currentPage, setCurrentPage] = useState(initialState.currentPage)
   const [totalPages, setTotalPages] = useState(1)
@@ -185,10 +191,13 @@ const Classes: NextPage = () => {
       academicYearFilter,
       departmentFilter,
       termFilter,
+      communicationFilter,
+      girFilter,
+      hassFilter,
       currentPage,
     }
     sessionStorage.setItem('classesPageState', JSON.stringify(state))
-  }, [searchTerm, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, currentPage])
+  }, [searchTerm, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, currentPage])
 
 
   // useEffect(() => {
@@ -335,6 +344,15 @@ const Classes: NextPage = () => {
         if (termFilter.length > 0) {
           queryParams.append('terms', termFilter.join(','))
         }
+        if (communicationFilter.length > 0) {
+          queryParams.append('communicationRequirements', communicationFilter.join(','))
+        }
+        if (girFilter.length > 0) {
+          queryParams.append('girAttributes', girFilter.join(','))
+        }
+        if (hassFilter.length > 0) {
+          queryParams.append('hassAttributes', hassFilter.join(','))
+        }
 
         const startTime = performance.now()
         const response = await fetch(`/api/classes?${queryParams}`, {
@@ -366,12 +384,12 @@ const Classes: NextPage = () => {
   }, [
     currentPage, debounced, offeredFilter, reviewableFilter,
     reviewsOnlyFilter, academicYearFilter, departmentFilter,
-    termFilter, sort
+    termFilter, communicationFilter, girFilter, hassFilter, sort
   ])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, sort])
+  }, [debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, sort])
 
   useHotkeys([
     ['mod+\\', () => {
@@ -426,7 +444,7 @@ const Classes: NextPage = () => {
 
       <Divider
         my="md"
-        label={`Advanced Search (${Object.entries({ offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter })
+        label={`Advanced Search (${Object.entries({ offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter })
           .filter(([_, value]) =>
             Array.isArray(value) ? value.length > 0 : !!value
           ).length
@@ -454,6 +472,44 @@ const Classes: NextPage = () => {
             ]} value={termFilter} onChange={setTermFilter} />
             <Space h="sm" />
             <MultiSelect placeholder="Department" data={allDepartments} value={departmentFilter} onChange={setDepartmentFilter} />
+            <Space h="sm" />
+            <MultiSelect
+              placeholder="Communication Intensive"
+              data={[
+                { label: 'CI-H (Humanities)', value: 'CI-H' },
+                { label: 'CI-HW (Humanities Writing)', value: 'CI-HW' }
+              ]}
+              value={communicationFilter}
+              onChange={setCommunicationFilter}
+            />
+            <Space h="sm" />
+            <MultiSelect
+              placeholder="GIR Attributes"
+              data={[
+                { label: 'REST (Science)', value: 'REST' },
+                { label: 'LAB (Laboratory)', value: 'LAB' },
+                { label: 'Chemistry (GIR)', value: 'CHEM' },
+                { label: 'Biology (GIR)', value: 'BIOL' },
+                { label: 'Physics I (GIR)', value: 'PHY1' },
+                { label: 'Physics II (GIR)', value: 'PHY2' },
+                { label: 'Calculus I (GIR)', value: 'CAL1' },
+                { label: 'Calculus II (GIR)', value: 'CAL2' }
+              ]}
+              value={girFilter}
+              onChange={setGirFilter}
+            />
+            <Space h="sm" />
+            <MultiSelect
+              placeholder="HASS Attributes"
+              data={[
+                { label: 'HASS-A (Arts)', value: 'HASS-A' },
+                { label: 'HASS-E (Elective)', value: 'HASS-E' },
+                { label: 'HASS-H (Humanities)', value: 'HASS-H' },
+                { label: 'HASS-S (Social Sciences)', value: 'HASS-S' }
+              ]}
+              value={hassFilter}
+              onChange={setHassFilter}
+            />
           </Grid.Col>
         </Grid>
 

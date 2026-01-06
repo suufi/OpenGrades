@@ -17,7 +17,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "downlevelIteration": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "baseUrl": "./",
     "paths": {
@@ -33,6 +33,7 @@
     "types.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "scripts",
   ]
 }

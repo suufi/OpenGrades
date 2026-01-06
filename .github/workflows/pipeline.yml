@@ -47,11 +47,16 @@ jobs:
              "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}"
              "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}"
              "ELASTIC_SEARCH_URI=${{ secrets.ELASTIC_SEARCH_URI }}"
+             "ELASTICSEARCH_EMBEDDINGS_INDEX=${{ secrets.ELASTICSEARCH_EMBEDDINGS_INDEX }}"
              "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}"
              "MINIO_ACCESS_KEY_ID=${{ secrets.MINIO_ACCESS_KEY_ID }}"
              "MINIO_SECRET_ACCESS_KEY=${{ secrets.MINIO_SECRET_ACCESS_KEY }}"
              "MINIO_BUCKET_NAME=${{ secrets.MINIO_BUCKET_NAME }}"
-             "MINIO_REGION=${{ secrets.MINIO_REGION }}"             
+             "MINIO_REGION=${{ secrets.MINIO_REGION }}"
+             "OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }}"
+             "OLLAMA_EMBEDDING_MODEL=${{ secrets.OLLAMA_EMBEDDING_MODEL }}"
+             "OLLAMA_CHAT_MODEL=${{ secrets.OLLAMA_CHAT_MODEL }}"
+             "OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}"             
 
   deploy:
     name: Deploy Image
@@ -82,11 +87,16 @@ jobs:
           echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
           echo "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}" >> .env
           echo "ELASTIC_SEARCH_URI=${{ secrets.ELASTIC_SEARCH_URI }}" >> .env
+          echo "ELASTICSEARCH_EMBEDDINGS_INDEX=${{ secrets.ELASTICSEARCH_EMBEDDINGS_INDEX }}" >> .env
           echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> .env
           echo "MINIO_ACCESS_KEY_ID=${{ secrets.MINIO_ACCESS_KEY_ID }}" >> .env
           echo "MINIO_SECRET_ACCESS_KEY=${{ secrets.MINIO_SECRET_ACCESS_KEY }}" >> .env
           echo "MINIO_BUCKET_NAME=${{ secrets.MINIO_BUCKET_NAME }}" >> .env
           echo "MINIO_REGION=${{ secrets.MINIO_REGION }}" >> .env
+          echo "OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }}" >> .env
+          echo "OLLAMA_EMBEDDING_MODEL=${{ secrets.OLLAMA_EMBEDDING_MODEL }}" >> .env
+          echo "OLLAMA_CHAT_MODEL=${{ secrets.OLLAMA_CHAT_MODEL }}" >> .env
+          echo "OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}" >> .env
 
 
 

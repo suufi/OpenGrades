@@ -5,8 +5,12 @@ export interface ICourseEmbedding {
     class: mongoose.Types.ObjectId
     embeddingType: 'description' | 'reviews' | 'content'
     embedding: number[]
+    embeddingModel: string           // e.g., 'qwen3-embedding:4b'
+    embeddingDimensions: number      // e.g., 2560, 768
     sourceText: string
     sourceId?: mongoose.Types.ObjectId
+    chunkIndex?: number    // 0 = AI summary, 1+ = text chunks
+    totalChunks?: number
     lastUpdated: Date
 }
 
@@ -29,12 +33,27 @@ const CourseEmbeddingSchema = new mongoose.Schema<ICourseEmbedding>({
         type: [Number],
         required: true
     },
+    embeddingModel: {
+        type: String,
+        required: true,
+        index: true
+    },
+    embeddingDimensions: {
+        type: Number,
+        required: true
+    },
     sourceText: {
         type: String,
         required: true
     },
     sourceId: {
         type: Schema.Types.ObjectId
+    },
+    chunkIndex: {
+        type: Number
+    },
+    totalChunks: {
+        type: Number
     },
     lastUpdated: {
         type: Date,

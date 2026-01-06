@@ -4,12 +4,14 @@ import { useState } from 'react'
 
 import { IClass } from '@/types'
 import Link from 'next/link'
+import { usePlausibleTracker } from '@/utils/plausible'
 
 const GradeReportModal = ({ opened, onClose, onAddClasses }: {
     opened: boolean
     onClose: () => void
     onAddClasses: (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => void
 }) => {
+    const plausible = usePlausibleTracker()
     const [gradeReport, setGradeReport] = useState('')
     const [loading, setLoading] = useState(false)
     const [withPartialReviews, setWithPartialReviews] = useState(true)
@@ -64,13 +66,22 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
 
     // Submit the parsed classes
     const handleSubmit = () => {
+        // Track grade report upload
+        const totalClasses = Object.values(parsedClasses).flat().length
+        const terms = Object.keys(parsedClasses)
+        plausible('Grade Report Upload', {
+            props: {
+                classCount: totalClasses.toString(),
+                term: terms.length > 0 ? terms[0] : 'Unknown'
+            }
+        })
         onAddClasses(parsedClasses, partialReviews)
         setGradeReport('')
         setParsedClasses({})
         onClose()
     }
 
-    function getEmojiForTerm (term: string) {
+    function getEmojiForTerm(term: string) {
         term = term.substring(4)
         switch (term) {
             case 'FA':

@@ -4,7 +4,8 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { IClass, IClassReview } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
-import { Accordion, Avatar, Badge, Button, Card, Center, Container, Divider, Flex, Group, Paper, Space, Stack, Switch, Text, Title, UnstyledButton } from '@mantine/core'
+import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
+import { Accordion, Avatar, Badge, Box, Button, Card, Center, Container, Divider, Flex, Grid, Group, Paper, RingProgress, Space, Stack, Switch, Text, Title, Tooltip, UnstyledButton } from '@mantine/core'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import { useRouter } from 'next/router'
@@ -18,7 +19,9 @@ import styles from '@/styles/ClassPage.module.css'
 import { BarChart, DonutChart } from '@mantine/charts'
 import { showNotification } from '@mantine/notifications'
 import moment from 'moment-timezone'
-import { ArrowUpCircle } from 'tabler-icons-react'
+import { IconArrowUpCircle, IconClock, IconMessage, IconThumbUp } from '@tabler/icons'
+import RelatedClasses from '@/components/RelatedClasses'
+import { extractCourseNumbers } from '@/utils/prerequisiteGraph'
 
 
 const RecommendationLevels: Record<number, string> = {
@@ -50,6 +53,11 @@ interface AggregateProps {
         bucketPath?: string,
         createdAt: string
     }>
+    relatedClasses?: {
+        prerequisites: { subjectNumber: string; subjectTitle: string }[]
+        corequisites: { subjectNumber: string; subjectTitle: string }[]
+        requiredBy: { subjectNumber: string; subjectTitle: string }[]
+    }
 }
 
 interface ClassReviewCommentProps {
@@ -67,7 +75,7 @@ interface ClassReviewCommentProps {
     onVoteChange: (vote: number) => void // Function to change the vote
 }
 
-function ClassReviewComment ({ classReview,
+function ClassReviewComment({ classReview,
     author,
     reported,
     trustLevel,
@@ -81,52 +89,160 @@ function ClassReviewComment ({ classReview,
 
     const [previousVote, setPreviousVote] = useState(userVote) // Track previous vote state
 
+    // Helper function to get workload label and color
+    const getWorkloadInfo = (hours: number) => {
+        if (hours <= 6) return { label: 'Light', color: 'green' }
+        if (hours <= 12) return { label: 'Moderate', color: 'yellow' }
+        if (hours <= 18) return { label: 'Heavy', color: 'orange' }
+        return { label: 'Very Heavy', color: 'red' }
+    }
+
+    // Helper function to get recommendation color
+    const getRecommendationColor = (level: number) => {
+        if (level >= 6) return 'green'
+        if (level >= 4) return 'yellow'
+        return 'red'
+    }
+
+    const workloadInfo = getWorkloadInfo(classReview.hoursPerWeek || 0)
+    const ratingPercent = ((classReview.overallRating || 0) / 7) * 100
+
     return (
-        <Paper className={styles.comment} withBorder radius="md" >
-            <Group>
-                <Avatar alt={author.name} radius="xl" />
-                <div>
-                    {
-                        trustLevel && trustLevel >= 2 ? <Text size="sm" className={styles.text}>{showName ? author.hiddenName : author.name}</Text> : <Text size="sm" className={styles.text}>{author.name}</Text>
-                    }
-                    <Text size="xs" c="dimmed">
-                        {moment(classReview.createdAt).tz('America/New_York').format('MMMM DD, YYYY hh:mm a')}
-                    </Text>
-                    {(classReview.firstYear || classReview.retaking || classReview.droppedClass || trustLevel && trustLevel >= 2 && (reported || hidden)) ? <Space h='sm' /> : <></>}
-                    <Group gap='xs'>
-                        {classReview.firstYear && <Badge color={'indigo'} variant="filled">First Year</Badge>}
-                        {classReview.retaking && <Badge color={'green'} variant="filled">Retake</Badge>}
-                        {classReview.droppedClass && <Badge color={'yellow'} variant="filled">Dropped</Badge>}
-                        {
-                            trustLevel && trustLevel >= 2 && reported && <Badge color={'red'} variant="filled">Reported</Badge>
-                        }
-                        {
-                            trustLevel && trustLevel >= 2 && hidden && <Badge color={'orange'} variant="filled">Hidden</Badge>
-                        }
-                    </Group>
-                </div>
+        <Paper className={styles.comment} withBorder radius="md" p="md">
+            {/* Header: Author info and badges */}
+            <Group justify="space-between" mb="sm">
+                <Group>
+                    <Avatar alt={author.name} radius="xl" />
+                    <div>
+                        <Text size="sm" fw={500} className={styles.text}>{author.name}</Text>
+                        <Text size="xs" c="dimmed">
+                            {moment(classReview.createdAt).tz('America/New_York').format('MMMM DD, YYYY')}
+                        </Text>
+                    </div>
+                </Group>
+                <Group gap='xs'>
+                    {classReview.firstYear && <Badge size="sm" color='indigo' variant="light">First Year</Badge>}
+                    {classReview.retaking && <Badge size="sm" color='green' variant="light">Retake</Badge>}
+                    {classReview.droppedClass && <Badge size="sm" color='yellow' variant="light">Dropped</Badge>}
+                </Group>
             </Group>
-            <Text className={`${styles.text} ${styles.commentBody}`} size="sm">
-                <b> Overall Rating: </b> {classReview.overallRating}/7 <br />
-                <b> Hours Per Week: </b> {classReview.hoursPerWeek} <br />
-                <b> Recommendation: </b> {classReview.recommendationLevel} - {RecommendationLevels[classReview.recommendationLevel]} <br />
-            </Text>
-            <Text className={`${styles.text} ${styles.commentBody}`} size="sm">
-                <Divider mb='sm' />
-                Class Comments: <em> &ldquo;{classReview.classComments}&rdquo; </em> <br />
-                Background Comments: <em> &ldquo;{classReview.backgroundComments}&rdquo; </em>
-            </Text>
+
+            {/* Metrics Grid */}
+            <Grid mb="md" gutter="md">
+                {/* Overall Rating */}
+                <Grid.Col span={{ base: 4, sm: 4 }}>
+                    <Group gap="xs" align="center">
+                        <Tooltip label={`${classReview.overallRating}/7 overall rating`}>
+                            <RingProgress
+                                size={50}
+                                thickness={5}
+                                roundCaps
+                                sections={[{ value: ratingPercent, color: ratingPercent >= 70 ? 'green' : ratingPercent >= 40 ? 'yellow' : 'red' }]}
+                                label={
+                                    <Text size="xs" ta="center" fw={700}>
+                                        {classReview.overallRating}
+                                    </Text>
+                                }
+                            />
+                        </Tooltip>
+                        <div>
+                            <Text size="xs" c="dimmed">Rating</Text>
+                            <Text size="sm" fw={500}>{classReview.overallRating}/7</Text>
+                        </div>
+                    </Group>
+                </Grid.Col>
+
+                {/* Hours Per Week */}
+                <Grid.Col span={{ base: 4, sm: 4 }}>
+                    <Group gap="xs" align="center">
+                        <Tooltip label={`${classReview.hoursPerWeek} hours per week (${workloadInfo.label})`}>
+                            <RingProgress
+                                size={50}
+                                thickness={5}
+                                roundCaps
+                                sections={[{ value: Math.min((classReview.hoursPerWeek || 0) / 25 * 100, 100), color: workloadInfo.color }]}
+                                label={
+                                    <Center>
+                                        <IconClock size={16} />
+                                    </Center>
+                                }
+                            />
+                        </Tooltip>
+                        <div>
+                            <Text size="xs" c="dimmed">Hours/Week</Text>
+                            <Text size="sm" fw={500}>{classReview.hoursPerWeek} <Text component="span" size="xs" c="dimmed">({workloadInfo.label})</Text></Text>
+                        </div>
+                    </Group>
+                </Grid.Col>
+
+                {/* Recommendation */}
+                <Grid.Col span={{ base: 4, sm: 4 }}>
+                    <Group gap="xs" align="center">
+                        <Tooltip label={RecommendationLevels[classReview.recommendationLevel]}>
+                            <RingProgress
+                                size={50}
+                                thickness={5}
+                                roundCaps
+                                sections={[{ value: (classReview.recommendationLevel / 7) * 100, color: getRecommendationColor(classReview.recommendationLevel) }]}
+                                label={
+                                    <Center>
+                                        <IconThumbUp size={16} />
+                                    </Center>
+                                }
+                            />
+                        </Tooltip>
+                        <div>
+                            <Text size="xs" c="dimmed">Would Recommend</Text>
+                            <Text size="sm" fw={500}>{classReview.recommendationLevel}/7</Text>
+                        </div>
+                    </Group>
+                </Grid.Col>
+            </Grid>
+
+            {/* Comments Section - Only show if there's content */}
+            {(classReview.classComments || classReview.backgroundComments) && (
+                <Stack gap="xs">
+                    {classReview.classComments && (
+                        <Box>
+                            <Group gap="xs" mb={4}>
+                                <IconMessage size={14} color="gray" />
+                                <Text size="xs" fw={600} c="dimmed">Class Comments</Text>
+                            </Group>
+                            <Text size="sm" style={{ fontStyle: 'italic', lineHeight: 1.5 }}>
+                                "{classReview.classComments}"
+                            </Text>
+                        </Box>
+                    )}
+
+                    {classReview.backgroundComments && (
+                        <Box>
+                            <Group gap="xs" mb={4}>
+                                <IconMessage size={14} color="gray" />
+                                <Text size="xs" fw={600} c="dimmed">Background & Tips</Text>
+                            </Group>
+                            <Text size="sm" style={{ fontStyle: 'italic', lineHeight: 1.5 }}>
+                                "{classReview.backgroundComments}"
+                            </Text>
+                        </Box>
+                    )}
+                </Stack>
+            )}
+
+            {/* Footer with vote count */}
+            <Divider my="sm" />
             <Group justify='flex-end'>
                 <Group gap="xs">
-                    <Text>{upvotes - downvotes}</Text>
-                    <ArrowUpCircle size={20} />
+                    <Text size="sm" fw={500} c={upvotes - downvotes > 0 ? 'green' : upvotes - downvotes < 0 ? 'red' : 'gray'}>
+                        {upvotes - downvotes}
+                    </Text>
+                    <IconArrowUpCircle size={20} />
                 </Group>
             </Group>
         </Paper>
     )
 }
 
-const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gradePointsProp, lastGradeReportUpload, submissionsProp }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gradePointsProp, lastGradeReportUpload, submissionsProp, relatedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
     const router = useRouter()
 
     const [classes, setClasses] = useState(classesProp)
@@ -403,6 +519,18 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                 </Accordion>
             </Stack>
 
+            {relatedClasses && (
+                <>
+                    <Space h='xl' />
+                    <RelatedClasses
+                        subjectNumber={router.query.subjectNumber as string}
+                        prerequisites={relatedClasses.prerequisites}
+                        corequisites={relatedClasses.corequisites}
+                        requiredBy={relatedClasses.requiredBy}
+                    />
+                </>
+            )}
+
             <Space h='xl' />
             <Title order={2}>Content Submissions</Title>
             <Space h='sm' />
@@ -470,7 +598,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }).lean()
     const classIds = classes.map(c => c._id)
 
-    function shuffleArray (array: unknown[]) {
+    function shuffleArray(array: unknown[]) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]]
@@ -530,12 +658,62 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         class: { $in: classIds },
     }).populate('class').select('letterGrade').lean()
 
-    const lastGradeReportUpload = user.lastGradeReportUpload && (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) < 1000 * 60 * 60 * 24 * 30 * 4
+    const lastGradeReportUpload = hasRecentGradeReport(user.lastGradeReportUpload, 4)
 
     const submissions = await ContentSubmission.find({
         class: { $in: classIds },
         approved: true
     }).populate('class').select('contentTitle type contentURL bucketPath class createdAt').select('-author -approved').lean()
+
+    // Sort classes to find the latest one for prerequisites
+    const sortedClasses = [...classes].sort((a: any, b: any) => {
+        // Sort by academic year descending, then term
+        if (b.academicYear !== a.academicYear) return b.academicYear - a.academicYear
+        return b.term.localeCompare(a.term)
+    })
+    const latestClass = sortedClasses[0] || {}
+
+    // Fetch related classes data
+    const prereqNumbers = extractCourseNumbers(latestClass.prerequisites || '')
+    const coreqNumbers = extractCourseNumbers(latestClass.corequisites || '')
+
+    const [prerequisiteClasses, corequisiteClasses, requiredByClasses] = await Promise.all([
+        Class.find({
+            subjectNumber: { $in: prereqNumbers },
+            offered: true
+        }).select('subjectNumber subjectTitle department').lean(),
+
+        Class.find({
+            subjectNumber: { $in: coreqNumbers },
+            offered: true
+        }).select('subjectNumber subjectTitle department').lean(),
+
+        Class.find({
+            offered: true,
+            $or: [
+                { prerequisites: { $regex: new RegExp(`\\b${subjectNumber}\\b`, 'i') } },
+                { corequisites: { $regex: new RegExp(`\\b${subjectNumber}\\b`, 'i') } }
+            ]
+        }).select('subjectNumber subjectTitle department').lean()
+    ])
+
+    const relatedClasses = {
+        prerequisites: prerequisiteClasses.map((c: any) => ({
+            subjectNumber: c.subjectNumber,
+            subjectTitle: c.subjectTitle,
+            department: c.department
+        })),
+        corequisites: corequisiteClasses.map((c: any) => ({
+            subjectNumber: c.subjectNumber,
+            subjectTitle: c.subjectTitle,
+            department: c.department
+        })),
+        requiredBy: requiredByClasses.map((c: any) => ({
+            subjectNumber: c.subjectNumber,
+            subjectTitle: c.subjectTitle,
+            department: c.department
+        }))
+    }
 
     return {
         props: {
@@ -543,7 +721,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             reviewsProp: JSON.parse(JSON.stringify(reviews)),
             gradePointsProp: lastGradeReportUpload ? JSON.parse(JSON.stringify(shuffleArray((gradePointsData.length > 3 || user.trustLevel >= 2) ? gradePointsData : []))) : [],
             lastGradeReportUpload,
-            submissionsProp: JSON.parse(JSON.stringify(submissions))
+            submissionsProp: JSON.parse(JSON.stringify(submissions)),
+            relatedClasses: JSON.parse(JSON.stringify(relatedClasses))
         }
     }
 }

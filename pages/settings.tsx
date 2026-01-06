@@ -25,6 +25,8 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { EyeOff, Search } from 'tabler-icons-react'
 // import { ClassManagementTable } from '../components/ClassManagementTable'
+import { EmbeddingManagement } from '@/components/EmbeddingManagement'
+import { DepartmentProgressTable } from '@/components/DepartmentProgressTable'
 import authOptions from '@/pages/api/auth/[...nextauth]'
 
 
@@ -90,76 +92,6 @@ const departments = courseCatalog.split('\n').map(line => {
   return null
 }).filter((department) => department !== null)
 
-function DepartmentalTermGroupings () {
-  const [groupedData, setGroupedData] = useState<DepartmentGroupingData[]>([])
-  const [activeTerm, setActiveTerm] = useState<string | null>(null)
-
-  useEffect(() => {
-    // Fetch data from the count API endpoint
-    const fetchGroupedData = async () => {
-      try {
-        const response = await fetch('/api/classes/count')
-        const result = await response.json()
-
-        if (result.success) {
-          setGroupedData(result.data)
-          if (result.data.length > 0) {
-            setActiveTerm(result.data[0].term) // Set the default active term
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching grouped data:', error)
-      }
-    }
-
-    fetchGroupedData()
-  }, [])
-
-  // Filter the grouped data by the active term
-  const activeTermData = groupedData.find(data => data.term === activeTerm)
-
-  // Sort the department data according to the sorted `departments` list
-  const sortedDepartments = departments.map(department => {
-    const departmentData = activeTermData?.departments.find(
-      d => d.department === department.value
-    )
-    return {
-      department: department.value,
-      classCount: departmentData?.classCount || 0,
-      displayCount: departmentData?.displayCount || 0,
-    }
-  })
-
-  return (
-    <Stack>
-      <Select
-        allowDeselect={false}
-        data={groupedData.map(data => ({ value: data.term, label: data.term }))}
-        value={activeTerm}
-        onChange={setActiveTerm}
-        placeholder="Select a term"
-      />
-      <Table striped withTableBorder withColumnBorders withRowBorders>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th> Department </Table.Th>
-            <Table.Th> Class Count </Table.Th>
-            <Table.Th> Displayed Count </Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {sortedDepartments && sortedDepartments.map(({ department, classCount, displayCount }) => (
-            <Table.Tr key={`${activeTerm}-${department}`}>
-              <Table.Td> {department} </Table.Td>
-              <Table.Td> {classCount} </Table.Td>
-              <Table.Td> {displayCount} </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-    </Stack>
-  )
-}
 
 const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
   const { colorScheme } = useMantineColorScheme()
@@ -380,11 +312,18 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 
             if (data.type === 'progress') {
               console.log('Showing/updating progress notification', notificationId)
+              const timeRemaining = data.estimatedTimeRemaining > 0
+                ? ` (~${data.estimatedTimeRemaining}s remaining)`
+                : ''
+              const classInfo = data.classCount !== undefined
+                ? ` - ${data.classCount} classes`
+                : ''
+
               if (notificationId) {
                 notifications.update({
                   id: notificationId,
-                  title: 'Fetching Classes',
-                  message: `(${data.current}/${data.total}) Fetching ${data.department}...`,
+                  title: `Fetching Classes (${data.percentage}%)`,
+                  message: `(${data.current}/${data.total}) ${data.department}${classInfo}${timeRemaining}`,
                   loading: true,
                   autoClose: false,
                   withCloseButton: false
@@ -394,21 +333,34 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
                 console.log('Creating notification with ID:', notificationId)
                 notifications.show({
                   id: notificationId,
-                  title: 'Fetching Classes',
-                  message: `(${data.current}/${data.total}) Fetching ${data.department}...`,
+                  title: `Fetching Classes (${data.percentage}%)`,
+                  message: `(${data.current}/${data.total}) ${data.department}${classInfo}${timeRemaining}`,
                   loading: true,
                   autoClose: false,
                   withCloseButton: false
                 })
               }
+            } else if (data.type === 'departmentError') {
+              console.log('Department error:', data)
+              notifications.show({
+                title: `Error fetching ${data.department}`,
+                message: data.error,
+                color: 'orange',
+                autoClose: 8000
+              })
             } else if (data.type === 'complete') {
               console.log('Showing complete notification')
+              const failedInfo = data.failedDepartments?.length > 0
+                ? ` Failed: ${data.failedDepartments.join(', ')}.`
+                : ''
+              const durationInfo = data.totalDuration ? ` Completed in ${data.totalDuration}s.` : ''
+
               if (notificationId) {
                 notifications.update({
                   id: notificationId,
-                  title: 'Success!',
-                  message: `Created ${data.newClasses} classes. Updated ${data.updatedClasses} classes.`,
-                  color: 'green',
+                  title: data.failedDepartments?.length > 0 ? 'Partially Complete' : 'Success!',
+                  message: `Created ${data.newClasses} classes. Updated ${data.updatedClasses} classes.${durationInfo}${failedInfo}`,
+                  color: data.failedDepartments?.length > 0 ? 'yellow' : 'green',
                   loading: false,
                   autoClose: 5000
                 })
@@ -586,10 +538,39 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
           </Group>
           <Grid gutter={6} align={'flex-end'} justify='space-between'>
             <Grid.Col span={{ md: 3, xs: 4 }}>
-              <TextInput label="Term" placeholder="2022FA" value={term} onChange={(event) => setTerm(event.target.value)} />
+              <TextInput label="Term" placeholder="2024FA" value={term} onChange={(event) => setTerm(event.target.value)} />
             </Grid.Col>
-            <Grid.Col span={{ md: 9, xs: 4 }}>
-              <MultiSelect data={departments} label="Departments" value={selectedDepartments} onChange={(val) => setSelectedDepartments(val)} />
+            <Grid.Col span={{ md: 9, xs: 8 }}>
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Text size="sm" fw={500}>Departments</Text>
+                  <Group gap="xs">
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      onClick={() => setSelectedDepartments(departments.map(d => d.value))}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      color="red"
+                      onClick={() => setSelectedDepartments([])}
+                    >
+                      Clear All
+                    </Button>
+                  </Group>
+                </Group>
+                <MultiSelect
+                  data={departments}
+                  value={selectedDepartments}
+                  onChange={(val) => setSelectedDepartments(val)}
+                  placeholder="Select departments..."
+                  searchable
+                  clearable
+                />
+              </Stack>
             </Grid.Col>
             <Grid.Col span={{ md: 5, xs: 4 }}>
               <Switch label="Reviewable" checked={reviewable} onChange={(event) => setReviewable(event.target.checked)} />
@@ -750,8 +731,9 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
           {dynamicColumns}
         </DataTable> */}
 
-        <Title order={3}> Department Listings (Grouped) </Title>
-        <DepartmentalTermGroupings classes={classes} />
+        <DepartmentProgressTable />
+
+        <EmbeddingManagement />
       </Stack>
     </Container>
   )

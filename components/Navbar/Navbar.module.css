@@ -1,0 +1,89 @@
+.navLink {
+    display: block;
+    width: 100%;
+    padding: var(--mantine-spacing-xs);
+    margin-bottom: 4px;
+    border-radius: var(--mantine-radius-sm);
+    border-left: 3px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    text-decoration: none;
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-3));
+}
+
+.navLink:hover {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+.navLinkActive {
+    border-left-color: var(--mantine-color-blue-6);
+    background-color: light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6));
+}
+
+.navLinkActive .navLinkText {
+    font-weight: 600;
+    color: light-dark(var(--mantine-color-blue-7), var(--mantine-color-blue-4));
+}
+
+.navLinkText {
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-2));
+    transition: color 0.15s ease;
+}
+
+.navLinkIcon {
+    transition: transform 0.15s ease;
+}
+
+.navLink:hover .navLinkIcon {
+    transform: translateX(2px);
+}
+
+.userSection {
+    padding-top: var(--mantine-spacing-sm);
+    border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.userButton {
+    display: block;
+    width: 100%;
+    padding: var(--mantine-spacing-xs);
+    border-radius: var(--mantine-radius-sm);
+    transition: background-color 0.15s ease;
+}
+
+.userButton:hover {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+.userText {
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-2));
+}
+
+.userTextDimmed {
+    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
+}
+
+.sectionDivider {
+    margin: var(--mantine-spacing-xs) 0;
+}
+
+.collapsibleHeader {
+    transition: background-color 0.2s;
+    margin-bottom: 4px;
+}
+
+.collapsibleHeader:hover {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+[data-mantine-color-scheme='dark'] .collapsibleHeader:hover {
+    background-color: var(--mantine-color-dark-6);
+}
+
+
+.navLinkFeatured .navLinkText {
+    color: light-dark(var(--mantine-color-violet-7), var(--mantine-color-violet-4));
+}
+
+.navLinkFeatured:hover {
+    background-color: light-dark(var(--mantine-color-violet-0), var(--mantine-color-dark-6));
+}

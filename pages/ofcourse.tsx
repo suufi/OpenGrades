@@ -5,6 +5,7 @@ import ClassReview from "@/models/ClassReview"
 import CourseOption from "@/models/CourseOption"
 import User from "@/models/User"
 import mongoConnection from "@/utils/mongoConnection"
+import { hasRecentGradeReport } from "@/utils/hasRecentGradeReport"
 import { Center, Container, Select, Space, Table, Tabs, Text, Title, UnstyledButton } from "@mantine/core"
 import { showNotification } from "@mantine/notifications"
 import { Chart as ChartJS, registerables } from "chart.js"
@@ -379,7 +380,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             }
 
 
-            if (!user.lastGradeReportUpload || (new Date().getTime() - new Date(user.lastGradeReportUpload).getTime()) > 1000 * 60 * 60 * 24 * 30 * 4) {
+            if (!hasRecentGradeReport(user.lastGradeReportUpload, 4)) {
                 return {
                     props: {
                         access: false,
