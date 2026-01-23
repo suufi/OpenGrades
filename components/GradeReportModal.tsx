@@ -9,13 +9,13 @@ import { usePlausibleTracker } from '@/utils/plausible'
 const GradeReportModal = ({ opened, onClose, onAddClasses }: {
     opened: boolean
     onClose: () => void
-    onAddClasses: (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => void
+    onAddClasses: (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => void
 }) => {
     const plausible = usePlausibleTracker()
     const [gradeReport, setGradeReport] = useState('')
     const [loading, setLoading] = useState(false)
     const [withPartialReviews, setWithPartialReviews] = useState(true)
-    const [partialReviews, setPartialReviews] = useState<{ class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]>([])
+    const [partialReviews, setPartialReviews] = useState<{ class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]>([])
     const [parsedClasses, setParsedClasses] = useState<{ [key: string]: IClass[] }>({})
 
     // Fetch and parse the grade report
@@ -30,17 +30,17 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
             })
 
             const body = await response.json()
-            if (response.ok) {
-                const { matchedClasses, partialReviews } = body.data
+            if (response.ok && body.data) {
+                const { matchedClasses = [], partialReviews = [] } = body.data
 
-                const classesWithReviews = matchedClasses.reduce((acc: Record<string, IClass[]>, cls: IClass & { partialReviewGrade?: string; isDropped?: boolean }) => {
+                const classesWithReviews = matchedClasses.reduce((acc: Record<string, IClass[]>, cls: IClass & { partialReviewGrade?: string; isDroppedClass?: boolean }) => {
                     const key = `${cls.academicYear}`
 
                     const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
 
                     if (matchingPR) {
                         cls.partialReviewGrade = matchingPR.letterGrade
-                        cls.isDropped = matchingPR.dropped
+                        cls.isDroppedClass = matchingPR.droppedClass
                     }
 
                     if (!acc[key]) {

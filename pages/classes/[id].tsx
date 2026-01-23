@@ -465,7 +465,7 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
 
   const schema = z.object({
     overallRating: z.number().min(1).max(7),
-    conditions: z.array(z.enum(['firstYear', 'dropped', 'retaking'])),
+    conditions: z.array(z.enum(['firstYear', 'droppedClass', 'retaking'])),
     hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'], { invalid_type_error: 'Please select a number of hours for this class.' }),
     recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { invalid_type_error: 'Please select a recommendation level.' }),
     classComments: z.string().min(5, 'Please type some more words.'),
@@ -493,7 +493,7 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
     initialValues: editData
       ? {
         overallRating: editData.overallRating,
-        conditions: [editData.firstYear ? 'firstYear' : false, editData.droppedClass ? 'dropped' : false, editData.retaking ? 'retaking' : false].filter((entry) => entry !== false),
+        conditions: [editData.firstYear ? 'firstYear' : false, editData.droppedClass ? 'droppedClass' : false, editData.retaking ? 'retaking' : false].filter((entry) => entry !== false),
         hoursPerWeek: editData.hoursPerWeek as TimeRange,
         classComments: editData.classComments || sessionForm.classComments,
         backgroundComments: editData.backgroundComments || sessionForm.backgroundComments,
@@ -612,7 +612,7 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
                     {...form.getInputProps('conditions')}
                   >
                     <Checkbox value="firstYear" label="Freshman Year" />
-                    <Checkbox value="dropped" label="Dropped Class" />
+                    <Checkbox value="droppedClass" label="Dropped Class" />
                     <Checkbox value="retaking" label="Retaking" />
                   </Checkbox.Group>
                   <Select key="hoursPerWeek" required withAsterisk {...form.getInputProps('hoursPerWeek')} placeholder="Select the number of hours" label="Hours/week spent on classwork outside of lecture/recitation " data={['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours']} />
@@ -1028,7 +1028,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
     })
   }
 
-  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
+  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => {
     const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
 
     try {

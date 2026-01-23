@@ -100,7 +100,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     if (!access) {
         const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
-        const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
+        const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => {
             const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
 
             try {

@@ -50,7 +50,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
   const isMobile = useMediaQuery(`(max - width: ${em(750)})`)
   const [gradeReport, setGradeReport] = useDebouncedState<string>('', 1000)
   const [partialReviewsEnabled, setPartialReviewsEnabled] = useState(true)
-  const [partialReviewsData, setPartialReviewsData] = useState<{ class: string, letterGrade: string, dropped: boolean, firstYear: boolean }[]>([])
+  const [partialReviewsData, setPartialReviewsData] = useState<{ class: string, letterGrade: string, droppedClass: boolean, firstYear: boolean }[]>([])
   const [wasMITUndergrad, setWasMITUndergrad] = useState<boolean | null>(null)
   const [mitUndergradClassOf, setMitUndergradClassOf] = useState<number | null>(null)
   const [isGradStudent, setIsGradStudent] = useState(false)
@@ -62,7 +62,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
   const [emailOptIn, setEmailOptIn] = useState<boolean | null>(true)
 
   async function verifyReferralKerb(kerb: string) {
-    const res = await fetch(`/ api / me / referral - kerb ? kerb = ${kerb} `)
+    const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
     const body = await res.json()
     if (res.ok && body.data) {
       setReferredByState({ data: body.data, status: 'success' })
@@ -123,7 +123,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
       classes: Array.isArray(userProfile?.classesTaken)
         ? userProfile?.classesTaken.reduce(
           (acc: { [key: string]: string[] }, c: IClass) => {
-            const key = `${c.term} `
+            const key = `${c.term}`
             if (acc[key]) {
               acc[key].push(c._id)
             } else {
@@ -254,54 +254,60 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
     })
       .then(async (res) => {
         const body = await res.json()
-        if (res.ok) {
-          console.log(body)
-          const { matchedClasses, partialReviews } = body.data
-          if (partialReviews) {
+        if (res.ok && body.data) {
+          const { matchedClasses = [], partialReviews = [] } = body.data
+          
+          if (partialReviews && Array.isArray(partialReviews)) {
             setPartialReviewsData(partialReviews)
           }
 
-          // Extract academic years
-          const newAcademicYearsTaken = [
-            ...new Set((matchedClasses as IClass[]).map((c: IClass) => `${c.academicYear - 1} -${c.academicYear} `)),
-          ]
-          setAcademicYearsTaken(newAcademicYearsTaken)
+          if (matchedClasses && Array.isArray(matchedClasses) && matchedClasses.length > 0) {
+            // Extract academic years
+            const newAcademicYearsTaken = [
+              ...new Set((matchedClasses as IClass[]).map((c: IClass) => `${c.academicYear - 1} -${c.academicYear} `)),
+            ]
+            setAcademicYearsTaken(newAcademicYearsTaken)
 
-          // Add partial reviews to classes
-          const classesWithPartialReviews = matchedClasses.map((cls: IClass & { partialReviewGrade?: string; isDropped?: boolean }) => {
-            const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
-            if (matchingPR) {
-              cls.partialReviewGrade = matchingPR.letterGrade
-              cls.isDropped = matchingPR.dropped
-            }
-            return cls
-          })
+            // Add partial reviews to classes
+            const classesWithPartialReviews = matchedClasses.map((cls: IClass & { partialReviewGrade?: string; isDroppedClass?: boolean }) => {
+              const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
+              if (matchingPR) {
+                cls.partialReviewGrade = matchingPR.letterGrade
+                cls.isDroppedClass = matchingPR.droppedClass
+              }
+              return cls
+            })
 
-          // Create a new object with the classes grouped by term
-          const newClasses = classesWithPartialReviews.reduce((acc: { [key: string]: string[] }, c: IClass) => {
-            const key = `${c.term} `
-            if (acc[key]) {
-              acc[key].push(c._id)
-            } else {
-              acc[key] = [c._id]
-            }
-            return acc
-          }, {})
+            // Create a new object with the classes grouped by term
+            const newClasses = classesWithPartialReviews.reduce((acc: { [key: string]: string[] }, c: IClass) => {
+              const key = `${c.term}`
+              if (acc[key]) {
+                acc[key].push(c._id)
+              } else {
+                acc[key] = [c._id]
+              }
+              return acc
+            }, {})
 
-          form.setValues((prevValues) => ({
-            ...prevValues,
-            classes: {
-              ...prevValues.classes,
-              ...newClasses,
-            },
-          }))
+            form.setValues((prevValues) => ({
+              ...prevValues,
+              classes: {
+                ...prevValues.classes,
+                ...newClasses,
+              },
+            }))
+          } else {
+            showNotification({ title: 'No classes found', message: 'No matching classes were found in your grade report. Please check that your grade report was copied correctly.' })
+          }
         } else {
           console.error(body)
+          showNotification({ title: 'Error!', message: body.message || 'Failed to parse grade report.' })
         }
         setFormLoading(false)
       })
       .catch((err) => {
         console.error(err)
+        showNotification({ title: 'Error!', message: 'Failed to upload grade report. Please try again.' })
         setFormLoading(false)
       })
   }, [gradeReport, partialReviewsEnabled])
@@ -529,11 +535,11 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
                               <Title order={3}> 🍁 Fall {year} </Title>
-                              <ClassSearch term={`${year + 1} FA`} display={`Fall ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1}FA`} display={`Fall ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
                               <Title order={3}> ❄️ IAP {year + 1} </Title>
-                              <ClassSearch term={`${year + 1} JA`} display={`IAP ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1}JA`} display={`IAP ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
                               <Title order={3}> 🌹 Spring {year + 1} </Title>
-                              <ClassSearch term={`${year + 1} SP`} display={`Spring ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={`${year + 1}SP`} display={`Spring ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
                             </React.Fragment>
                           )
                         })

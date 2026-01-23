@@ -103,7 +103,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
         })
     if (!access || !courseOptionsData || courseOptionsData.length === 0) {
         const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
-        const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
+        const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => {
             const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
 
             try {
