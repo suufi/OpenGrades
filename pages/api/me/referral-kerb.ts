@@ -6,7 +6,7 @@ import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {
     success: boolean,
-    data?: object,
+    data?: object | boolean,
     message?: string
 }
 
