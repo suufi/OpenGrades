@@ -252,6 +252,20 @@ export interface IFAQ {
     updatedAt: Date
 }
 
+export interface IChangelogEntry {
+    _id?: string
+    /** Release date (YYYY-MM-DD) or display label */
+    date: string
+    /** Optional title for this release (e.g. "March 2025") */
+    title?: string
+    /** Bullet points for this release */
+    bullets: string[]
+    /** Sort order (newest first: higher = newer) */
+    order?: number
+    createdAt?: Date
+    updatedAt?: Date
+}
+
 export interface ICourseOption {
     _id?: string,
     departmentCode: string,

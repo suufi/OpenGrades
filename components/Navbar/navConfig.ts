@@ -15,7 +15,8 @@ import {
     Star,
     Network,
     GitBranch,
-    Diamonds
+    Diamonds,
+    News
 } from 'tabler-icons-react'
 import { IconQuestionCircle } from '@tabler/icons'
 
@@ -56,6 +57,8 @@ export const navConfig: NavItem[] = [
     { label: 'DormSoup', icon: Mail, href: 'https://dormsoup.mit.edu/', color: 'green', external: true, section: 'sipb' },
 
     // Other links
+    { label: 'Changelog', icon: News, href: '/changelog', color: 'blue', section: 'other' },
+    { label: 'Privacy Policy', icon: Shield, href: '/privacy', color: 'gray', section: 'other' },
     { label: 'Feedback', icon: Star, href: 'https://forms.gle/pyj7zY45AVnjX2Nc8', color: 'yellow', external: true, section: 'other' },
     { label: 'Affiliate Access', icon: Key, href: 'https://forms.gle/8iandxQpc6abmQtZA', color: 'pink', external: true, section: 'other' },
 ]
@@ -63,6 +66,8 @@ export const navConfig: NavItem[] = [
 // Links shown to unauthenticated users
 export const publicNavConfig: NavItem[] = [
     { label: 'About', icon: InfoCircle, href: '/about', color: 'grape', section: 'main' },
+    { label: 'Changelog', icon: News, href: '/changelog', color: 'blue', section: 'other' },
+    { label: 'Privacy Policy', icon: Shield, href: '/privacy', color: 'gray', section: 'other' },
     { label: 'Feedback', icon: Star, href: 'https://forms.gle/pyj7zY45AVnjX2Nc8', color: 'yellow', external: true, section: 'other' },
     { label: 'Affiliate Access', icon: Key, href: 'https://forms.gle/8iandxQpc6abmQtZA', color: 'pink', external: true, section: 'other' },
 ]

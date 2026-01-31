@@ -156,7 +156,7 @@ const PrivacyPolicyPage: NextPage = () => {
             <List mb="xl">
                 <List.Item><strong>No external training:</strong> Your data is not shared with AI companies for model training</List.Item>
                 <List.Item><strong>No advertisers:</strong> We have no ads and share nothing with marketers</List.Item>
-                <List.Item><strong>Legal:</strong> We may disclose data if required by law or MIT policy</List.Item>
+                <List.Item><strong>Legal:</strong> We may disclose data if required by law or MIT policy. Please do not commit crimes on this platform. </List.Item>
             </List>
 
             {/* Audit Logs */}
