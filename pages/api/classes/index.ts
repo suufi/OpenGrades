@@ -413,9 +413,8 @@ async function handler(
         const sendMessage = (data: any) => {
           res.write(JSON.stringify(data) + '\n')
           // Flush output buffer if available (for streaming responses)
-          const flushableRes = res as { flush?: () => void }
-          if (typeof flushableRes.flush === 'function') {
-            flushableRes.flush()
+          if (typeof (res as any).flush === 'function') {
+            (res as any).flush()
           }
         }
 
