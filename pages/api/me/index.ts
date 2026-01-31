@@ -39,7 +39,7 @@ export default async function handler(
     case 'GET':
       try {
         if (session.user?.id) {
-          const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+          const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
 
           return res.status(200).json({ success: true, data: { session, user } })
         } else {
@@ -53,7 +53,7 @@ export default async function handler(
       break
     case 'PUT':
       try {
-        const user = await User.findOne({ email: session.user?.id.toLowerCase() }).lean()
+        const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
 
         if (user) {
           const schema = z.object({
@@ -101,7 +101,7 @@ export default async function handler(
             updateData.courseAffiliation = uniqueAffiliations
           }
 
-          await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() },
+          await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() },
             updateData
           )
 
@@ -140,11 +140,11 @@ export default async function handler(
             await ClassReview.create(reviewsToMake)
 
             if (reviewsToMake.length > 0) {
-              await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: new Date() })
+              await User.updateOne({ email: session.user?.email?.toLowerCase() }, { lastGradeReportUpload: new Date() })
             }
           }
 
-          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() })
         } else {
           throw new Error("User doesn't have ID.")
         }

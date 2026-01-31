@@ -28,12 +28,11 @@ export default async function handler (
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
-                if (session.user?.id) {
-                    // const user = await User.findOne({ email: session.user.id }).lean()
+                if (session.user?.email) {
                     const reports = await AuditLog.find({}).populate('actor').lean()
                     return res.status(200).json({ success: true, data: { reports } })
                 } else {
-                    throw new Error("User doesn't have ID.")
+                    throw new Error("User doesn't have email.")
                 }
             } catch (error: unknown) {
                 if (error instanceof Error) {
@@ -43,7 +42,7 @@ export default async function handler (
             break
         case 'POST':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
                     const author = await User.findOne({ email: session.user?.email })
 
                     if (!session.user || session.user?.trustLevel < 2) {

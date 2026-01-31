@@ -33,7 +33,7 @@ export default async function handler (
             break
         case 'PATCH':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
                     const referredByUser = body.referredBy ? await User.exists({ kerb: body.referredBy }) : false
                     if (!referredByUser) {
                         throw new Error('User does not exist.')
@@ -41,7 +41,7 @@ export default async function handler (
                     if (referredByUser === session.user.kerb) {
                         throw new Error('You cannot refer yourself.')
                     }
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() }, {
                         referredBy: referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : null
                     })
 

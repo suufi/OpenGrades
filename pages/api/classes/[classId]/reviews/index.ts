@@ -64,13 +64,13 @@ export default async function handler (
         console.log(typeof body)
         console.log(session)
 
-        const user = await User.findOne({ email: session.user?.email }).lean()
+        const user = await User.findOne({ email: session.user?.email }).lean() as any
 
-        if (session.user && user.trustLevel < 1) {
+        if (session.user && user && user.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean()
+        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean() as any
         if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
@@ -95,7 +95,7 @@ export default async function handler (
         if (!reviewedClass.units.includes('P/D/F') && data.letterGrade === 'P') {
           return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
-        if (await ClassReview.exists({ class: req.query.classId, author: author._id })) {
+        if (!author || await ClassReview.exists({ class: req.query.classId, author: author._id })) {
           return res.status(409).json({ success: false, message: 'Class review already exists.' })
         }
 
@@ -146,13 +146,13 @@ export default async function handler (
       break
     case 'PUT':
       try {
-        const user = await User.findOne({ email: session.user?.email }).lean()
+        const user = await User.findOne({ email: session.user?.email }).lean() as any
 
-        if (session.user && user.trustLevel < 1) {
+        if (session.user && user && user.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean()
+        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean() as any
         if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
@@ -174,7 +174,11 @@ export default async function handler (
         const data = schema.parse(body)
 
         const author = await User.findOne({ email: session.user?.email })
-        const existingReview = await ClassReview.findOne({ class: req.query.classId, author: author._id }).lean()
+        if (!author) {
+          return res.status(404).json({ success: false, message: 'User not found.' })
+        }
+        
+        const existingReview = await ClassReview.findOne({ class: req.query.classId, author: author._id }).lean() as any
         if (!existingReview) {
           return res.status(404).json({ success: false, message: 'Class review does not exist.' })
         }
@@ -183,7 +187,7 @@ export default async function handler (
           return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
 
-        let changes = {
+        let changes: any = {
           overallRating: data.overallRating,
           firstYear: data.firstYear,
           retaking: data.retaking,

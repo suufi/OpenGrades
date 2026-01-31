@@ -34,7 +34,7 @@ export default async function handler (
         case 'GET':
             try {
                 if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
+                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean()
 
                     return res.status(200).json({ success: true, data: { classesTaken: user.classesTaken } })
                 } else {
@@ -48,10 +48,10 @@ export default async function handler (
             break
         case 'POST':
             try {
-                const user = await User.exists({ email: session.user?.id.toLowerCase() })
+                const user = await User.exists({ email: session.user?.email?.toLowerCase() })
                 if (user) {
 
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() }, {
                         $addToSet: {
                             classesTaken: {
                                 $each: body.classesTaken
@@ -93,10 +93,10 @@ export default async function handler (
                         }
                         await ClassReview.create(reviewsToMake)
 
-                        await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
+                        await User.updateOne({ email: session.user?.email?.toLowerCase() }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
                     }
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() })
                 } else {
                     throw new Error('User does not exist.')
                 }
@@ -108,15 +108,15 @@ export default async function handler (
             break
         case 'DELETE':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
 
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() }, {
                         $pull: {
                             classesTaken: body.classId
                         }
                     })
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() })
                 } else {
                     throw new Error('User does not exist.')
                 }

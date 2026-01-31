@@ -31,7 +31,7 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                const user = await User.findOne({ email: session.user.id.toLowerCase() })
+                const user = await User.findOne({ email: session.user.email.toLowerCase() })
                     .populate('courseAffiliation')
                     .populate('classesTaken')
                     .lean()
@@ -151,7 +151,7 @@ export default async function handler (
                 let finalProgramTerms = programTerms
 
                 if ((finalProgramTerms.length === 0) && (undergradTerms && undergradTerms.length > 0)) {
-                    const userForAff = await User.findOne({ email: session.user.id.toLowerCase() })
+                    const userForAff = await User.findOne({ email: session.user.email.toLowerCase() })
                         .populate('courseAffiliation')
                         .populate('classesTaken')
                         .lean()
@@ -188,13 +188,13 @@ export default async function handler (
 
 
                 const updateResult = await User.findOneAndUpdate(
-                    { email: session.user.id.toLowerCase() },
+                    { email: session.user.email.toLowerCase() },
                     { $set: { programTerms: finalProgramTerms } },
                     { new: true }
                 )
 
 
-                const user = await User.findOne({ email: session.user.id.toLowerCase() })
+                const user = await User.findOne({ email: session.user.email.toLowerCase() })
                     .populate('courseAffiliation')
                     .lean()
 

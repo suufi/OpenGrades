@@ -45,7 +45,7 @@ export default async function handler (
                     return res.status(404).json({ success: false, message: 'Class does not exist.' })
                 }
 
-                const content = await ContentSubmission.findById(req.query.contentId).populate(['class', 'author']).lean()
+                const content = await ContentSubmission.findById(req.query.contentId).populate(['class', 'author']).lean() as any
                 if (!content) {
                     return res.status(404).json({ success: false, message: 'Content not found.' })
                 }

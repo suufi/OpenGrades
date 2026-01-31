@@ -73,7 +73,7 @@ export default async function handler (
 
         const validCourseOptionObjects = courseOptionObjects.filter(co => co !== null)
 
-        const user = await User.findOne({ email: session.user?.id.toLowerCase() })
+        const user = await User.findOne({ email: session.user?.email?.toLowerCase() })
             .populate('courseAffiliation')
             .lean()
 
@@ -102,11 +102,11 @@ export default async function handler (
         const finalCourseAffiliation = [...validCourseOptionObjects, ...preservedHistoricalPrograms]
 
         await User.findOneAndUpdate(
-            { email: session.user?.id.toLowerCase() },
+            { email: session.user?.email?.toLowerCase() },
             { courseAffiliation: finalCourseAffiliation }
         )
 
-        const updatedUser = await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+        const updatedUser = await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
 
         return res.status(200).json({
             success: true,

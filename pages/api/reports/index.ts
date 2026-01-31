@@ -45,7 +45,7 @@ export default async function handler (
             break
         case 'POST':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
                     const author = await User.findOne({ email: session.user?.email })
 
                     if (!session.user || session.user?.trustLevel < 1) {
@@ -86,7 +86,7 @@ export default async function handler (
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
                     const report = await Report.findByIdAndUpdate(body.reportId, {
                         resolved: true,
                         outcome: body.outcome
