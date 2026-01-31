@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { withApiLogger } from '@/utils/apiLogger'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'

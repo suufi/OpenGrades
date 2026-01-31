@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { IClass } from '@/types'
@@ -39,7 +37,7 @@ function parseClassName(subjectNumber: string) {
   }
 }
 
-function parseDepartment(subjectNumber) {
+function parseDepartment(subjectNumber: string) {
   return subjectNumber.split('.')[0]
 }
 
@@ -396,9 +394,6 @@ async function handler(
 
     case 'POST':
       try {
-        // const classExists = await Class.exists()
-        console.log(body)
-        console.log(typeof body)
 
         if (!user || user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
@@ -417,8 +412,10 @@ async function handler(
 
         const sendMessage = (data: any) => {
           res.write(JSON.stringify(data) + '\n')
-          if (typeof (res as any).flush === 'function') {
-            (res as any).flush()
+          // Flush output buffer if available (for streaming responses)
+          const flushableRes = res as { flush?: () => void }
+          if (typeof flushableRes.flush === 'function') {
+            flushableRes.flush()
           }
         }
 
