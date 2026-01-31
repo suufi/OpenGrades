@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import User from '@/models/User'
 import { auth } from '@/utils/auth'
 import mongoConnection from '@/utils/mongoConnection'

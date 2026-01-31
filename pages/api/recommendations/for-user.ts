@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth'

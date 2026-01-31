@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { IClass } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
 import User from '@/models/User'

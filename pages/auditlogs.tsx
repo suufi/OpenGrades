@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import Head from 'next/head'
 

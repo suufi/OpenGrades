@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../../../utils/mongoConnection'
 

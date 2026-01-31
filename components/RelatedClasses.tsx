@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Badge, Button, Card, Group, SimpleGrid, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { IconArrowRight, IconArrowLeft, IconLink } from '@tabler/icons'
 import Link from 'next/link'

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import User from '@/models/User'
 import { auth } from '@/utils/auth'
 import type { NextApiRequest, NextApiResponse } from 'next'

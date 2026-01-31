@@ -1,4 +1,3 @@
-// @ts-nocheck
 import ClassReview from '@/models/ClassReview'
 import ReviewVote from '@/models/ReviewVote'
 import { auth } from '@/utils/auth'

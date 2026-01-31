@@ -1,4 +1,3 @@
-// @ts-nocheck
 import CourseOption from '@/models/CourseOption'
 import User from '@/models/User'
 import { auth } from '@/utils/auth'
