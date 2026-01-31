@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import type { GetServerSideProps, NextPage } from 'next'
 import Head from 'next/head'
@@ -193,7 +192,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         }
       }
 
-      const reports = await Report.find({}).populate('reporter contentSubmission classReview').lean()
+      const reports = await Report.find({}).populate('reporter contentSubmission classReview').lean() as any
 
       return {
         props: {

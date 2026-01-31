@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession } from 'next-auth'
@@ -618,7 +617,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     await mongoConnection()
 
     // Check if user has submitted a grade report
-    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
+    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any
     if (!user) {
         return {
             redirect: {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import authOptions from '@/auth'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
@@ -607,7 +606,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const classes = await Class.find({
         $or: [{ subjectNumber }, { aliases: { $in: [subjectNumber] } }],
         display: true
-    }).lean()
+    }).lean() as any
     const classIds = classes.map(c => c._id)
 
     function shuffleArray(array: unknown[]) {
@@ -621,7 +620,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // const reviews = await ClassReview.find({
     //     class: { $in: classIds },
     //     partial: false
-    // }).populate('class').lean()
+    // }).populate('class').lean() as any
 
     // aggregate reviews with # of upvotes and downvotes
     const reviews = await ClassReview.aggregate([
@@ -668,14 +667,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const gradePointsData = await ClassReview.find({
         class: { $in: classIds },
-    }).populate('class').select('letterGrade').lean()
+    }).populate('class').select('letterGrade').lean() as any
 
     const lastGradeReportUpload = hasRecentGradeReport(user.lastGradeReportUpload, 4)
 
     const submissions = await ContentSubmission.find({
         class: { $in: classIds },
         approved: true
-    }).populate('class').select('contentTitle type contentURL bucketPath class createdAt').select('-author -approved').lean()
+    }).populate('class').select('contentTitle type contentURL bucketPath class createdAt').select('-author -approved').lean() as any
 
     // Sort classes to find the latest one for prerequisites
     const sortedClasses = [...classes].sort((a: any, b: any) => {
@@ -693,12 +692,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         Class.find({
             subjectNumber: { $in: prereqNumbers },
             offered: true
-        }).select('subjectNumber subjectTitle department').lean(),
+        }).select('subjectNumber subjectTitle department').lean() as any,
 
         Class.find({
             subjectNumber: { $in: coreqNumbers },
             offered: true
-        }).select('subjectNumber subjectTitle department').lean(),
+        }).select('subjectNumber subjectTitle department').lean() as any,
 
         Class.find({
             offered: true,
@@ -706,7 +705,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 { prerequisites: { $regex: new RegExp(`\\b${subjectNumber}\\b`, 'i') } },
                 { corequisites: { $regex: new RegExp(`\\b${subjectNumber}\\b`, 'i') } }
             ]
-        }).select('subjectNumber subjectTitle department').lean()
+        }).select('subjectNumber subjectTitle department').lean() as any
     ])
 
     const relatedClasses = {

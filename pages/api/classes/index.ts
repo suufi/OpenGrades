@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { IClass } from '@/types'
@@ -21,7 +19,8 @@ const client = getESClient()
 type Data = {
   success: boolean,
   data?: object,
-  message?: string
+  message?: string,
+  meta?: object
 }
 
 type ClassQuery = {
@@ -38,7 +37,7 @@ function parseClassName(subjectNumber: string) {
   }
 }
 
-function parseDepartment(subjectNumber) {
+function parseDepartment(subjectNumber: string) {
   return subjectNumber.split('.')[0]
 }
 
@@ -135,10 +134,10 @@ export default async function handler(
           query.hassAttribute = { $in: hassValues }
         }
 
-        const tokens = search.split(/\s+/).filter(Boolean)
+        const tokens = typeof search === 'string' ? search.split(/\s+/).filter(Boolean) : []
 
         // Prepare for sorting
-        let sortQuery = {}
+        let sortQuery: any = {}
         if (sortField) {
           if (sortField !== 'relevance') {
             if (sortField === 'alphabetical') {
@@ -148,7 +147,7 @@ export default async function handler(
             } else if (sortField === 'reviews') {
               sortQuery.classReviewCount = -1
             } else {
-              sortQuery[sortField] = sortOrder === 'asc' ? 1 : -1
+              sortQuery[sortField as string] = sortOrder === 'asc' ? 1 : -1
             }
           } else {
             if (!search) {
@@ -157,8 +156,8 @@ export default async function handler(
           }
         }
 
-        let highlights = {}
-        let scores = {}
+        let highlights: any = {}
+        let scores: any = {}
 
         if (search) {
 
@@ -208,7 +207,7 @@ export default async function handler(
 
           const searchResults = await client.search({
             index: 'opengrades_prod.classes',
-            query: esQuery,
+            query: esQuery as any,
             highlight: {
               fields: {
                 description: {},
@@ -223,8 +222,13 @@ export default async function handler(
             size: 1000
           }).catch((error) => {
             console.error("Error during ElasticSearch query", error)
-            return res.status(400).json({ success: false, message: error.message })
+            res.status(400).json({ success: false, message: error.message })
+            return null
           })
+
+          if (!searchResults) {
+            return
+          }
 
           const classIds = searchResults.hits.hits.map((hit) => new mongoose.Types.ObjectId(hit._id))
           query._id = { $in: classIds }
@@ -232,12 +236,12 @@ export default async function handler(
           highlights = searchResults.hits.hits.reduce((acc, hit) => {
             acc[hit._id] = hit.highlight
             return acc
-          }, {})
+          }, {} as any)
 
           scores = searchResults.hits.hits.reduce((acc, hit) => {
             acc[hit._id] = hit._score
             return acc
-          }, {})
+          }, {} as any)
         }
 
 
@@ -278,16 +282,17 @@ export default async function handler(
               {
                 $addFields: {
                   classReviewCount: { $size: '$reviews' },
+                  userCount: { $size: '$classesTaken' }
                 }
-              },
+              } as any,
               {
                 $project: {
                   reviews: 0,
                 }
-              }
+              } as any
             )
           }
-          aggregationPipeline.push({ $sort: sortQuery })
+          aggregationPipeline.push({ $sort: sortQuery } as any)
         }
 
         let classes = await Class.aggregate(aggregationPipeline)
@@ -384,11 +389,6 @@ export default async function handler(
 
     case 'POST':
       try {
-        // const classExists = await Class.exists()
-        console.log(body)
-        console.log(typeof body)
-        // console.log(session)
-
         if (!session) {
           return res.status(403).json({ success: false, message: 'Please sign in.' })
         }
@@ -410,6 +410,7 @@ export default async function handler(
 
         const sendMessage = (data: any) => {
           res.write(JSON.stringify(data) + '\n')
+          // Flush output buffer if available (for streaming responses)
           if (typeof (res as any).flush === 'function') {
             (res as any).flush()
           }
@@ -471,7 +472,7 @@ export default async function handler(
         requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
         requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
 
-        async function fetchDescription(description) {
+        const fetchDescription = async (description: string) => {
           if (!description.includes("See description under subject")) {
             return description
           }
@@ -492,7 +493,7 @@ export default async function handler(
 
 
           // attempt to look up the class description for this same term if we already have it
-          const existingClass = await Class.findOne({ subjectNumber, term: body.term }).lean()
+          const existingClass = await Class.findOne({ subjectNumber, term: body.term }).lean() as any
 
           if (existingClass) {
             return existingClass.description

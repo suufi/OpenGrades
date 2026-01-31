@@ -1,6 +1,3 @@
-
-// @ts-nocheck
-
 import type { InferGetServerSidePropsType, NextPage } from 'next'
 import Head from 'next/head'
 
@@ -621,11 +618,11 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         {
           path: 'courseAffiliation'
         }
-      ]).lean()
-      const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean()
+      ]).lean() as any
+      const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean() as any
       let reviews = []
       if (user) {
-        reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean()
+        reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean() as any
       }
       const referralCount = await User.countDocuments({ referredBy: user._id })
 

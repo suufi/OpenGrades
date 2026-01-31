@@ -1,5 +1,3 @@
-
-// @ts-nocheck
 import { auth } from '@/utils/auth'
 
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -32,10 +30,10 @@ export default async function handler (
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
-                if (session.user?.id) {
-                    // const user = await User.findOne({ sub: session.user.id }).lean()
+                if (session.user?.email) {
+                    // const user = await User.findOne({ sub: session.user.id }).lean() as any
 
-                    return res.status(200).json({ success: true, data: { reports: await Report.find({}).populate('reporter contentId classReview').lean() } })
+                    return res.status(200).json({ success: true, data: { reports: await Report.find({}).populate('reporter contentId classReview').lean() as any } })
                 } else {
                     throw new Error("User doesn't have ID.")
                 }
@@ -47,7 +45,7 @@ export default async function handler (
             break
         case 'POST':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
                     const author = await User.findOne({ email: session.user?.email })
 
                     if (!session.user || session.user?.trustLevel < 1) {
@@ -88,7 +86,7 @@ export default async function handler (
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
                     const report = await Report.findByIdAndUpdate(body.reportId, {
                         resolved: true,
                         outcome: body.outcome

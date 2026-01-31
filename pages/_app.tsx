@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { AppProps } from 'next/app'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -266,7 +265,7 @@ function useEditProfileModal() {
               description="Your reviews help train our recommendation system running on MIT SIPB servers. All AI processing is local—no external services. Only class comments and review metadata (first year, retaking, dropped status) are used. No identifiable information is shared."
               checked={!userProfile?.aiEmbeddingOptOut}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, aiEmbeddingOptOut: !event.currentTarget.checked })
+                setUserProfile({ ...userProfile, aiEmbeddingOptOut: !event.currentTarget.checked } as any)
 
                 fetch('/api/me/privacy', {
                   method: 'PUT',
@@ -286,7 +285,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, aiEmbeddingOptOut: !(!event.currentTarget.checked) })
+                    setUserProfile({ ...userProfile, aiEmbeddingOptOut: !(!event.currentTarget.checked) } as any)
                   }
                 })
               }}
@@ -302,7 +301,7 @@ function useEditProfileModal() {
               description="Get notified when someone has questions about classes you've taken. (Feature coming soon)"
               checked={!userProfile?.qaEmailOptOut}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, qaEmailOptOut: !event.currentTarget.checked })
+                setUserProfile({ ...userProfile, qaEmailOptOut: !event.currentTarget.checked } as any)
 
                 fetch('/api/me/privacy', {
                   method: 'PUT',
@@ -322,7 +321,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, qaEmailOptOut: !(!event.currentTarget.checked) })
+                    setUserProfile({ ...userProfile, qaEmailOptOut: !(!event.currentTarget.checked) } as any)
                   }
                 })
               }}
@@ -335,7 +334,7 @@ function useEditProfileModal() {
               description="Get updates, announcements, and general communications from MIT OpenGrades"
               checked={userProfile?.emailOptIn === true}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, emailOptIn: event.currentTarget.checked })
+                setUserProfile({ ...userProfile, emailOptIn: event.currentTarget.checked } as any)
 
                 fetch('/api/me', {
                   method: 'PUT',
@@ -355,7 +354,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, emailOptIn: !event.currentTarget.checked })
+                    setUserProfile({ ...userProfile, emailOptIn: !event.currentTarget.checked } as any)
                   }
                 })
               }}
@@ -433,7 +432,7 @@ function ContentFetcher(props: AppProps) {
       : <>
         <Container style={{ height: '100%', padding: '5rem' }}>
           <Center style={{ height: '90%' }}>
-            <Text size="xl" weight={700}>
+            <Text size="xl" fw={700}>
               Your account is not authorized to use this platform. Please contact <a href="mailto:sipb-opengrades@mit.edu">sipb-opengrades@mit.edu</a> if you believe this is a mistake.
             </Text>
           </Center>
@@ -442,7 +441,7 @@ function ContentFetcher(props: AppProps) {
   )
 }
 
-function App({ pageProps, Component }: AppProps) {
+function App({ pageProps, Component, router }: AppProps) {
   const [opened, { toggle }] = useDisclosure()
   console.log("App.props", pageProps)
 
@@ -497,17 +496,17 @@ function App({ pageProps, Component }: AppProps) {
           </div>
         </AppShell.Header>
         <AppShell.Main className={mainClasses.mainContainer}>
-          <ContentFetcher {...{ Component, pageProps }} />
+          <ContentFetcher {...{ Component, pageProps, router }} />
         </AppShell.Main>
       </AppShell >
     </>
   )
 }
 
-export default function AppWrapper({ Component, pageProps }: AppProps) {
+export default function AppWrapper({ Component, pageProps, router }: AppProps) {
   useEffect(() => {
-    window.dataLayer = window.dataLayer || []
-    function gtag() { dataLayer.push(arguments) }
+    (window as any).dataLayer = (window as any).dataLayer || []
+    function gtag(...args: any[]) { (window as any).dataLayer.push(args) }
     gtag('js', new Date())
     gtag('config', 'G-2EWKT6ED8T')
   }, [])
@@ -535,6 +534,7 @@ export default function AppWrapper({ Component, pageProps }: AppProps) {
 
     <ErrorBoundary>
       <PlausibleProvider domain="opengrades.mit.edu" customDomain="https://analytics.mit.edu" trackOutboundLinks selfHosted taggedEvents>
+        {/* @ts-expect-error - React 18/19 type compatibility issue with next-auth */}
         <SessionProvider session={pageProps.session}>
           <UserContextProvider>
             <MantineProvider
@@ -544,7 +544,7 @@ export default function AppWrapper({ Component, pageProps }: AppProps) {
               <ModalsProvider>
                 {/* <App {...pageProps} /> */}
                 <link rel="canonical" href="https://opengrades.mit.edu" />
-                <App pageProps={pageProps} Component={Component} />
+                <App pageProps={pageProps} Component={Component} router={router} />
                 {/* <Script src='https://www.googletagmanager.com/gtag/js?id=G-2EWKT6ED8T' strategy='afterInteractive' /> */}
               </ModalsProvider>
             </MantineProvider>

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth'
@@ -24,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
+        const session = await getServerSession(req, res, authOptions) as any
         if (!session || !session.user?.email) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }

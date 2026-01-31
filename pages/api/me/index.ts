@@ -1,4 +1,3 @@
-// @ts-nocheck
 import '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { auth } from '@/utils/auth'
@@ -39,8 +38,8 @@ export default async function handler(
   switch (method) {
     case 'GET':
       try {
-        if (session.user?.id) {
-          const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+        if (session.user?.email) {
+          const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean() as any
 
           return res.status(200).json({ success: true, data: { session, user } })
         } else {
@@ -54,7 +53,7 @@ export default async function handler(
       break
     case 'PUT':
       try {
-        const user = await User.findOne({ email: session.user?.id.toLowerCase() }).lean()
+        const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any
 
         if (user) {
           const schema = z.object({
@@ -102,20 +101,20 @@ export default async function handler(
             updateData.courseAffiliation = uniqueAffiliations
           }
 
-          await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() },
+          await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() },
             updateData
           )
 
           if (data.partialReviews) {
             const reviewsToMake = []
-            const existingReviews = await ClassReview.find({ author: user._id }).lean()
-            const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
+            const existingReviews = await ClassReview.find({ author: user._id }).lean() as any
+            const existingReviewsByClass = new Map(existingReviews.map((r: any) => [r.class.toString(), r]))
 
             for (const review of data.partialReviews) {
-              const existingReview = existingReviewsByClass.get(review.class)
+              const existingReview = existingReviewsByClass.get(review.class) as any
 
               // If existing review has 'D' but new grade report shows 'DR', update it
-              if (existingReview && existingReview.letterGrade === 'D' && review.letterGrade === 'DR') {
+              if (existingReview && existingReview.letterGrade === 'D' && (review as any).letterGrade === 'DR') {
                 await ClassReview.updateOne(
                   { _id: existingReview._id },
                   { letterGrade: 'DR', droppedClass: true }
@@ -141,11 +140,11 @@ export default async function handler(
             await ClassReview.create(reviewsToMake)
 
             if (reviewsToMake.length > 0) {
-              await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: new Date() })
+              await User.updateOne({ email: session.user?.email?.toLowerCase() }, { lastGradeReportUpload: new Date() })
             }
           }
 
-          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() as any })
         } else {
           throw new Error("User doesn't have ID.")
         }

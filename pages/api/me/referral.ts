@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../utils/mongoConnection'
 
@@ -19,12 +18,12 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
+                if (session.user?.email) {
+                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean() as any
 
                     return res.status(200).json({ success: true, data: !!user.referredBy })
                 } else {
-                    throw new Error("User doesn't have ID.")
+                    throw new Error("User doesn't have email.")
                 }
             } catch (error: unknown) {
                 if (error instanceof Error) {
@@ -34,16 +33,16 @@ export default async function handler (
             break
         case 'PATCH':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
                     const referredByUser = body.referredBy ? await User.exists({ kerb: body.referredBy }) : false
                     if (!referredByUser) {
                         throw new Error('User does not exist.')
                     }
-                    if (referredByUser === session.user.kerb) {
+                    if ((referredByUser as any)._id?.toString() === session.user.kerb) {
                         throw new Error('You cannot refer yourself.')
                     }
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
-                        referredBy: referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : null
+                    await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() }, {
+                        referredBy: referredByUser ? new mongoose.Types.ObjectId((referredByUser as any)._id) : null
                     })
 
                     return res.status(200).json({ success: true, data: !!referredByUser })

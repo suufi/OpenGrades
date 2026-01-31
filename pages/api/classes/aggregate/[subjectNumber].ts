@@ -1,4 +1,3 @@
-// @ts-nocheck
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import mongoConnection from '@/utils/mongoConnection'
@@ -25,10 +24,10 @@ export default async function handler (
 
         const subjectNumber = req.query.subjectNumber as string
 
-        const classes = await Class.find({ $or: [{ subjectNumber }, { aliases: { $in: [subjectNumber] } }] }).lean()
+        const classes = await Class.find({ $or: [{ subjectNumber }, { aliases: { $in: [subjectNumber] } }] }).lean() as any
         const classIds = classes.map(c => c._id)
 
-        const reviews = await ClassReview.find({ class: { $in: classIds } }).lean()
+        const reviews = await ClassReview.find({ class: { $in: classIds } }).lean() as any
 
         return res.status(200).json({ success: true, data: { classes, reviews } })
 

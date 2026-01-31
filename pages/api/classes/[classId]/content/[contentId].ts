@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../../../utils/mongoConnection'
 
@@ -30,7 +29,7 @@ export default async function handler (
 ) {
     await mongoConnection()
     const { method, body } = req
-    // const session = await getServerSession(req, res, authOptions)
+    // const session = await getServerSession(req, res, authOptions) as any
     const session = await auth(req, res)
 
     if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
@@ -46,7 +45,7 @@ export default async function handler (
                     return res.status(404).json({ success: false, message: 'Class does not exist.' })
                 }
 
-                const content = await ContentSubmission.findById(req.query.contentId).populate(['class', 'author']).lean()
+                const content = await ContentSubmission.findById(req.query.contentId).populate(['class', 'author']).lean() as any
                 if (!content) {
                     return res.status(404).json({ success: false, message: 'Content not found.' })
                 }

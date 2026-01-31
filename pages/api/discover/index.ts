@@ -1,4 +1,3 @@
-// @ts-nocheck
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import mongoConnection from '@/utils/mongoConnection'
@@ -15,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const startTime = Date.now()
     await mongoConnection()
 
-    const session = await getServerSession(req, res, authOptions)
+    const session = await getServerSession(req, res, authOptions) as any
     if (!session) {
       return res.status(401).json({ success: false, message: 'Unauthorized' })
     }
@@ -105,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const hiddenGemClasses = hiddenGemClassIds.length > 0
       ? await Class.find({ _id: { $in: hiddenGemClassIds }, offered: true })
         .select('subjectNumber subjectTitle department academicYear term units instructors _id')
-        .lean()
+        .lean() as any
       : []
 
     const hiddenGems = hiddenGemClasses
@@ -120,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const trendingClasses = trendingClassIds.length > 0
       ? await Class.find({ _id: { $in: trendingClassIds }, offered: true })
         .select('subjectNumber subjectTitle department academicYear term units instructors')
-        .lean()
+        .lean() as any
       : []
 
     const trending = trendingClasses

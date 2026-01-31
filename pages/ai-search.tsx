@@ -1,4 +1,3 @@
-// @ts-nocheck
 import AISearchBox from '@/components/AISearchBox'
 import mongoConnection from '@/utils/mongoConnection'
 import User from '@/models/User'
@@ -197,7 +196,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         }
     }
 
-    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
+    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any as any
 
     if (!user) {
         return {

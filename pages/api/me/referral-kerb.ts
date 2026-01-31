@@ -1,4 +1,3 @@
-// @ts-nocheck
 import User from '@/models/User'
 import { auth } from '@/utils/auth'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -6,7 +5,7 @@ import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {
     success: boolean,
-    data?: object,
+    data?: object | boolean,
     message?: string
 }
 

@@ -1,5 +1,3 @@
-
-// @ts-nocheck
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -599,7 +597,7 @@ const Classes: NextPage = () => {
 // export async function getServerSideProps (context) {
 //   await mongoConnection()
 
-//   const classesProp: IClass[] = await Class.find({display: true }).lean() as IClass[]
+//   const classesProp: IClass[] = await Class.find({display: true }).lean() as any as IClass[]
 //   const classReviewCounts = await ClassReview.aggregate().sortByCount('class')
 //   // const session: Session | null = await getServerSession(context.req, context.res, authOptions)
 //   return {

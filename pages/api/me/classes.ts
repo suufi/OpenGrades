@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -34,8 +33,8 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
+                if (session.user?.email) {
+                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean() as any
 
                     return res.status(200).json({ success: true, data: { classesTaken: user.classesTaken } })
                 } else {
@@ -49,10 +48,10 @@ export default async function handler (
             break
         case 'POST':
             try {
-                const user = await User.exists({ email: session.user?.id.toLowerCase() })
+                const user = await User.exists({ email: session.user?.email?.toLowerCase() })
                 if (user) {
 
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() }, {
                         $addToSet: {
                             classesTaken: {
                                 $each: body.classesTaken
@@ -62,14 +61,14 @@ export default async function handler (
 
                     if (body.partialReviews) {
                         const reviewsToMake = []
-                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean()
+                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean() as any
                         const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
                         for (const review of body.partialReviews) {
-                            const existingReview = existingReviewsByClass.get(review.class)
+                            const existingReview = existingReviewsByClass.get(review.class) as any
 
                             // If existing review has 'D' but new grade report shows 'DR', update it
-                            if (existingReview && existingReview.letterGrade === 'D' && review.letterGrade === 'DR') {
+                            if (existingReview && existingReview.letterGrade === 'D' && (review as any).letterGrade === 'DR') {
                                 await ClassReview.updateOne(
                                     { _id: existingReview._id },
                                     { letterGrade: 'DR', droppedClass: true }
@@ -94,10 +93,10 @@ export default async function handler (
                         }
                         await ClassReview.create(reviewsToMake)
 
-                        await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
+                        await User.updateOne({ email: session.user?.email?.toLowerCase() }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
                     }
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() as any })
                 } else {
                     throw new Error('User does not exist.')
                 }
@@ -109,15 +108,15 @@ export default async function handler (
             break
         case 'DELETE':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email: session.user?.email?.toLowerCase() })) {
 
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() }, {
                         $pull: {
                             classesTaken: body.classId
                         }
                     })
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() as any })
                 } else {
                     throw new Error('User does not exist.')
                 }

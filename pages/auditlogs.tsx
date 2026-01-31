@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import Head from 'next/head'
 
@@ -72,7 +71,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         }
       }
 
-      const auditLogs = await AuditLog.find({}).populate('actor').sort({ createdAt: -1 }).lean() as IAuditLog[]
+      const auditLogs = await AuditLog.find({}).populate('actor').sort({ createdAt: -1 }).lean() as any as IAuditLog[]
 
       return {
         props: {

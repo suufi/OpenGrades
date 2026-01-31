@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import User from '@/models/User'
 import { auth } from '@/utils/auth'
 import mongoConnection from '@/utils/mongoConnection'
@@ -33,10 +31,10 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                const user = await User.findOne({ email: session.user.id.toLowerCase() })
+                const user = await User.findOne({ email: session.user.email.toLowerCase() })
                     .populate('courseAffiliation')
                     .populate('classesTaken')
-                    .lean()
+                    .lean() as any
 
                 if (!user) {
                     return res.status(404).json({ success: false, message: 'User not found' })
@@ -144,7 +142,7 @@ export default async function handler (
                     return res.status(400).json({
                         success: false,
                         message: 'Invalid request body',
-                        data: validation.error.errors
+                        data: (validation.error as any).errors
                     })
                 }
 
@@ -153,10 +151,10 @@ export default async function handler (
                 let finalProgramTerms = programTerms
 
                 if ((finalProgramTerms.length === 0) && (undergradTerms && undergradTerms.length > 0)) {
-                    const userForAff = await User.findOne({ email: session.user.id.toLowerCase() })
+                    const userForAff = await User.findOne({ email: session.user.email.toLowerCase() })
                         .populate('courseAffiliation')
                         .populate('classesTaken')
-                        .lean()
+                        .lean() as any
 
                     if (!userForAff) {
                         return res.status(404).json({ success: false, message: 'User not found' })
@@ -190,15 +188,15 @@ export default async function handler (
 
 
                 const updateResult = await User.findOneAndUpdate(
-                    { email: session.user.id.toLowerCase() },
+                    { email: session.user.email.toLowerCase() },
                     { $set: { programTerms: finalProgramTerms } },
                     { new: true }
                 )
 
 
-                const user = await User.findOne({ email: session.user.id.toLowerCase() })
+                const user = await User.findOne({ email: session.user.email.toLowerCase() })
                     .populate('courseAffiliation')
-                    .lean()
+                    .lean() as any
 
                 if (!user) {
                     return res.status(404).json({ success: false, message: 'User not found' })

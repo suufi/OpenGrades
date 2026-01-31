@@ -1,4 +1,3 @@
-// @ts-nocheck
 import CourseOption from '@/models/CourseOption'
 import User from '@/models/User'
 import { auth } from '@/utils/auth'
@@ -74,9 +73,9 @@ export default async function handler (
 
         const validCourseOptionObjects = courseOptionObjects.filter(co => co !== null)
 
-        const user = await User.findOne({ email: session.user?.id.toLowerCase() })
+        const user = await User.findOne({ email: session.user?.email?.toLowerCase() })
             .populate('courseAffiliation')
-            .lean()
+            .lean() as any
 
         const newCourseAffiliationIds = new Set(validCourseOptionObjects.map(co => co._id.toString()))
         const preservedHistoricalPrograms: any[] = []
@@ -103,11 +102,11 @@ export default async function handler (
         const finalCourseAffiliation = [...validCourseOptionObjects, ...preservedHistoricalPrograms]
 
         await User.findOneAndUpdate(
-            { email: session.user?.id.toLowerCase() },
+            { email: session.user?.email?.toLowerCase() },
             { courseAffiliation: finalCourseAffiliation }
         )
 
-        const updatedUser = await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+        const updatedUser = await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean() as any
 
         return res.status(200).json({
             success: true,

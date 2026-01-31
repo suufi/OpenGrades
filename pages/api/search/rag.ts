@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth'
@@ -17,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
+        const session = await getServerSession(req, res, authOptions) as any
         if (!session) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }
@@ -69,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const takenSubjectNumbersSet = new Set<string>()
         const user = await User.findOne({ email: session.user?.email })
             .populate('classesTaken')
-            .lean()
+            .lean() as any
         const userTakenClasses = user?.classesTaken || []
         userTakenClasses.forEach((c: any) => {
             if (c.subjectNumber) takenSubjectNumbersSet.add(c.subjectNumber)
@@ -124,7 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const userWithAffiliation = await User.findOne({ email: session.user?.email })
             .populate('courseAffiliation')
-            .lean()
+            .lean() as any
 
         const takenClasses = userTakenClasses
         const takenClassesString = takenClasses.length > 0

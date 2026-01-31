@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import React, { useContext, useEffect, useState } from 'react'
 
 import InferNextPropsType from 'infer-next-props-type'
@@ -110,7 +108,6 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 
   // change theme when page is loaded
   useEffect(() => {
-    // console.log("theme was changed to " + colorScheme)
     if (changeTheme) {
       changeTheme(`lara-${colorScheme == "dark" ? "light" : "dark"}-blue`, `lara-${colorScheme}-blue`, 'theme-link')
     }
@@ -742,7 +739,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 export async function getServerSideProps (context) {
   await mongoConnection()
 
-  const users: IUser[] = await User.find({}).lean() as IUser[]
+  const users: IUser[] = await User.find({}).lean() as any as IUser[]
 
   const totalUsers = await User.countDocuments()
 

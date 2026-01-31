@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { IClass } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
 import User from '@/models/User'
@@ -345,7 +344,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         }
     }
 
-    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
+    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any
 
     if (!user) {
         return {
