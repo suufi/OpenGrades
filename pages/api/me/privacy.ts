@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth'
@@ -114,7 +113,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: error.message
+            error: error instanceof Error ? error.message : 'Unknown error'
         })
     }
 }

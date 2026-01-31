@@ -1,7 +1,6 @@
-
-// @ts-nocheck
 import CourseOption from '@/models/CourseOption'
 import User from '@/models/User'
+import AuditLog from '@/models/AuditLog'
 import mongoConnection from '@/utils/mongoConnection'
 import type {
     GetServerSidePropsContext,
@@ -68,9 +67,6 @@ export const config = {
         async session ({ session, token }) {
             // Send properties to the client, like an access_token from a provider.
             // session.accessToken = token.accessToken
-            console.log("session", session)
-            console.log("token", token)
-
             session.user = token.user as { _id: string; trustLevel: number; verified: boolean; kerb: string; name: string; classOf: number; affiliation: string } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
             return session
         }
@@ -80,14 +76,11 @@ export const config = {
     // },
     events: {
         async signIn ({ profile }: { profile?: Profile }) {
-            console.log("profile", profile)
             await mongoConnection()
 
-            console.log("process.env.MIT_API_CLIENT_ID", process.env.MIT_API_CLIENT_ID)
-
             const requestHeaders = new Headers()
-            requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
-            requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
+            requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID || '')
+            requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET || '')
             let apiFetch
 
             try {
@@ -95,7 +88,6 @@ export const config = {
                     headers: requestHeaders
                 }).then(async (response) => {
                     const res = await response.json()
-                    console.log(res)
 
                     if (response.ok) {
 
@@ -145,7 +137,7 @@ export const config = {
                             ? existingUser?.courseAffiliation || []
                             : courseOptionObjects
 
-                        if (shouldPreserveAffiliation && apiAffiliationType === 'affiliate') {
+                        if (shouldPreserveAffiliation && apiAffiliationType === 'affiliate' && existingUser) {
                             await AuditLog.create({
                                 actor: existingUser._id,
                                 description: `Preserved student status and course affiliations for ${existingUser.kerb} despite API reporting "affiliate"`,
@@ -203,10 +195,8 @@ export const config = {
                     } else {
                         throw new Error(res.errorDescription)
                     }
-                    // console.log('res111111')
                 })
             } catch (error: unknown) {
-                console.log(error)
                 if (error instanceof Error) {
                     throw new Error(error.message)
                 }

@@ -1403,9 +1403,6 @@ export const getServerSideProps = (async (context) => {
         reports = await Report.find({ $or: [{ contentSubmission: { $in: contentSubmissionData.map((contentSubmission: IContentSubmission) => contentSubmission._id) } }, { classReview: { $in: reviewsData.map((review: IClassReview) => review._id) } }] }).populate('reporter contentSubmission classReview').lean()
       }
 
-      console.log('my session', session)
-      // console.log('reviewsData', reviewsData)
-
       // check if last grade report upload was made in last 4 months
       const lastGradeReportUpload = hasRecentGradeReport(user.lastGradeReportUpload, 4)
 

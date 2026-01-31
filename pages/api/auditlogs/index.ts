@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { auth } from '@/utils/auth'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import AuditLog from '../../../models/AuditLog'
@@ -51,7 +49,6 @@ export default async function handler (
                     if (!session.user || session.user?.trustLevel < 2) {
                         return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                     }
-                    console.log("body", body)
                     if (!body.description || !body.type) {
                         return res.status(400).json({ success: false, message: 'Missing required fields.' })
                     }

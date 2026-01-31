@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
 import ClassReview from '../../../models/ClassReview'
@@ -46,14 +44,9 @@ export default async function handler (
       return res.status(200).json({ success: true, data: {} })
     case 'POST':
       try {
-        // const classExists = await Class.exists()
-        console.log(body)
-        console.log(typeof body)
-        // console.log(session)
-
         const author = await User.findOne({ email: session.user?.email })
 
-        if (author.trustLevel < 1) {
+        if (!author || author.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 

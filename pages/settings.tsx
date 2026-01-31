@@ -110,7 +110,6 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 
   // change theme when page is loaded
   useEffect(() => {
-    // console.log("theme was changed to " + colorScheme)
     if (changeTheme) {
       changeTheme(`lara-${colorScheme == "dark" ? "light" : "dark"}-blue`, `lara-${colorScheme}-blue`, 'theme-link')
     }
