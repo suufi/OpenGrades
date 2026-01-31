@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import React, { useEffect, useState } from 'react'
 
 import InferNextPropsType from 'infer-next-props-type'

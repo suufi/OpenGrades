@@ -1,4 +1,3 @@
-// @ts-nocheck
 import AISearchBox from '@/components/AISearchBox'
 import mongoConnection from '@/utils/mongoConnection'
 import User from '@/models/User'

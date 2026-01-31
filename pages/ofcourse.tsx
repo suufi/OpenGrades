@@ -1,4 +1,3 @@
-// @ts-nocheck
 import GradeReportModal from "@/components/GradeReportModal"
 import Class from "@/models/Class"
 import ClassReview from "@/models/ClassReview"

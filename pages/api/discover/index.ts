@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoose from 'mongoose'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'

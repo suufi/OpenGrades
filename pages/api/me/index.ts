@@ -1,4 +1,3 @@
-// @ts-nocheck
 import '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { getUserFromRequest } from '@/utils/authMiddleware'

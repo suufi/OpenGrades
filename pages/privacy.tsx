@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Container, Divider, Space, Text, Title, List, Anchor, Paper, ThemeIcon, Group, Stack } from "@mantine/core"
 import { IconShield, IconLock, IconEye, IconTrash, IconMail, IconDatabase, IconUserCheck } from "@tabler/icons"
 import { NextPage } from "next"

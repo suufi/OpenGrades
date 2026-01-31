@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import User from '@/models/User'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'

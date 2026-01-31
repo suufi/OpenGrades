@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { withApiLogger } from '@/utils/apiLogger'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
