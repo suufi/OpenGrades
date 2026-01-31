@@ -112,7 +112,6 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
   })
 
   useEffect(() => {
-    console.log('user profile changed')
     form.setInitialValues({
       kerb: userProfile?.kerb,
       name: userProfile?.name,
@@ -120,13 +119,15 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
       affiliation: userProfile?.affiliation,
       flags: userProfile?.flags || [],
       classes: Array.isArray(userProfile?.classesTaken)
-        ? userProfile?.classesTaken.reduce(
+        ? userProfile.classesTaken.reduce(
           (acc: { [key: string]: string[] }, c: IClass) => {
             const key = `${c.term}`
+            const id = c._id != null ? (typeof c._id === 'string' ? c._id : String(c._id)) : ''
+            if (!id) return acc
             if (acc[key]) {
-              acc[key].push(c._id)
+              acc[key].push(id)
             } else {
-              acc[key] = [c._id]
+              acc[key] = [id]
             }
             return acc
           },

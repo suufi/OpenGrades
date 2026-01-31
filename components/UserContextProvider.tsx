@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { IUser } from '../types'
 
 interface IUserContext {
@@ -13,32 +14,30 @@ export const UserContext = createContext<IUserContext>({
 })
 
 export function UserContextProvider ({ children }: { children: React.ReactNode }) {
-  const [userProfile, setUserProfile] = useState({})
+  const [userProfile, setUserProfile] = useState<IUser | Record<string, never>>({})
+  const { status } = useSession()
   const value = {
     userProfile, setUserProfile
   }
 
   useEffect(() => {
-    (async () => {
-      await fetch('/api/me').then(async (res) => {
+    if (status !== 'authenticated') return
+    let cancelled = false
+    fetch('/api/me')
+      .then(async (res) => {
         const body = await res.json()
-        if (res.ok) {
-          // showNotification({
-          //   title: 'User Profile',
-          //   message: JSON.stringify(body.data.user)
-          // })
+        if (cancelled) return
+        if (res.ok && body.data?.user) {
           setUserProfile(body.data.user)
         } else {
-          // showNotification({
-          //   color: 'red',
-          //   title: 'Error',
-          //   message: body.message
-          // })
-          console.error(body.message)
+          console.error(body.message ?? 'Failed to load user profile')
         }
       })
-    })()
-  }, [])
+      .catch((err) => {
+        if (!cancelled) console.error(err)
+      })
+    return () => { cancelled = true }
+  }, [status])
 
   return <UserContext.Provider value={value}> {children} </UserContext.Provider>
 }

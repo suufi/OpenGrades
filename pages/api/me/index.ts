@@ -91,7 +91,7 @@ async function handler(
           const flagsToSet = data.flags ?? data.identityFlags
           if (flagsToSet) updateData.flags = flagsToSet
           if (data.flatClasses) {
-            updateData.classesTaken = data.flatClasses
+            updateData.classesTaken = data.flatClasses.map((id: string) => new mongoose.Types.ObjectId(id))
             updateData.lastGradeReportUpload = new Date()
           }
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined

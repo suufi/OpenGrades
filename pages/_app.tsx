@@ -420,7 +420,7 @@ function ContentFetcher(props: AppProps) {
     return <NotLoggedIn />
   }
 
-  if (!userProfile) {
+  if (!userProfile || (status === 'authenticated' && Object.keys(userProfile).length === 0)) {
     return (
       <Container style={{ height: '100%', padding: '5rem' }}>
         <Center style={{ height: '90%' }}>
