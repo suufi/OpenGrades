@@ -85,6 +85,13 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     getInitialValueInEffect: true
   })
 
+  // Sync degreeTermsReviewed when grad has already assigned terms (e.g. in LockdownModule)
+  useEffect(() => {
+    if (userProp?.year === 'G' && (userProp?.programTerms?.length ?? 0) > 0) {
+      setDegreeTermsReviewed(true)
+    }
+  }, [userProp?.year, userProp?.programTerms])
+
   const [gradeReportModalOpened, { open: openGradeReportModal, close: closeGradeReportModal }] = useDisclosure(false)
 
   // Check eligibility based on student level 'G' (handles early grad with no course affiliation)

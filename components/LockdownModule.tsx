@@ -569,7 +569,8 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                           message: 'Your degree term assignments have been saved.'
                         })
                         setDegreeTermsSaved(true)
-                        submitProfile(form.values)
+                        const flatClasses = Object.values((form.values.classes as Record<string, string[]>) || {}).flat()
+                        submitProfile({ ...form.values, flatClasses } as UserProfile)
                       }}
                     />
                   </Stack>

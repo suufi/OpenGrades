@@ -62,7 +62,7 @@ export default async function handler(
             name: z.string().optional(),
             classOf: z.number().optional(),
             affiliation: z.string().optional(),
-            flags: z.array(z.nativeEnum(IdentityFlags)).optional(),
+            identityFlags: z.array(z.nativeEnum(IdentityFlags)).optional(),
             flatClasses: z.array(z.string()).optional(),
             referredBy: z.string().optional(),
             undergradProgramIds: z.array(z.string()).optional(),
@@ -74,7 +74,7 @@ export default async function handler(
               firstYear: z.boolean()
             })).optional()
           }).partial({
-            flags: true,
+            identityFlags: true,
             flatClasses: true,
             referredBy: true,
             undergradProgramIds: true,
@@ -87,8 +87,12 @@ export default async function handler(
           const updateData: any = {}
 
           if (data.classOf) updateData.classOf = data.classOf
-          if (data.flags) updateData.flags = data.flags
-          if (data.flatClasses) updateData.classesTaken = data.flatClasses
+          const flagsToSet = data.flags ?? data.identityFlags
+          if (flagsToSet) updateData.flags = flagsToSet
+          if (data.flatClasses) {
+            updateData.classesTaken = data.flatClasses
+            updateData.lastGradeReportUpload = new Date()
+          }
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
           if (typeof data.emailOptIn === 'boolean') updateData.emailOptIn = data.emailOptIn
           if (user.trustLevel < 1) updateData.trustLevel = 1
