@@ -85,7 +85,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
     classOf: z.number().min(2000).max(new Date().getFullYear() + 7),
     flags: z.nativeEnum(IdentityFlags).array(),
     affiliation: z.string(),
-    classes: z.array(z.string()),
+    classes: z.record(z.string(), z.array(z.string())),
     referredBy: z.string().optional()
   }).partial({
     flags: true,
@@ -319,8 +319,23 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
           <LoadingOverlay visible={formLoading} overlayProps={{ blur: 2 }} />
           {/* <Flex direction={'column'} wrap={'nowrap'} justify={'flex-end'} align={'center'} style={{ height: '100%' }} gap='xl'> */}
           {/* {JSON.stringify(userProfile)} */}
-          {/* {status} */}
-          <form onSubmit={form.onSubmit((values) => submitProfile(values))}>
+          <form onSubmit={form.onSubmit(
+            (values) => submitProfile(values),
+            (errors) => {
+              const messages = Object.entries(errors)
+                .filter(([, msg]) => msg != null && msg !== '')
+                .map(([field, msg]) => `${field}: ${msg}`)
+              const message = messages.length > 0
+                ? messages.slice(0, 3).join('. ')
+                : 'Please fix the errors in the form below.'
+              showNotification({
+                color: 'red',
+                title: 'Form has errors',
+                message: messages.length > 3 ? `${message} (and ${messages.length - 3} more)` : message,
+                autoClose: 8000
+              })
+            }
+          )}>
             <Stepper active={active} onStepClick={setActive} orientation={isMobile ? 'vertical' : 'horizontal'}>
               <Stepper.Step label="Introduction" description="Find out what we're about!">
                 <Group>
