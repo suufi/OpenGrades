@@ -140,7 +140,7 @@ interface ServerSideProps {
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
     await mongoConnection()
 
-    const faqs = await FAQ.find({}).lean()
+    const faqs = await FAQ.find({}).lean() as any
 
     const classCount = await Class.countDocuments({
         offered: true
@@ -169,7 +169,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
     let maintainers = await User.find({
         supportStatus: 'Maintainer',
-    }).select('kerb classOf avatar name').lean()
+    }).select('kerb classOf avatar name').lean() as any
 
     maintainers = maintainers.map((maintainer) => {
         return {
@@ -182,7 +182,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
     let supporters = await User.find({
         supportStatus: 'Supporter',
-    }).select('kerb classOf avatar name').lean()
+    }).select('kerb classOf avatar name').lean() as any
 
     supporters = supporters.map((supporter) => {
         return {

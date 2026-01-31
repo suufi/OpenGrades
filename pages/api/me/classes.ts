@@ -58,7 +58,7 @@ async function handler(
 
                     if (body.partialReviews) {
                         const reviewsToMake = []
-                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean()
+                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean() as any
                         const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
                         for (const review of body.partialReviews) {

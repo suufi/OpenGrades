@@ -35,7 +35,7 @@ async function handler (
                 const user = await User.findOne({ email })
                     .populate('courseAffiliation')
                     .populate('classesTaken')
-                    .lean()
+                    .lean() as any
 
                 if (!user) {
                     return res.status(404).json({ success: false, message: 'User not found' })
@@ -155,7 +155,7 @@ async function handler (
                     const userForAff = await User.findOne({ email })
                         .populate('courseAffiliation')
                         .populate('classesTaken')
-                        .lean()
+                        .lean() as any
 
                     if (!userForAff) {
                         return res.status(404).json({ success: false, message: 'User not found' })
@@ -197,7 +197,7 @@ async function handler (
 
                 const user = await User.findOne({ email })
                     .populate('courseAffiliation')
-                    .lean()
+                    .lean() as any
 
                 if (!user) {
                     return res.status(404).json({ success: false, message: 'User not found' })

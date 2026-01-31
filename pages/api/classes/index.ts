@@ -145,10 +145,10 @@ async function handler(
           query.hassAttribute = { $in: hassValues }
         }
 
-        const tokens = search.split(/\s+/).filter(Boolean)
+        const tokens = typeof search === 'string' ? search.split(/\s+/).filter(Boolean) : []
 
         // Prepare for sorting
-        let sortQuery = {}
+        let sortQuery: any = {}
         if (sortField) {
           if (sortField !== 'relevance') {
             if (sortField === 'alphabetical') {
@@ -158,7 +158,7 @@ async function handler(
             } else if (sortField === 'reviews') {
               sortQuery.classReviewCount = -1
             } else {
-              sortQuery[sortField] = sortOrder === 'asc' ? 1 : -1
+              sortQuery[sortField as string] = sortOrder === 'asc' ? 1 : -1
             }
           } else {
             if (!search) {
@@ -167,8 +167,8 @@ async function handler(
           }
         }
 
-        let highlights = {}
-        let scores = {}
+        let highlights: any = {}
+        let scores: any = {}
 
         if (search) {
 
@@ -233,8 +233,13 @@ async function handler(
             size: 1000
           }).catch((error) => {
             console.error("Error during ElasticSearch query", error)
-            return res.status(400).json({ success: false, message: error.message })
+            res.status(400).json({ success: false, message: error.message })
+            return null
           })
+
+          if (!searchResults) {
+            return
+          }
 
           const classIds = searchResults.hits.hits.map((hit) => new mongoose.Types.ObjectId(hit._id))
           query._id = { $in: classIds }
@@ -242,12 +247,12 @@ async function handler(
           highlights = searchResults.hits.hits.reduce((acc, hit) => {
             acc[hit._id] = hit.highlight
             return acc
-          }, {})
+          }, {} as any)
 
           scores = searchResults.hits.hits.reduce((acc, hit) => {
             acc[hit._id] = hit._score
             return acc
-          }, {})
+          }, {} as any)
         }
 
 
@@ -288,8 +293,9 @@ async function handler(
               {
                 $addFields: {
                   classReviewCount: { $size: '$reviews' },
+                  userCount: { $size: '$classesTaken' }
                 }
-              },
+              } as any,
               {
                 $project: {
                   reviews: 0,
@@ -297,7 +303,7 @@ async function handler(
               }
             )
           }
-          aggregationPipeline.push({ $sort: sortQuery })
+          aggregationPipeline.push({ $sort: sortQuery } as any)
         }
 
         let classes = await Class.aggregate(aggregationPipeline)
