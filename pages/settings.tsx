@@ -739,7 +739,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 export async function getServerSideProps (context) {
   await mongoConnection()
 
-  const users: IUser[] = await User.find({}).lean() as IUser[]
+  const users: IUser[] = await User.find({}).lean() as any as IUser[]
 
   const totalUsers = await User.countDocuments()
 

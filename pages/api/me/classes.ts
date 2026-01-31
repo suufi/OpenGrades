@@ -33,8 +33,8 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean()
+                if (session.user?.email) {
+                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean() as any
 
                     return res.status(200).json({ success: true, data: { classesTaken: user.classesTaken } })
                 } else {
@@ -61,7 +61,7 @@ export default async function handler (
 
                     if (body.partialReviews) {
                         const reviewsToMake = []
-                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean()
+                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean() as any
                         const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
                         for (const review of body.partialReviews) {
@@ -96,7 +96,7 @@ export default async function handler (
                         await User.updateOne({ email: session.user?.email?.toLowerCase() }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
                     }
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() as any })
                 } else {
                     throw new Error('User does not exist.')
                 }
@@ -116,7 +116,7 @@ export default async function handler (
                         }
                     })
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() as any })
                 } else {
                     throw new Error('User does not exist.')
                 }

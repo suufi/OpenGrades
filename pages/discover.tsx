@@ -344,7 +344,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         }
     }
 
-    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
+    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any
 
     if (!user) {
         return {

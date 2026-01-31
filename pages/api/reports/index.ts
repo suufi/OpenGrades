@@ -30,10 +30,10 @@ export default async function handler (
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
-                if (session.user?.id) {
-                    // const user = await User.findOne({ sub: session.user.id }).lean()
+                if (session.user?.email) {
+                    // const user = await User.findOne({ sub: session.user.id }).lean() as any
 
-                    return res.status(200).json({ success: true, data: { reports: await Report.find({}).populate('reporter contentId classReview').lean() } })
+                    return res.status(200).json({ success: true, data: { reports: await Report.find({}).populate('reporter contentId classReview').lean() as any } })
                 } else {
                     throw new Error("User doesn't have ID.")
                 }

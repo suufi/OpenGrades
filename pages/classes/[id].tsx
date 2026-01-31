@@ -1287,8 +1287,8 @@ export const getServerSideProps = (async (context) => {
 
   await mongoConnection()
   console.log(id)
-  const classData = await Class.findById(id).lean()
-  const contentSubmissionData: IContentSubmission[] = await ContentSubmission.find({ class: id }).lean()
+  const classData = await Class.findById(id).lean() as any
+  const contentSubmissionData: IContentSubmission[] = await ContentSubmission.find({ class: id }).lean() as any
 
   const session: Session | null = await getServerSession(context.req, context.res, authOptions)
   let myReview = null
@@ -1296,17 +1296,17 @@ export const getServerSideProps = (async (context) => {
   if (session) {
     if (session.user && session.user?.email) {
       const user: IUser = await User.findOne({ email: session.user.email })
-      myReview = await ClassReview.findOne({ class: id, author: user._id }).populate('class').lean()
+      myReview = await ClassReview.findOne({ class: id, author: user._id }).populate('class').lean() as any
 
       let reviewsData: IClassReview[] = []
       // if (user.trustLevel < 2) {
-      //   reviewsData = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean()
+      //   reviewsData = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean() as any
       // } else {
-      //   reviewsData = await ClassReview.find({ class: id }).populate('author').lean()
+      //   reviewsData = await ClassReview.find({ class: id }).populate('author').lean() as any
       // }
 
       // // Get the user's vote (if any) on each review
-      // const reviewVotes = await ReviewVote.find({ user: user._id }).lean()
+      // const reviewVotes = await ReviewVote.find({ user: user._id }).lean() as any
       // const reviewVotesMap = reviewVotes.reduce((map, vote) => {
       //   map[vote.classReview.toString()] = vote.vote
       //   return map
@@ -1394,12 +1394,12 @@ export const getServerSideProps = (async (context) => {
       }
 
 
-      const gradePointsData = await ClassReview.find({ class: id }).select(['letterGrade', 'numericGrade', 'verified']).lean()
+      const gradePointsData = await ClassReview.find({ class: id }).select(['letterGrade', 'numericGrade', 'verified']).lean() as any
       let reports: IReport[] = []
 
       if (user.trustLevel >= 2) {
         // find all reports for the reviews and content submissions
-        reports = await Report.find({ $or: [{ contentSubmission: { $in: contentSubmissionData.map((contentSubmission: IContentSubmission) => contentSubmission._id) } }, { classReview: { $in: reviewsData.map((review: IClassReview) => review._id) } }] }).populate('reporter contentSubmission classReview').lean()
+        reports = await Report.find({ $or: [{ contentSubmission: { $in: contentSubmissionData.map((contentSubmission: IContentSubmission) => contentSubmission._id) } }, { classReview: { $in: reviewsData.map((review: IClassReview) => review._id) } }] }).populate('reporter contentSubmission classReview').lean() as any
       }
 
       // check if last grade report upload was made in last 4 months
@@ -1408,7 +1408,7 @@ export const getServerSideProps = (async (context) => {
       // Query embedding status for trust level >= 2 users
       let embeddingStatus = null
       if (user.trustLevel >= 2) {
-        const embeddings = await CourseEmbedding.find({ class: id }).select('embeddingType sourceId').lean()
+        const embeddings = await CourseEmbedding.find({ class: id }).select('embeddingType sourceId').lean() as any
 
         const hasDescriptionEmbedding = embeddings.some((e: any) => e.embeddingType === 'description')
         const embeddedReviewIds = embeddings
@@ -1434,13 +1434,13 @@ export const getServerSideProps = (async (context) => {
           subjectNumber: { $in: prereqNumbers },
           offered: true,
           academicYear: classData.academicYear
-        }).select('subjectNumber subjectTitle department academicYear').lean(),
+        }).select('subjectNumber subjectTitle department academicYear').lean() as any,
 
         Class.find({
           subjectNumber: { $in: coreqNumbers },
           offered: true,
           academicYear: classData.academicYear
-        }).select('subjectNumber subjectTitle department academicYear').lean(),
+        }).select('subjectNumber subjectTitle department academicYear').lean() as any,
 
         Class.find({
           offered: true,
@@ -1449,7 +1449,7 @@ export const getServerSideProps = (async (context) => {
             { prerequisites: { $regex: new RegExp(`\\b${classData.subjectNumber}\\b`, 'i') } },
             { corequisites: { $regex: new RegExp(`\\b${classData.subjectNumber}\\b`, 'i') } }
           ]
-        }).select('subjectNumber subjectTitle department academicYear').lean()
+        }).select('subjectNumber subjectTitle department academicYear').lean() as any
       ])
 
       // Helper to deduplicate by subjectNumber within each related list

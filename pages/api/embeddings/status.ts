@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
+        const session = await getServerSession(req, res, authOptions) as any
         if (!session) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }

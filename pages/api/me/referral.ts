@@ -18,8 +18,8 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
+                if (session.user?.email) {
+                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean() as any
 
                     return res.status(200).json({ success: true, data: !!user.referredBy })
                 } else {

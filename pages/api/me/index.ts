@@ -38,8 +38,8 @@ export default async function handler(
   switch (method) {
     case 'GET':
       try {
-        if (session.user?.id) {
-          const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+        if (session.user?.email) {
+          const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean() as any
 
           return res.status(200).json({ success: true, data: { session, user } })
         } else {
@@ -53,7 +53,7 @@ export default async function handler(
       break
     case 'PUT':
       try {
-        const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
+        const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any
 
         if (user) {
           const schema = z.object({
@@ -107,7 +107,7 @@ export default async function handler(
 
           if (data.partialReviews) {
             const reviewsToMake = []
-            const existingReviews = await ClassReview.find({ author: user._id }).lean()
+            const existingReviews = await ClassReview.find({ author: user._id }).lean() as any
             const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
             for (const review of data.partialReviews) {
@@ -144,7 +144,7 @@ export default async function handler(
             }
           }
 
-          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() })
+          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() as any })
         } else {
           throw new Error("User doesn't have ID.")
         }

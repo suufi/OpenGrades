@@ -433,13 +433,13 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         let people = await User.find(
             { courseAffiliation: { $ne: null } },
             { courseAffiliation: 1, year: 1, createdAt: 1, _id: 0 }
-        ).populate('courseAffiliation', 'departmentCode courseOption').lean()
+        ).populate('courseAffiliation', 'departmentCode courseOption').lean() as any
 
 
         let classReviews = await ClassReview.find(
             {},
             { class: 1, overallRating: 1, recommendationLevel: 1, letterGrade: 1, createdAt: 1, _id: 0 }
-        ).populate('class', 'department crossListedDepartments subjectNumber aliases').lean()
+        ).populate('class', 'department crossListedDepartments subjectNumber aliases').lean() as any
 
         return {
             props: {

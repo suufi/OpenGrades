@@ -17,8 +17,8 @@ export default async function handler (
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean()
+                if (session.user?.email) {
+                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean() as any
 
                     return res.status(200).json({ success: true, data: { flags: user.flags } })
                 } else {
@@ -38,7 +38,7 @@ export default async function handler (
                         flags: body.flags
                     })
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.email?.toLowerCase() }).populate('classesTaken').lean() as any })
                 } else {
                     throw new Error('User does not exist.')
                 }

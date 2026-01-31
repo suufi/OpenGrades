@@ -29,7 +29,7 @@ export default async function handler (
 ) {
     await mongoConnection()
     const { method, body } = req
-    // const session = await getServerSession(req, res, authOptions)
+    // const session = await getServerSession(req, res, authOptions) as any
     const session = await auth(req, res)
 
     if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
