@@ -78,9 +78,13 @@ export const config = {
         async signIn ({ profile }: { profile?: Profile }) {
             await mongoConnection()
 
+            if (!process.env.MIT_API_CLIENT_ID || !process.env.MIT_API_CLIENT_SECRET) {
+                throw new Error('MIT API credentials are not configured')
+            }
+
             const requestHeaders = new Headers()
-            requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID || '')
-            requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET || '')
+            requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
+            requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
             let apiFetch
 
             try {
