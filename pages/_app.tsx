@@ -33,12 +33,30 @@ import 'primereact/resources/primereact.min.css' // core css
 
 import mainClasses from '@/styles/Main.module.css'
 
-const availableAcademicYears = [
-  '2021-2022',
-  '2022-2023',
-  '2023-2024',
-  '2024-2025'
-]
+const getAvailableAcademicYears = () => {
+  const startYear = 2021
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+  const years = []
+
+  let endYear
+  if (currentMonth < 8) {
+    endYear = currentYear
+  } else {
+    endYear = currentYear + 1
+  }
+
+  for (let year = startYear; year < endYear; year++) {
+    years.push(`${year}-${year + 1}`)
+  }
+
+  return years
+}
+
+const availableAcademicYears = getAvailableAcademicYears()
+
+
 
 
 
