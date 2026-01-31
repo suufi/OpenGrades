@@ -62,7 +62,7 @@ export default async function handler(
             name: z.string().optional(),
             classOf: z.number().optional(),
             affiliation: z.string().optional(),
-            identityFlags: z.array(z.nativeEnum(IdentityFlags)).optional(),
+            flags: z.array(z.nativeEnum(IdentityFlags)).optional(),
             flatClasses: z.array(z.string()).optional(),
             referredBy: z.string().optional(),
             undergradProgramIds: z.array(z.string()).optional(),
@@ -74,7 +74,7 @@ export default async function handler(
               firstYear: z.boolean()
             })).optional()
           }).partial({
-            identityFlags: true,
+            flags: true,
             flatClasses: true,
             referredBy: true,
             undergradProgramIds: true,
@@ -87,7 +87,7 @@ export default async function handler(
           const updateData: any = {}
 
           if (data.classOf) updateData.classOf = data.classOf
-          if (data.identityFlags) updateData.identityFlags = data.identityFlags
+          if (data.flags) updateData.flags = data.flags
           if (data.flatClasses) updateData.classesTaken = data.flatClasses
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
           if (typeof data.emailOptIn === 'boolean') updateData.emailOptIn = data.emailOptIn

@@ -83,13 +83,12 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
     kerb: z.string(),
     name: z.string(),
     classOf: z.number().min(2000).max(new Date().getFullYear() + 7),
-    identityFlags: z.nativeEnum(IdentityFlags).array(),
+    flags: z.nativeEnum(IdentityFlags).array(),
     affiliation: z.string(),
     classes: z.array(z.string()),
     referredBy: z.string().optional()
   }).partial({
     flags: true,
-    identityFlags: true,
     classes: true
   })
   const form = useForm<UserProfile>({
@@ -361,7 +360,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                   <List.Item> <Text c='dimmed' fz='sm'>International: any student who does not hold United States citizenship or permanent residency, regardless of where they live or attend school.⁠ </Text> </List.Item>
                 </List>
                 <Space h="sm" />
-                <MultiSelect {...form.getInputProps('identityFlags')} label='Identity Flags (optional)' description="Please select identities that you identify with." data={[
+                <MultiSelect {...form.getInputProps('flags')} label='Identity Flags (optional)' description="Please select identities that you identify with." data={[
                   {
                     value: 'First Gen',
                     label: 'First Generation'

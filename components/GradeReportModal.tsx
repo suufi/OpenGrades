@@ -126,7 +126,7 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
                                             <List spacing="xs">
                                                 {classes
                                                     .sort((a, b) => a.term.localeCompare(b.term)) // Sort classes by term
-                                                    .map((classTaken: IClass & { partialReviewGrade?: string; isDropped?: boolean }) => (
+                                                    .map((classTaken: IClass & { partialReviewGrade?: string; isDroppedClass?: boolean }) => (
                                                         <List.Item
                                                             key={classTaken._id}
                                                         >
