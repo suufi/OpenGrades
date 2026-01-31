@@ -201,12 +201,24 @@ function ClassReviewComment({ classReview,
     setShowName(!showName)
   }
 
-  // Helper function to get workload label and color
-  const getWorkloadInfo = (hours: number) => {
-    if (hours <= 6) return { label: 'Light', color: 'green' }
-    if (hours <= 12) return { label: 'Moderate', color: 'yellow' }
-    if (hours <= 18) return { label: 'Heavy', color: 'orange' }
-    return { label: 'Very Heavy', color: 'red' }
+  const getWorkloadInfo = (timeRange: TimeRange | string | undefined): { label: string; color: string; ringValue: number } => {
+    const unknown = { label: 'Unknown', color: 'gray', ringValue: 0 }
+    if (!timeRange || timeRange === TimeRange.Unknown) return unknown
+    const rangeMap: Record<string, { label: string; color: string; midpoint: number }> = {
+      [TimeRange['0-2 hours']]: { label: 'Light', color: 'green', midpoint: 1 },
+      [TimeRange['3-5 hours']]: { label: 'Light', color: 'green', midpoint: 4 },
+      [TimeRange['6-8 hours']]: { label: 'Moderate', color: 'yellow', midpoint: 7 },
+      [TimeRange['9-11 hours']]: { label: 'Moderate', color: 'yellow', midpoint: 10 },
+      [TimeRange['12-14 hours']]: { label: 'Moderate', color: 'yellow', midpoint: 13 },
+      [TimeRange['15-17 hours']]: { label: 'Heavy', color: 'orange', midpoint: 16 },
+      [TimeRange['18-20 hours']]: { label: 'Heavy', color: 'orange', midpoint: 19 },
+      [TimeRange['21-23 hours']]: { label: 'Very Heavy', color: 'red', midpoint: 22 },
+      [TimeRange['24-26 hours']]: { label: 'Very Heavy', color: 'red', midpoint: 25 },
+      [TimeRange['37-40 hours']]: { label: 'Very Heavy', color: 'red', midpoint: 38.5 }
+    }
+    const info = rangeMap[timeRange]
+    if (!info) return unknown
+    return { ...info, ringValue: Math.min((info.midpoint / 40) * 100, 100) }
   }
 
   // Helper function to get recommendation color
@@ -216,7 +228,7 @@ function ClassReviewComment({ classReview,
     return 'red'
   }
 
-  const workloadInfo = getWorkloadInfo(classReview.hoursPerWeek || 0)
+  const workloadInfo = getWorkloadInfo(classReview.hoursPerWeek)
   const ratingPercent = ((classReview.overallRating || 0) / 7) * 100
 
   return (
@@ -276,12 +288,12 @@ function ClassReviewComment({ classReview,
         {/* Hours Per Week */}
         <Grid.Col span={{ base: 4, sm: 4 }}>
           <Group gap="xs" align="center">
-            <Tooltip label={`${classReview.hoursPerWeek} hours per week (${workloadInfo.label})`}>
+            <Tooltip label={`${classReview.hoursPerWeek ?? 'Unknown'} per week (${workloadInfo.label})`}>
               <RingProgress
                 size={50}
                 thickness={5}
                 roundCaps
-                sections={[{ value: Math.min((classReview.hoursPerWeek || 0) / 25 * 100, 100), color: workloadInfo.color }]}
+                sections={[{ value: workloadInfo.ringValue, color: workloadInfo.color }]}
                 label={
                   <Center>
                     <IconClock size={16} />
@@ -291,7 +303,7 @@ function ClassReviewComment({ classReview,
             </Tooltip>
             <div>
               <Text size="xs" c="dimmed">Hours/Week</Text>
-              <Text size="sm" fw={500}>{classReview.hoursPerWeek} <Text component="span" size="xs" c="dimmed">({workloadInfo.label})</Text></Text>
+              <Text size="sm" fw={500}>{classReview.hoursPerWeek ?? 'Unknown'} <Text component="span" size="xs" c="dimmed">({workloadInfo.label})</Text></Text>
             </div>
           </Group>
         </Grid.Col>
@@ -522,7 +534,7 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
       recommendationLevel: Number(values.recommendationLevel),
       firstYear: (values.conditions as string[]).includes('firstYear'),
       retaking: (values.conditions as string[]).includes('retaking'),
-      droppedClass: (values.conditions as string[]).includes('dropped')
+      droppedClass: (values.conditions as string[]).includes('droppedClass')
     })
   })
 
