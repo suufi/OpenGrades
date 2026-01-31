@@ -338,8 +338,8 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
               </Stepper.Step>
               <Stepper.Step label="Information Verification" description="Tell us more about you!">
                 <Group grow>
-                  <TextInput disabled {...form.getInputProps('kerb')} label="Kerb" />
-                  <TextInput disabled {...form.getInputProps('name')} label="Name" />
+                  <TextInput disabled {...form.getInputProps('kerb')} label="Kerb" description="Kerberos ID (per MIT)" />
+                  <TextInput disabled {...form.getInputProps('name')} label="Name" description="Name (per MIT)" />
                   <NumberInput {...form.getInputProps('classOf')} label="Class of" description="Known or expected graduation year (required)" min={2019} max={2035} required />
                 </Group>
                 <Space h='md' />
@@ -569,6 +569,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                           message: 'Your degree term assignments have been saved.'
                         })
                         setDegreeTermsSaved(true)
+                        submitProfile(form.values)
                       }}
                     />
                   </Stack>
@@ -596,7 +597,11 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                 <Button type='submit'>Submit</Button>
               )}
               {(isGradStudent && active === 3 && !profileSubmitted) && (
-                <Button type='submit'>{wasMITUndergrad ? 'Assign Terms' : 'Submit'}</Button>
+                wasMITUndergrad ? (
+                  <Button onClick={nextStep}>Assign Terms</Button>
+                ) : (
+                  <Button type='submit'>Submit</Button>
+                )
               )}
               {active === 4 && isGradStudent && wasMITUndergrad && profileSubmitted && (
                 <Button
