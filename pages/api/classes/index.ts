@@ -19,7 +19,8 @@ const client = getESClient()
 type Data = {
   success: boolean,
   data?: object,
-  message?: string
+  message?: string,
+  meta?: object
 }
 
 type ClassQuery = {
@@ -206,7 +207,7 @@ export default async function handler(
 
           const searchResults = await client.search({
             index: 'opengrades_prod.classes',
-            query: esQuery,
+            query: esQuery as any,
             highlight: {
               fields: {
                 description: {},
@@ -288,7 +289,7 @@ export default async function handler(
                 $project: {
                   reviews: 0,
                 }
-              }
+              } as any
             )
           }
           aggregationPipeline.push({ $sort: sortQuery } as any)
@@ -471,7 +472,7 @@ export default async function handler(
         requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
         requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
 
-        async function fetchDescription(description) {
+        const fetchDescription = async (description: string) => {
           if (!description.includes("See description under subject")) {
             return description
           }
@@ -492,7 +493,7 @@ export default async function handler(
 
 
           // attempt to look up the class description for this same term if we already have it
-          const existingClass = await Class.findOne({ subjectNumber, term: body.term }).lean()
+          const existingClass = await Class.findOne({ subjectNumber, term: body.term }).lean() as any
 
           if (existingClass) {
             return existingClass.description

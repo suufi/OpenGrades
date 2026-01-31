@@ -65,10 +65,10 @@ export default async function handler (
                         const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
                         for (const review of body.partialReviews) {
-                            const existingReview = existingReviewsByClass.get(review.class)
+                            const existingReview = existingReviewsByClass.get(review.class) as any
 
                             // If existing review has 'D' but new grade report shows 'DR', update it
-                            if (existingReview && existingReview.letterGrade === 'D' && review.letterGrade === 'DR') {
+                            if (existingReview && existingReview.letterGrade === 'D' && (review as any).letterGrade === 'DR') {
                                 await ClassReview.updateOne(
                                     { _id: existingReview._id },
                                     { letterGrade: 'DR', droppedClass: true }

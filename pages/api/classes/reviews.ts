@@ -110,7 +110,7 @@ export default async function handler (
         await Karma.create({
           actor: author._id,
           amount: 50,
-          description: `Posting a review for a class - ${await Class.findOne({ id: data.class }).lean().then((c) => c?.name) || 'Unknown'}`
+          description: `Posting a review for a class - ${await Class.findOne({ id: data.class }).lean().then((c: any) => c?.name) || 'Unknown'}`
         })
 
         return res.status(200).json({

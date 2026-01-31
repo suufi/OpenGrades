@@ -21,10 +21,10 @@ const UserAvatar = ({ user }) => {
 }
 
 
-const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ classCount, classReviewCount, userCount, faqs, maintainers, supporters }) => {
+const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ classCount, classReviewCount, userCount, faqs, maintainers, supporters }: any) => {
 
 
-    const faqItems = faqs ? faqs.map((item) => (
+    const faqItems = faqs ? faqs.map((item: any) => (
         <Accordion.Item key={item._id} value={item._id}>
             <Accordion.Control>{item.question}</Accordion.Control>
             <Accordion.Panel>
@@ -98,7 +98,7 @@ const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
                     maintainers.map((maintainer) => {
                         return (
                             <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3, lg: 2 }}>
-                                <Stack align="center" direction="column">
+                                <Stack align="center" >
                                     <UserAvatar user={maintainer} />
                                 </Stack>
                             </Grid.Col>
@@ -115,7 +115,7 @@ const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
                     supporters.map((supporter) => {
                         return (
                             <Grid.Col span={{ base: 6, xs: 6, sm: 4, md: 3, lg: 2 }}>
-                                <Stack align="center" direction="column">
+                                <Stack align="center" >
                                     <UserAvatar user={supporter} />
                                 </Stack>
                             </Grid.Col>
