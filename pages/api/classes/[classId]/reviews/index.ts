@@ -114,7 +114,7 @@ async function handler(
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean()
+        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean() as any
         if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
@@ -138,7 +138,7 @@ async function handler(
         if (!reviewedClass.units.includes('P/D/F') && data.letterGrade === 'P') {
           return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
-        if (await ClassReview.exists({ class: req.query.classId, author: author._id })) {
+        if (!author || await ClassReview.exists({ class: req.query.classId, author: author._id })) {
           return res.status(409).json({ success: false, message: 'Class review already exists.' })
         }
 
@@ -197,7 +197,7 @@ async function handler(
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean()
+        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean() as any
         if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
@@ -226,7 +226,7 @@ async function handler(
           return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
 
-        let changes = {
+        let changes: any = {
           overallRating: data.overallRating,
           firstYear: data.firstYear,
           retaking: data.retaking,

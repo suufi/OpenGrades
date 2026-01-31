@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
+import ReviewVote from '@/models/ReviewVote'
 
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
@@ -35,7 +36,7 @@ async function handler (
                     return res.status(404).json({ success: false, message: 'Class does not exist.' })
                 }
 
-                const content = await ClassReview.findById(req.query.reviewId).populate(['class', 'author']).lean()
+                const content = await ClassReview.findById(req.query.reviewId).populate(['class', 'author']).lean() as any
 
                 const upvotes = await ReviewVote.countDocuments({ classReview: content._id, vote: 1 })
                 const downvotes = await ReviewVote.countDocuments({ classReview: content._id, vote: -1 })
