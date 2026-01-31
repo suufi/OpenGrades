@@ -228,7 +228,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
 
     // Memoize graph data with GIR positioning and edge curvature
     const graphData = useMemo(() => {
-        const isGIR = (node: GraphNode) => node.data?.isGIR || false
+        const isGIR = (node: GraphNode) => (node.data as any)?.isGIR || false
         const girNodes = nodes.filter(isGIR)
         const nonGirNodes = nodes.filter(n => !isGIR(n))
 
@@ -431,6 +431,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                                 Exploring: {explodedNode}
                             </Badge>
                         )}
+                        
                         <ForceGraph2D
                             ref={fgRef}
                             graphData={graphData}

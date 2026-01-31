@@ -108,13 +108,13 @@ export default async function handler(
           if (data.partialReviews) {
             const reviewsToMake = []
             const existingReviews = await ClassReview.find({ author: user._id }).lean() as any
-            const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
+            const existingReviewsByClass = new Map(existingReviews.map((r: any) => [r.class.toString(), r]))
 
             for (const review of data.partialReviews) {
-              const existingReview = existingReviewsByClass.get(review.class)
+              const existingReview = existingReviewsByClass.get(review.class) as any
 
               // If existing review has 'D' but new grade report shows 'DR', update it
-              if (existingReview && existingReview.letterGrade === 'D' && review.letterGrade === 'DR') {
+              if (existingReview && existingReview.letterGrade === 'D' && (review as any).letterGrade === 'DR') {
                 await ClassReview.updateOne(
                   { _id: existingReview._id },
                   { letterGrade: 'DR', droppedClass: true }
