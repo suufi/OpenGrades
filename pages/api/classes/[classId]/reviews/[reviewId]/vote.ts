@@ -2,6 +2,7 @@
 import ClassReview from '@/models/ClassReview'
 import ReviewVote from '@/models/ReviewVote'
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -10,7 +11,7 @@ type Data = {
     message?: string
 }
 
-export default async function handler (req: NextApiRequest, res: NextApiResponse<Data>) {
+async function handler (req: NextApiRequest, res: NextApiResponse<Data>) {
     await mongoConnection()
     const { method, body } = req
     const session = await auth(req, res)
@@ -114,3 +115,5 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
             return res.status(400).json({ success: false, message: 'Invalid method.' })
     }
 }
+
+export default withApiLogger(handler)

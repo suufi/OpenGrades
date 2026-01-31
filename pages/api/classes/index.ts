@@ -7,6 +7,7 @@ import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 
 import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
@@ -50,7 +51,7 @@ export const config = {
   },
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
@@ -814,3 +815,5 @@ export default async function handler(
       break
   }
 }
+
+export default withApiLogger(handler)

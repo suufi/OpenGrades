@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../../models/Class'
@@ -11,7 +12,7 @@ type Data = {
   message?: string
 }
 
-export default async function handler (
+async function handler (
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
@@ -55,3 +56,5 @@ export default async function handler (
       break
   }
 }
+
+export default withApiLogger(handler)

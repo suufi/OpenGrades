@@ -1,5 +1,6 @@
 import CourseOption from '@/models/CourseOption'
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -9,7 +10,7 @@ type Data = {
     message?: string
 }
 
-export default async function handler (
+async function handler (
     req: NextApiRequest,
     res: NextApiResponse<Data>
 ) {
@@ -102,3 +103,5 @@ export default async function handler (
             return res.status(405).json({ success: false, message: 'Method not allowed' })
     }
 }
+
+export default withApiLogger(handler)

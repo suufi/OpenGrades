@@ -6,6 +6,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
 
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 
 import AuditLog from '@/models/AuditLog'
 import Class from '@/models/Class'
@@ -34,7 +35,7 @@ enum TimeRange {
   '37-40 hours' = '37-40 hours'
 }
 
-export default async function handler (
+async function handler (
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
@@ -242,3 +243,5 @@ export default async function handler (
       break
   }
 }
+
+export default withApiLogger(handler)

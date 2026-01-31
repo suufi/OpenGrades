@@ -3,9 +3,11 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../utils/mongoConnection'
 
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 
 import User from '../../../models/User'
-export default async function handler (
+
+async function handler (
     req: NextApiRequest,
     res: NextApiResponse
 ) {
@@ -52,5 +54,6 @@ export default async function handler (
         default:
             return res.status(405).json({ success: false, message: 'Method not allowed.' })
     }
-
 }
+
+export default withApiLogger(handler)

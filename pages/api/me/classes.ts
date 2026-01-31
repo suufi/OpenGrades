@@ -3,6 +3,7 @@ import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
@@ -20,7 +21,7 @@ function normalizeGrade(grade: string) {
 }
 
 
-export default async function handler (
+async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
@@ -129,5 +130,6 @@ export default async function handler (
         default:
             return res.status(405).json({ success: false, message: 'Method not allowed.' })
     }
-
 }
+
+export default withApiLogger(handler)

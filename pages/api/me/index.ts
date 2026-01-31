@@ -2,6 +2,7 @@
 import '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
@@ -25,7 +26,7 @@ function normalizeGrade(grade: string) {
   return grade
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
@@ -164,3 +165,5 @@ export default async function handler(
       break
   }
 }
+
+export default withApiLogger(handler)

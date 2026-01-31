@@ -6,6 +6,7 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 
 import z from 'zod'
 
@@ -15,7 +16,7 @@ type Data = {
     message?: string
 }
 
-export default async function handler (
+async function handler (
     req: NextApiRequest,
     res: NextApiResponse<Data>
 ) {
@@ -78,3 +79,5 @@ export default async function handler (
 
     }
 }
+
+export default withApiLogger(handler)

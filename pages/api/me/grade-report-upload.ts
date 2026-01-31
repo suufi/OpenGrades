@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
 import mongoConnection from '../../../utils/mongoConnection'
@@ -99,7 +100,7 @@ type Data = {
     message?: string
 }
 
-export default async function handler (req: NextApiRequest, res: NextApiResponse<Data>) {
+async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     await mongoConnection()
     const { method, body } = req
 
@@ -170,3 +171,5 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
         res.status(405).json({ success: false, message: 'Method not allowed' })
     }
 }
+
+export default withApiLogger(handler)

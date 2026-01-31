@@ -1,5 +1,6 @@
 // @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
+import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth'
 import authOptions from '../auth/[...nextauth]'
@@ -26,7 +27,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
     return response.embedding
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method not allowed' })
     }
@@ -402,3 +403,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
     }
 }
+
+export default withApiLogger(handler)

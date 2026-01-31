@@ -287,7 +287,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   const [modalOpened, setModalOpened] = useState(false)
 
-  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; dropped: boolean, firstYear: boolean }[]) => {
+  const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => {
     const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
 
     setContentLoading(true)

@@ -7,6 +7,7 @@ import Class from '../../../../../models/Class'
 import ContentSubmission from '../../../../../models/ContentSubmission'
 
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 
 import z from 'zod'
 
@@ -24,7 +25,7 @@ const minioClient = new Minio.Client({
 })
 
 
-export default async function handler (
+async function handler (
     req: NextApiRequest,
     res: NextApiResponse<Data>
 ) {
@@ -111,3 +112,5 @@ export default async function handler (
 
     }
 }
+
+export default withApiLogger(handler)

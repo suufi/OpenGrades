@@ -1,5 +1,7 @@
 import Class from '@/models/Class'
 import mongoConnection from '@/utils/mongoConnection'
+import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 type Data = {
@@ -8,12 +10,18 @@ type Data = {
     message?: string
 }
 
-export default async function handler (
+async function handler (
     req: NextApiRequest,
     res: NextApiResponse<Data>
 ) {
     await mongoConnection()
     const { method } = req
+
+    const session = await auth(req, res)
+    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    if (!session.user || session.user?.trustLevel < 1) {
+        return res.status(403).json({ success: false, message: 'Not authorized.' })
+    }
 
     if (method !== 'GET') {
         return res.status(405).json({ success: false, message: 'Method not allowed' })
@@ -36,3 +44,5 @@ export default async function handler (
         return res.status(500).json({ success: false, message: 'Internal Server Error' })
     }
 }
+
+export default withApiLogger(handler)

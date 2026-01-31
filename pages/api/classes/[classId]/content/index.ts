@@ -5,6 +5,7 @@ import mongoConnection from '../../../../../utils/mongoConnection'
 
 import AuditLog from '@/models/AuditLog'
 import { auth } from '@/utils/auth'
+import { withApiLogger } from '@/utils/apiLogger'
 import formidable from 'formidable'
 import * as Minio from 'minio'
 import mongoose from 'mongoose'
@@ -29,7 +30,7 @@ const minioClient = new Minio.Client({
 })
 
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
@@ -189,6 +190,8 @@ export default async function handler(
       break
   }
 }
+
+export default withApiLogger(handler)
 
 export const config = {
   api: {
