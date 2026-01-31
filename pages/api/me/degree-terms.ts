@@ -142,7 +142,7 @@ export default async function handler (
                     return res.status(400).json({
                         success: false,
                         message: 'Invalid request body',
-                        data: validation.error.errors
+                        data: (validation.error as any).errors
                     })
                 }
 

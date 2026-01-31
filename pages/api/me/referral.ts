@@ -19,11 +19,11 @@ export default async function handler (
         case 'GET':
             try {
                 if (session.user?.email) {
-                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean() as any
+                    const user = await User.findOne({ email: session.user.email.toLowerCase() }).populate('classesTaken').lean() as any
 
                     return res.status(200).json({ success: true, data: !!user.referredBy })
                 } else {
-                    throw new Error("User doesn't have ID.")
+                    throw new Error("User doesn't have email.")
                 }
             } catch (error: unknown) {
                 if (error instanceof Error) {
@@ -38,11 +38,11 @@ export default async function handler (
                     if (!referredByUser) {
                         throw new Error('User does not exist.')
                     }
-                    if (referredByUser === session.user.kerb) {
+                    if ((referredByUser as any)._id?.toString() === session.user.kerb) {
                         throw new Error('You cannot refer yourself.')
                     }
                     await User.findOneAndUpdate({ email: session.user?.email?.toLowerCase() }, {
-                        referredBy: referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : null
+                        referredBy: referredByUser ? new mongoose.Types.ObjectId((referredByUser as any)._id) : null
                     })
 
                     return res.status(200).json({ success: true, data: !!referredByUser })
