@@ -9,6 +9,7 @@ import type {
     NextApiResponse,
 } from "next"
 import { getServerSession, Profile } from "next-auth"
+import AuditLog from '@/models/AuditLog'
 
 const LATEST_GRAD_YEAR = 2028
 // You'll need to import and pass this
