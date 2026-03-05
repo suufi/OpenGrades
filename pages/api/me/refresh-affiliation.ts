@@ -1,7 +1,7 @@
 // @ts-nocheck
 import CourseOption from '@/models/CourseOption'
 import User from '@/models/User'
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -19,16 +19,16 @@ async function handler (
     await mongoConnection()
     const { method } = req
 
-    const session = await auth(req, res)
-
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const requestUser = await getUserFromRequest(req, res)
+    if (!requestUser?.email) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const email = requestUser.email.toLowerCase()
 
     if (method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method not allowed' })
     }
 
     try {
-        const kerb = session.user?.email?.split('@')[0]
+        const kerb = requestUser.email?.split('@')[0]
 
         if (!kerb) {
             throw new Error('No kerberos found in session')
@@ -75,7 +75,7 @@ async function handler (
 
         const validCourseOptionObjects = courseOptionObjects.filter(co => co !== null)
 
-        const user = await User.findOne({ email: session.user?.id.toLowerCase() })
+        const user = await User.findOne({ email })
             .populate('courseAffiliation')
             .lean()
 
@@ -104,11 +104,11 @@ async function handler (
         const finalCourseAffiliation = [...validCourseOptionObjects, ...preservedHistoricalPrograms]
 
         await User.findOneAndUpdate(
-            { email: session.user?.id.toLowerCase() },
+            { email },
             { courseAffiliation: finalCourseAffiliation }
         )
 
-        const updatedUser = await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+        const updatedUser = await User.findOne({ email }).populate('classesTaken').populate('courseAffiliation').lean()
 
         return res.status(200).json({
             success: true,

@@ -10,3 +10,13 @@
 .text {
     color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-white));
 }
+
+.courseMention {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+.courseMention:hover {
+    text-decoration-thickness: 2px;
+}

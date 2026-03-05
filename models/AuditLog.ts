@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 import { IAuditLog } from '../types'
 
 const { Schema } = mongoose
@@ -34,4 +34,4 @@ const AuditLogSchema = new mongoose.Schema<IAuditLog>({
   }
 }, { timestamps: true })
 
-export default (mongoose.models.AuditLog || mongoose.model('AuditLog', AuditLogSchema))
+export default (mongoose.models.AuditLog as Model<IAuditLog> || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema))

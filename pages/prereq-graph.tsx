@@ -468,6 +468,10 @@ const PrereqGraphPage: NextPage<PrereqGraphPageProps> = ({ initialSubject }) => 
                     <ThemeIcon size="sm" color={nodeColors.requiredBy} radius="xl"><IconCircle size={10} /></ThemeIcon>
                     <Text size="sm">Classes That Need This</Text>
                 </Group>
+                <Group gap="xs">
+                    <ThemeIcon size="sm" color="#FFD700" radius="xl"><IconCircle size={10} /></ThemeIcon>
+                    <Text size="sm">GIR Requirements</Text>
+                </Group>
             </Group>
 
             {/* Graph Visualization */}
@@ -493,9 +497,24 @@ const PrereqGraphPage: NextPage<PrereqGraphPageProps> = ({ initialSubject }) => 
                             graphData={graphData}
                             width={undefined}
                             height={600}
-                            nodeLabel={(node: any) => `${node.name || node.id}${node.data?.subjectTitle ? `: ${node.data.subjectTitle}` : ''}`}
-                            nodeColor={(node: any) => nodeColors[node.data?.type || 'root']}
-                            nodeVal={(node: any) => node.data?.type === 'root' ? 10 : 8}
+                            nodeLabel={(node: any) => {
+                                if (node.data?.isGIRRequirement) {
+                                    return node.data.subjectTitle || node.id
+                                }
+                                return `${node.name || node.id}${node.data?.subjectTitle ? `: ${node.data.subjectTitle}` : ''}`
+                            }}
+                            nodeColor={(node: any) => {
+                                if (node.data?.isGIRRequirement) {
+                                    return '#FFD700' // Gold for GIR requirements
+                                }
+                                return nodeColors[node.data?.type || 'root']
+                            }}
+                            nodeVal={(node: any) => {
+                                if (node.data?.isGIRRequirement || node.data?.type === 'root') {
+                                    return 10
+                                }
+                                return 8
+                            }}
                             nodeRelSize={4}
                             linkColor={(link: any) => link.color || '#888'}
                             linkWidth={2}

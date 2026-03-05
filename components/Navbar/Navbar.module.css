@@ -7,7 +7,7 @@
     border-left: 3px solid transparent;
     transition: background-color 0.15s ease, border-color 0.15s ease;
     text-decoration: none;
-    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-3));
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-1));
 }
 
 .navLink:hover {
@@ -25,7 +25,7 @@
 }
 
 .navLinkText {
-    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-2));
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-1));
     transition: color 0.15s ease;
 }
 
@@ -55,11 +55,11 @@
 }
 
 .userText {
-    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-2));
+    color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-1));
 }
 
 .userTextDimmed {
-    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
+    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-3));
 }
 
 .sectionDivider {

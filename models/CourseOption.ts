@@ -1,5 +1,5 @@
 import { ICourseOption } from '@/types'
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 
 const { Schema } = mongoose
 
@@ -35,4 +35,4 @@ const CourseOptionSchema = new mongoose.Schema<ICourseOption>({
     }
 }, { timestamps: true })
 
-export default (mongoose.models.CourseOption || mongoose.model('CourseOption', CourseOptionSchema))
+export default (mongoose.models.CourseOption as Model<ICourseOption> || mongoose.model<ICourseOption>('CourseOption', CourseOptionSchema))

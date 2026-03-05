@@ -5,7 +5,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 
 import { z } from 'zod'
 
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 
 import AuditLog from '@/models/AuditLog'
@@ -35,40 +35,83 @@ enum TimeRange {
   '37-40 hours' = '37-40 hours'
 }
 
-async function handler (
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
   await mongoConnection()
   const { method, body } = req
-  const session = await auth(req, res)
+  const user = await getUserFromRequest(req, res)
 
-  if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+  if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
   switch (method) {
     case 'GET':
       try {
-        if (session.user?.trustLevel < 2) {
-          return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
+        const canSeeAuthors = user?.trustLevel >= 2
+
+        let classId = req.query.classId as string
+        if (!mongoose.Types.ObjectId.isValid(classId)) {
+          const cls = await Class.findOne({ subjectNumber: classId }).select('_id')
+          if (!cls) {
+            return res.status(404).json({ success: false, message: 'Class not found' })
+          }
+          classId = cls._id.toString()
         }
-        const classes = await ClassReview.find({ class: req.query.classId }).populate(['class', 'author']).lean()
-        return res.status(200).json({ success: true, data: classes })
+
+        // Fetch reviews with or without author population
+        let reviews = canSeeAuthors
+          ? await ClassReview.find({ class: classId, display: true }).populate(['class', 'author']).lean()
+          : await ClassReview.find({ class: classId, display: true }).populate(['class']).lean()
+
+        // Extract grades separately (for grade distribution chart)
+        const grades = reviews
+          .filter((r: any) => r.letterGrade)
+          .map((r: any) => ({ letterGrade: r.letterGrade, numericGrade: r.numericGrade }))
+
+        // Shuffle grades
+        for (let i = grades.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [grades[i], grades[j]] = [grades[j], grades[i]]
+        }
+
+        // Remove grade data from reviews if user is not trusted (to preserve anonymity)
+        // Also add isOwnReview flag for each review
+        if (!canSeeAuthors) {
+          reviews = reviews.map((r: any) => ({
+            ...r,
+            author: undefined,
+            letterGrade: undefined,
+            numericGrade: undefined,
+            isOwnReview: r.author && user?._id && r.author.toString() === user._id.toString()
+          }))
+        } else {
+          reviews = reviews.map((r: any) => ({
+            ...r,
+            isOwnReview: r.author?._id && user?._id && r.author._id.toString() === user._id.toString()
+          }))
+        }
+
+        // Shuffle reviews
+        for (let i = reviews.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [reviews[i], reviews[j]] = [reviews[j], reviews[i]]
+        }
+
+        return res.status(200).json({ success: true, data: { reviews, grades } })
       } catch (error: unknown) {
         if (error instanceof Error) {
           return res.status(400).json({ success: false, message: error.toString() })
         }
       }
-      return res.status(200).json({ success: true, data: {} })
+      return res.status(200).json({ success: true, data: { reviews: [], grades: [] } })
     case 'POST':
       try {
-        // const classExists = await Class.exists()
-        console.log(body)
-        console.log(typeof body)
-        console.log(session)
-
-        const user = await User.findOne({ email: session.user?.email }).lean()
-
-        if (session.user && user.trustLevel < 1) {
+        const author = await User.findOne({ email: user?.email })
+        if (!author) {
+          return res.status(404).json({ success: false, message: 'User not found.' })
+        }
+        if (user?.trustLevel !== undefined && author.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
@@ -93,7 +136,6 @@ async function handler (
 
         const data = schema.parse(body)
 
-        const author = await User.findOne({ email: session.user?.email })
         if (!reviewedClass.units.includes('P/D/F') && data.letterGrade === 'P') {
           return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
@@ -148,9 +190,11 @@ async function handler (
       break
     case 'PUT':
       try {
-        const user = await User.findOne({ email: session.user?.email }).lean()
-
-        if (session.user && user.trustLevel < 1) {
+        const author = await User.findOne({ email: user?.email })
+        if (!author) {
+          return res.status(404).json({ success: false, message: 'User not found.' })
+        }
+        if (user?.trustLevel !== undefined && author.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
@@ -174,8 +218,6 @@ async function handler (
         })
 
         const data = schema.parse(body)
-
-        const author = await User.findOne({ email: session.user?.email })
         const existingReview = await ClassReview.findOne({ class: req.query.classId, author: author._id }).lean()
         if (!existingReview) {
           return res.status(404).json({ success: false, message: 'Class review does not exist.' })
@@ -222,7 +264,7 @@ async function handler (
       break
     case 'DELETE':
       try {
-        if (session.user && session.user?.trustLevel < 2) {
+        if (user && user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 

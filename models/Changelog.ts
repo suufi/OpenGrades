@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 import { IChangelogEntry } from '../types'
 
 const { Schema } = mongoose
@@ -25,4 +25,4 @@ const ChangelogSchema = new mongoose.Schema<IChangelogEntry>({
 
 ChangelogSchema.index({ order: -1, date: -1 })
 
-export default (mongoose.models.Changelog || mongoose.model('Changelog', ChangelogSchema))
+export default (mongoose.models.Changelog as Model<IChangelogEntry> || mongoose.model<IChangelogEntry>('Changelog', ChangelogSchema))

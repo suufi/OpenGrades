@@ -2,9 +2,7 @@
 import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getServerSession } from 'next-auth'
-import authOptions from '../auth/[...nextauth]'
-import User from '@/models/User'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import ContentSubmission from '@/models/ContentSubmission'
@@ -35,13 +33,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
-        if (!session || !session.user?.email) {
+        const user = await getUserFromRequest(req, res)
+        if (!user) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }
 
-        const user = await User.findOne({ email: session.user.email })
-        if (!user || user.trustLevel < 2) {
+        if (user.trustLevel < 2) {
             return res.status(403).json({ success: false, message: 'Insufficient permissions' })
         }
 

@@ -5,7 +5,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 
 import z from 'zod'
@@ -22,13 +22,13 @@ async function handler (
 ) {
     await mongoConnection()
     const { method, body } = req
-    const session = await auth(req, res)
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const user = await getUserFromRequest(req, res)
+    if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
     switch (method) {
         case 'GET':
             try {
-                if (session.user && session.user?.trustLevel < 2) {
+                if (user?.trustLevel < 2) {
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
@@ -50,7 +50,7 @@ async function handler (
             }
         case 'PUT':
             try {
-                if (session.user && session.user?.trustLevel < 2) {
+                if (user?.trustLevel < 2) {
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 

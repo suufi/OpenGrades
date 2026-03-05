@@ -2,7 +2,7 @@
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 
 import ClassReview from '@/models/ClassReview'
@@ -28,20 +28,16 @@ async function handler(
     await mongoConnection()
     const { method, body } = req
 
-    const session = await auth(req, res)
-
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const requestUser = await getUserFromRequest(req, res)
+    if (!requestUser?.email) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const email = requestUser.email.toLowerCase()
 
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
+                const user = await User.findOne({ email }).populate('classesTaken').lean()
 
-                    return res.status(200).json({ success: true, data: { classesTaken: user.classesTaken } })
-                } else {
-                    throw new Error("User doesn't have ID.")
-                }
+                return res.status(200).json({ success: true, data: { classesTaken: user.classesTaken } })
             } catch (error: unknown) {
                 if (error instanceof Error) {
                     return res.status(400).json({ success: false, message: error.toString() })
@@ -50,10 +46,10 @@ async function handler(
             break
         case 'POST':
             try {
-                const user = await User.exists({ email: session.user?.id.toLowerCase() })
+                const user = await User.exists({ email })
                 if (user) {
 
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email }, {
                         $addToSet: {
                             classesTaken: {
                                 $each: body.classesTaken
@@ -95,10 +91,10 @@ async function handler(
                         }
                         await ClassReview.create(reviewsToMake)
 
-                        await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
+                        await User.updateOne({ email }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
                     }
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email }).populate('classesTaken').lean() })
                 } else {
                     throw new Error('User does not exist.')
                 }
@@ -110,15 +106,15 @@ async function handler(
             break
         case 'DELETE':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email })) {
 
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email }, {
                         $pull: {
                             classesTaken: body.classId
                         }
                     })
 
-                    return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+                    return res.status(200).json({ success: true, data: await User.findOne({ email }).populate('classesTaken').lean() })
                 } else {
                     throw new Error('User does not exist.')
                 }

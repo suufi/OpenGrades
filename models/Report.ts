@@ -1,4 +1,5 @@
-import mongoose from 'mongoose'
+import { IReport } from '@/types'
+import mongoose, { Model } from 'mongoose'
 
 const { Schema } = mongoose
 
@@ -35,4 +36,4 @@ ReportScheme.pre('validate', function (next) {
     next()
 })
 
-export default (mongoose.models.Report || mongoose.model('Report', ReportScheme))
+export default (mongoose.models.Report as Model<IReport> || mongoose.model<IReport>('Report', ReportScheme))

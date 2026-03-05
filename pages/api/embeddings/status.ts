@@ -2,8 +2,7 @@
 import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getServerSession } from 'next-auth'
-import authOptions from '../auth/[...nextauth]'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import CourseEmbedding from '@/models/CourseEmbedding'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
@@ -23,8 +22,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
-        if (!session) {
+        const user = await getUserFromRequest(req, res)
+        if (!user) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }
 

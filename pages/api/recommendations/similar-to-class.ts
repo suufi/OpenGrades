@@ -2,8 +2,7 @@
 import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getServerSession } from 'next-auth'
-import authOptions from '../auth/[...nextauth]'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { hybridRecommendations } from '@/utils/recommendations'
 import Class from '@/models/Class'
 import User from '@/models/User'
@@ -21,13 +20,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
-        if (!session) {
+        const requestUser = await getUserFromRequest(req, res)
+        if (!requestUser?.email) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }
 
         // Check grade report recency
-        const user = await User.findOne({ email: session.user?.email })
+        const user = await User.findOne({ email: requestUser.email })
         if (!user || !hasRecentGradeReport(user.lastGradeReportUpload)) {
             return res.status(403).json({
                 success: false,

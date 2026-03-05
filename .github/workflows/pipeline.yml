@@ -57,6 +57,8 @@ jobs:
              "OLLAMA_EMBEDDING_MODEL=${{ secrets.OLLAMA_EMBEDDING_MODEL }}"
              "OLLAMA_CHAT_MODEL=${{ secrets.OLLAMA_CHAT_MODEL }}"
              "OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}"             
+             "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}"
 
   deploy:
     name: Deploy Image
@@ -97,6 +99,8 @@ jobs:
           echo "OLLAMA_EMBEDDING_MODEL=${{ secrets.OLLAMA_EMBEDDING_MODEL }}" >> .env
           echo "OLLAMA_CHAT_MODEL=${{ secrets.OLLAMA_CHAT_MODEL }}" >> .env
           echo "OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
 
 
 

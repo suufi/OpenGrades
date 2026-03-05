@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 import { IClass } from '../types'
 
 const ClassSchema = new mongoose.Schema<IClass>({
@@ -59,7 +59,7 @@ const ClassSchema = new mongoose.Schema<IClass>({
   },
   girAttribute: [{
     type: String,
-    enum: ['BIOL', 'CAL1', 'CAL2', 'CHEM', 'LAB', 'LAB2', 'PHY1', 'PHY2', 'REST']
+    enum: ['BIOL', 'CAL1', 'CAL2', 'CHEM', 'LAB', 'PLAB', 'PHY1', 'PHY2', 'REST']
   }],
   prerequisites: {
     type: String
@@ -104,4 +104,4 @@ ClassSchema.index({ girAttribute: 1 })
 ClassSchema.index({ communicationRequirement: 1 })
 ClassSchema.index({ classTags: 1 })
 
-export default (mongoose.models.Class || mongoose.model('Class', ClassSchema))
+export default (mongoose.models.Class as Model<IClass> || mongoose.model<IClass>('Class', ClassSchema))

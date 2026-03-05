@@ -1,4 +1,5 @@
-import mongoose from 'mongoose'
+import { IReviewVote } from '@/types'
+import mongoose, { Model } from 'mongoose'
 const { Schema } = mongoose
 
 const ReviewVoteSchema = new mongoose.Schema({
@@ -25,4 +26,4 @@ const ReviewVoteSchema = new mongoose.Schema({
     }
 }, { timestamps: true })
 
-export default (mongoose.models.ReviewVote || mongoose.model('ReviewVote', ReviewVoteSchema))
+export default (mongoose.models.ReviewVote as Model<IReviewVote> || mongoose.model<IReviewVote>('ReviewVote', ReviewVoteSchema))

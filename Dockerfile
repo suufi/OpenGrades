@@ -50,6 +50,8 @@ RUN \
     --mount=type=secret,id=OLLAMA_EMBEDDING_MODEL \
     --mount=type=secret,id=OLLAMA_CHAT_MODEL \
     --mount=type=secret,id=OLLAMA_API_KEY \
+    --mount=type=secret,id=JWT_SECRET \
+    --mount=type=secret,id=JWT_EXPIRES_IN \
     export MONGODB_CONNECTION_URI=$(cat /run/secrets/MONGODB_CONNECTION_URI) && \
     export MIT_OIDC_WELLKNOWN=$(cat /run/secrets/MIT_OIDC_WELLKNOWN) && \
     export MIT_OIDC_CLIENT_ID=$(cat /run/secrets/MIT_OIDC_CLIENT_ID) && \
@@ -72,6 +74,8 @@ RUN \
     export OLLAMA_EMBEDDING_MODEL=$(cat /run/secrets/OLLAMA_EMBEDDING_MODEL) && \
     export OLLAMA_CHAT_MODEL=$(cat /run/secrets/OLLAMA_CHAT_MODEL) && \
     export OLLAMA_API_KEY=$(cat /run/secrets/OLLAMA_API_KEY) && \
+    export JWT_SECRET=$(cat /run/secrets/JWT_SECRET) && \
+    export JWT_EXPIRES_IN=$(cat /run/secrets/JWT_EXPIRES_IN) && \
 
     yarn run build
 

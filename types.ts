@@ -128,6 +128,7 @@ export interface IUser {
     }>,
     aiEmbeddingOptOut?: boolean,
     qaEmailOptOut?: boolean,
+    favoriteClasses?: string[],
     createdAt: Date,
     updatedAt: Date,
 }
@@ -275,4 +276,14 @@ export interface ICourseOption {
     courseLevel: string,
     courseOption: string,
     active: boolean
+}
+
+export interface IReviewVote {
+    _id?: string,
+    user: IUser,
+    classReview: IClassReview,
+    classReviewAuthor: IUser,
+    vote: number,
+    createdAt: Date,
+    updatedAt: Date
 }

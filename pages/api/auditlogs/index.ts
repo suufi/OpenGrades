@@ -1,7 +1,7 @@
 // @ts-nocheck
 
-import { auth } from '@/utils/auth'
 import { withApiLogger } from '@/utils/apiLogger'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import AuditLog from '../../../models/AuditLog'
 import User from '../../../models/User'
@@ -20,24 +20,18 @@ async function handler (
     await mongoConnection()
     const { method, body } = req
 
-    const session = await auth(req, res)
-
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const requestUser = await getUserFromRequest(req, res)
+    if (!requestUser) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
     switch (method) {
         case 'GET':
             try {
-                if (!session.user || session.user?.trustLevel < 2) {
+                if (requestUser?.trustLevel < 2) {
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
-                if (session.user?.id) {
-                    // const user = await User.findOne({ email: session.user.id }).lean()
-                    const reports = await AuditLog.find({}).populate('actor').lean()
-                    return res.status(200).json({ success: true, data: { reports } })
-                } else {
-                    throw new Error("User doesn't have ID.")
-                }
+                const reports = await AuditLog.find({}).populate('actor').lean()
+                return res.status(200).json({ success: true, data: { reports } })
             } catch (error: unknown) {
                 if (error instanceof Error) {
                     return res.status(400).json({ success: false, message: error.toString() })
@@ -46,28 +40,24 @@ async function handler (
             break
         case 'POST':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
-                    const author = await User.findOne({ email: session.user?.email })
+                const author = await User.findOne({ email: requestUser?.email })
+                if (!author) throw new Error("User doesn't have ID.")
 
-                    if (!session.user || session.user?.trustLevel < 2) {
-                        return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
-                    }
-                    console.log("body", body)
-                    if (!body.description || !body.type) {
-                        return res.status(400).json({ success: false, message: 'Missing required fields.' })
-                    }
-
-                    const log = await AuditLog.create({
-                        actor: author,
-                        description: body.description,
-                        type: body.type
-                    })
-
-                    return res.status(200).json({ success: true, data: log })
-
-                } else {
-                    throw new Error("User doesn't have ID.")
+                if (requestUser?.trustLevel < 2) {
+                    return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
+                console.log("body", body)
+                if (!body.description || !body.type) {
+                    return res.status(400).json({ success: false, message: 'Missing required fields.' })
+                }
+
+                const log = await AuditLog.create({
+                    actor: author,
+                    description: body.description,
+                    type: body.type
+                })
+
+                return res.status(200).json({ success: true, data: log })
             } catch (error: unknown) {
                 if (error instanceof Error) {
                     return res.status(400).json({ success: false, message: error.toString() })

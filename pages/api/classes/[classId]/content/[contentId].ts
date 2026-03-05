@@ -6,8 +6,8 @@ import * as Minio from 'minio'
 import Class from '../../../../../models/Class'
 import ContentSubmission from '../../../../../models/ContentSubmission'
 
-import { auth } from '@/utils/auth'
 import { withApiLogger } from '@/utils/apiLogger'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 
 import z from 'zod'
 
@@ -31,15 +31,13 @@ async function handler (
 ) {
     await mongoConnection()
     const { method, body } = req
-    // const session = await getServerSession(req, res, authOptions)
-    const session = await auth(req, res)
-
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const user = await getUserFromRequest(req, res)
+    if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.trustLevel < 1) {
+                if (user?.trustLevel < 1) {
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 
@@ -73,7 +71,7 @@ async function handler (
             }
         case 'PUT':
             try {
-                if (session.user && session.user?.trustLevel < 2) {
+                if (user && user?.trustLevel < 2) {
                     return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
                 }
 

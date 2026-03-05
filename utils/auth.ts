@@ -19,7 +19,7 @@ export const config = {
         {
             id: 'mit-oidc',
             name: 'MIT',
-            type: 'oauth',
+            type: 'oauth' as const,
             wellKnown: process.env.MIT_OIDC_WELLKNOWN,
             clientId: process.env.MIT_OIDC_CLIENT_ID,
             clientSecret: process.env.MIT_OIDC_CLIENT_SECRET,
@@ -48,7 +48,7 @@ export const config = {
                 }
             },
             userinfo: {
-                async request (context: { tokens: { access_token?: string }; client: { userinfo: (arg0: string) => any } }) {
+                async request(context: { tokens: { access_token?: string }; client: { userinfo: (arg0: string) => any } }) {
                     if (context?.tokens?.access_token) {
                         return await context.client.userinfo(context.tokens.access_token)
                     } else {
@@ -74,6 +74,12 @@ export const config = {
 
             session.user = token.user as { _id: string; trustLevel: number; verified: boolean; kerb: string; name: string; classOf: number; affiliation: string } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
             return session
+        },
+        async redirect ({ url, baseUrl }) {
+            // Allow mobile app deep link callback
+            if (url.startsWith('opengrades://')) return url
+            if (url.startsWith(baseUrl)) return url
+            return baseUrl
         }
     },
     // session: {
@@ -130,12 +136,16 @@ export const config = {
 
                         const apiAffiliationType = res.item.affiliations[0]?.type || null
                         const existingUser = await User.findOne({ email: profile?.email }).lean()
-                        const wasStudent = existingUser?.affiliation === 'student'
-                        const shouldPreserveAffiliation = wasStudent && apiAffiliationType === 'affiliate'
+                        const existingAffiliation = existingUser?.affiliation || null
+                        const wasStudent = existingAffiliation === 'student'
+                        const wasAlumni = existingAffiliation === 'alumni'
+                        const shouldPreserveAffiliation = (wasStudent || wasAlumni) && apiAffiliationType === 'affiliate'
 
                         const verified = shouldPreserveAffiliation ? true : apiAffiliationType === 'student'
-                        const affiliation = shouldPreserveAffiliation ? 'alumni' : apiAffiliationType
-                        const year = shouldPreserveAffiliation ? 'A' : classYearAffiliation?.classYear || null
+                        const affiliation = shouldPreserveAffiliation
+                            ? (wasStudent ? 'alumni' : existingAffiliation)
+                            : apiAffiliationType
+                        const year = shouldPreserveAffiliation ? (existingUser?.year || 'A') : classYearAffiliation?.classYear || null
 
                         // Safely compute classOf, handling the absence of classYear
                         const classOf = (classYearAffiliation && classYearAffiliation.classYear !== 'G' && classYearAffiliation.classYear !== 'U')
@@ -149,7 +159,7 @@ export const config = {
                         if (shouldPreserveAffiliation && apiAffiliationType === 'affiliate') {
                             await AuditLog.create({
                                 actor: existingUser._id,
-                                description: `Preserved student status and course affiliations for ${existingUser.kerb} despite API reporting "affiliate"`,
+                                description: `Preserved ${existingAffiliation || 'prior'} status and course affiliations for ${existingUser.kerb} despite API reporting "affiliate"`,
                                 type: 'PreserveAlumni'
                             })
                         }
@@ -225,7 +235,7 @@ export const config = {
         }
     },
     theme: {
-        colorScheme: 'light',
+        colorScheme: 'light' as const,
         brandColor: '#008CFF'
     }
 }

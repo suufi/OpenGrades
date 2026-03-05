@@ -1,7 +1,7 @@
 // @ts-nocheck
 import ClassReview from '@/models/ClassReview'
 import ReviewVote from '@/models/ReviewVote'
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -14,9 +14,9 @@ type Data = {
 async function handler (req: NextApiRequest, res: NextApiResponse<Data>) {
     await mongoConnection()
     const { method, body } = req
-    const session = await auth(req, res)
+    const user = await getUserFromRequest(req, res)
 
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
     switch (method) {
         case 'POST':
@@ -28,7 +28,7 @@ async function handler (req: NextApiRequest, res: NextApiResponse<Data>) {
 
                 const reviewId = req.query.reviewId as string
                 // Check if the user has already voted on this review
-                const existingVote = await ReviewVote.findOne({ user: session.user._id, classReview: reviewId })
+                const existingVote = await ReviewVote.findOne({ user: user._id, classReview: reviewId })
 
                 // Fetch only the author of the ClassReview to avoid fetching the entire document
                 const classReview = await ClassReview.findById(reviewId).select('author').lean()
@@ -80,7 +80,7 @@ async function handler (req: NextApiRequest, res: NextApiResponse<Data>) {
                 // If the user has not voted yet, create a new vote
                 const newVote = new ReviewVote({
                     classReviewAuthor: classReviewAuthor.toString(),
-                    user: session.user._id,
+                    user: user._id,
                     classReview: reviewId,
                     vote
                 })

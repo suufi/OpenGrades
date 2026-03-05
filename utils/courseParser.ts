@@ -56,26 +56,21 @@ export function parseUnitsField(units: string): ParsedUnits {
     const girAttributes: string[] = []
 
     const girMappings: Record<string, string> = {
+        'PHYSICS II': 'PHY2',
+        'PHY2': 'PHY2',
+        'PHYSICS I': 'PHY1',
+        'PHY1': 'PHY1',
+        'CALC II': 'CAL2',
+        'CAL2': 'CAL2',
+        'CALC I': 'CAL1',
+        'CAL1': 'CAL1',
         'CHEMISTRY': 'CHEM',
         'CHEM': 'CHEM',
         'BIOLOGY': 'BIOL',
         'BIOL': 'BIOL',
-        'PHYSICS I': 'PHY1',
-        'PHYSICS 1': 'PHY1',
-        'PHY1': 'PHY1',
-        'PHYSICS II': 'PHY2',
-        'PHYSICS 2': 'PHY2',
-        'PHY2': 'PHY2',
-        'CALC I': 'CAL1',
-        'CALC 1': 'CAL1',
-        'CAL1': 'CAL1',
-        'CALCULUS I': 'CAL1',
-        'CALC II': 'CAL2',
-        'CALC 2': 'CAL2',
-        'CAL2': 'CAL2',
-        'CALCULUS II': 'CAL2',
+        'Institute LAB': 'LAB',
+        'Partial Lab': 'PLAB',
         'LAB': 'LAB',
-        'LAB2': 'LAB2',
         'REST': 'REST'
     }
 

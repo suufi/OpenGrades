@@ -1,23 +1,7 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 import type { IClassReview } from '../types'
 
 const { Schema } = mongoose
-
-// interface ClassReview {
-//     id?: string;
-//     class: Class;
-//     author: User;
-//     approved: boolean;
-//     overallRating: number;
-//     firstYear: boolean;
-//     retaking: boolean;
-//     droppedClass: boolean;
-//     hoursPerWeek: string;
-//     recommendationLevel: number;
-//     classComments: string;
-//     numericGrade: number;
-//     letterGrade: string;
-// }
 
 const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   class: {
@@ -85,4 +69,4 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   }
 }, { timestamps: true })
 
-export default (mongoose.models.ClassReview || mongoose.model('ClassReview', ClassReviewSchema))
+export default (mongoose.models.ClassReview as Model<IClassReview> || mongoose.model<IClassReview>('ClassReview', ClassReviewSchema))

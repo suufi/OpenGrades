@@ -1,4 +1,4 @@
-// @ts-nocheck
+ // @ts-nocheck
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession } from 'next-auth'
@@ -21,7 +21,8 @@ import {
     ThemeIcon,
     Tooltip,
     ActionIcon,
-    Switch
+    Switch,
+    SegmentedControl
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 import { IconCircle, IconArrowRight, IconHome, IconRefresh } from '@tabler/icons'
@@ -36,6 +37,14 @@ import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 
 const ForceGraph2D = dynamic(
     () => import('react-force-graph-2d'),
+    {
+        ssr: false,
+        loading: () => <Center h={600}><Loader size="xl" /></Center>
+    }
+)
+
+const ForceGraph3D = dynamic(
+    () => import('react-force-graph-3d'),
     {
         ssr: false,
         loading: () => <Center h={600}><Loader size="xl" /></Center>
@@ -75,6 +84,8 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
 }) => {
     const router = useRouter()
     const fgRef = useRef<any>(null)
+    const fg3dRef = useRef<any>(null)
+    const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d')
     const [academicYear, setAcademicYear] = useState<string>(initialYear.toString())
     const [department, setDepartment] = useState<string | null>(null)
     const [includeIsolated, setIncludeIsolated] = useState(false)
@@ -130,9 +141,14 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
 
     const handleNodeClick = (node: any) => {
         setSelectedNode(node)
-        if (fgRef.current) {
+        if (viewMode === '2d' && fgRef.current) {
             node.fx = node.x
             node.fy = node.y
+        }
+        if (viewMode === '3d' && fg3dRef.current) {
+            node.fx = node.x
+            node.fy = node.y
+            node.fz = node.z
         }
     }
 
@@ -141,41 +157,39 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
     }
 
     const handleNodeRightClick = (node: any) => {
+        const ref = viewMode === '2d' ? fgRef.current : fg3dRef.current
         if (explodedNode === node.id) {
             setExplodedNode(null)
-            if (fgRef.current && typeof fgRef.current.d3ReheatSimulation === 'function') {
-                fgRef.current.d3ReheatSimulation()
+            if (ref && typeof ref.d3ReheatSimulation === 'function') {
+                ref.d3ReheatSimulation()
             }
         } else {
             setExplodedNode(node.id)
-            if (fgRef.current && typeof fgRef.current.d3ReheatSimulation === 'function') {
-                fgRef.current.d3ReheatSimulation()
+            if (ref && typeof ref.d3ReheatSimulation === 'function') {
+                ref.d3ReheatSimulation()
             }
         }
     }
 
     const handleResetView = () => {
-        // Reset view
         setExplodedNode(null)
 
-        // Clear fixed positions
-        if (fgRef.current && graphData.nodes.length > 0) {
-            graphData.nodes.forEach((node: any) => {
-                node.fx = undefined
-                node.fy = undefined
-            })
+        if (graphData.nodes.length === 0) return
 
-            // Reheat simulation
+        graphData.nodes.forEach((node: any) => {
+            node.fx = undefined
+            node.fy = undefined
+            node.fz = undefined
+        })
+
+        if (viewMode === '2d' && fgRef.current) {
             if (typeof fgRef.current.d3ReheatSimulation === 'function') {
                 fgRef.current.d3ReheatSimulation()
             }
-
-            // Wait for simulation to settle, then zoom
             setTimeout(() => {
                 if (fgRef.current && graphData.nodes.length > 0) {
                     let minX = Infinity, maxX = -Infinity
                     let minY = Infinity, maxY = -Infinity
-
                     graphData.nodes.forEach((node: any) => {
                         if (node.x !== undefined && node.y !== undefined) {
                             minX = Math.min(minX, node.x)
@@ -184,39 +198,39 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                             maxY = Math.max(maxY, node.y)
                         }
                     })
-
-                    if (minX !== Infinity && fgRef.current) {
-                        // Calculate center
+                    if (minX !== Infinity) {
                         const centerX = (minX + maxX) / 2
                         const centerY = (minY + maxY) / 2
                         const width = maxX - minX
                         const height = maxY - minY
                         const maxDim = Math.max(width, height)
-
-                        // Get canvas dimensions (defaults since ref doesn't expose width/height)
-                        const canvasWidth = 800
-                        const canvasHeight = 600
-
-                        // Calculate zoom level
                         const padding = 50
                         const zoomLevel = Math.min(
-                            (canvasWidth - padding * 2) / maxDim,
-                            (canvasHeight - padding * 2) / maxDim
+                            (800 - padding * 2) / maxDim,
+                            (600 - padding * 2) / maxDim
                         )
-
-                        // Center and zoom
                         if (typeof fgRef.current.centerAt === 'function') {
                             fgRef.current.centerAt(centerX, centerY, 1000)
                         }
                         if (typeof fgRef.current.zoom === 'function') {
                             fgRef.current.zoom(zoomLevel, 1000)
                         } else if (typeof fgRef.current.zoomToFit === 'function') {
-                            // Fallback to zoomToFit
                             fgRef.current.zoomToFit(400, 50)
                         }
                     }
                 }
-            }, 500) // Wait for simulation to settle
+            }, 500)
+        }
+
+        if (viewMode === '3d' && fg3dRef.current) {
+            if (typeof fg3dRef.current.d3ReheatSimulation === 'function') {
+                fg3dRef.current.d3ReheatSimulation()
+            }
+            setTimeout(() => {
+                if (fg3dRef.current && typeof fg3dRef.current.zoomToFit === 'function') {
+                    fg3dRef.current.zoomToFit(400, 50)
+                }
+            }, 500)
         }
     }
 
@@ -230,29 +244,49 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
     // Memoize graph data with GIR positioning and edge curvature
     const graphData = useMemo(() => {
         const isGIR = (node: GraphNode) => node.data?.isGIR || false
+        const isGIRRequirement = (node: GraphNode) => node.data?.isGIRRequirement || false
         const girNodes = nodes.filter(isGIR)
-        const nonGirNodes = nodes.filter(n => !isGIR(n))
+        const girRequirementNodes = nodes.filter(isGIRRequirement)
+        const nonGirNodes = nodes.filter(n => !isGIR(n) && !isGIRRequirement(n))
 
         // Position GIR nodes in a circle
         const girAngleStep = girNodes.length > 0 ? (2 * Math.PI) / girNodes.length : 0
         const girRadius = 200 // Increased radius for better spacing
+
+        // Position GIR requirement nodes in a circle (outer ring)
+        const girReqAngleStep = girRequirementNodes.length > 0 ? (2 * Math.PI) / girRequirementNodes.length : 0
+        const girReqRadius = 300 // Outer radius for GIR requirements
 
         const mappedNodes = [
             ...girNodes.map((n, i) => ({
                 id: n.id,
                 name: n.label || n.id,
                 ...n,
-                // Initial position for GIR nodes
                 fx: undefined,
                 fy: undefined,
+                fz: undefined,
                 x: girRadius * Math.cos(i * girAngleStep),
                 y: girRadius * Math.sin(i * girAngleStep),
+                z: 0,
                 isGIR: true
+            })),
+            ...girRequirementNodes.map((n, i) => ({
+                id: n.id,
+                name: n.label || n.id,
+                ...n,
+                fx: undefined,
+                fy: undefined,
+                fz: undefined,
+                x: girReqRadius * Math.cos(i * girReqAngleStep),
+                y: girReqRadius * Math.sin(i * girReqAngleStep),
+                z: 0,
+                isGIRRequirement: true
             })),
             ...nonGirNodes.map(n => ({
                 id: n.id,
                 name: n.label || n.id,
                 ...n,
+                fz: undefined,
                 isGIR: false
             }))
         ]
@@ -312,7 +346,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
             {/* Controls */}
             <Paper shadow="sm" p="md" mb="xl" withBorder>
                 <Grid align="flex-end">
-                    <Grid.Col span={{ base: 12, sm: 4 }}>
+                    <Grid.Col span={{ base: 12, sm: 3 }}>
                         <Select
                             label="Academic Year"
                             placeholder="Select year"
@@ -321,7 +355,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                             data={availableYears.map(y => ({ value: y.toString(), label: `${y}-${y + 1}` }))}
                         />
                     </Grid.Col>
-                    <Grid.Col span={{ base: 12, sm: 4 }}>
+                    <Grid.Col span={{ base: 12, sm: 3 }}>
                         <Select
                             label="Department Filter"
                             placeholder="All departments"
@@ -331,7 +365,19 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                             data={departments.map(d => ({ value: d, label: `Course ${d}` }))}
                         />
                     </Grid.Col>
-                    <Grid.Col span={{ base: 12, sm: 4 }}>
+                    <Grid.Col span={{ base: 12, sm: 2 }}>
+                        <Text size="sm" fw={500} mb={4} component="label">View</Text>
+                        <SegmentedControl
+                            value={viewMode}
+                            onChange={(v) => setViewMode(v as '2d' | '3d')}
+                            data={[
+                                { value: '2d', label: '2D' },
+                                { value: '3d', label: '3D' }
+                            ]}
+                            fullWidth
+                        />
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, sm: 3 }}>
                         <Group justify="space-between">
                             <Button onClick={fetchNetwork} loading={loading}>
                                 Load Network
@@ -386,10 +432,10 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                 </Group>
                 <Group gap="xs">
                     <ThemeIcon size="sm" color="#BE4BDB" radius="xl">
-                        <IconCircle size={10} />
-                    </ThemeIcon>
+                            <IconCircle size={10} />
+                        </ThemeIcon>
                     <Text size="xs">Corequisite edges</Text>
-                </Group>
+                    </Group>
                 <Text size="xs" c="dimmed">
                     Arrow direction shows dependency direction.
                 </Text>
@@ -432,79 +478,110 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                                 Exploring: {explodedNode}
                             </Badge>
                         )}
-                        <ForceGraph2D
-                            ref={fgRef}
-                            graphData={graphData}
-                            width={undefined}
-                            height={650}
-                            nodeLabel={(node: any) => {
-                                const title = node.data?.subjectTitle || ''
-                                const girInfo = node.data?.isGIR ? ' (GIR)' : ''
-                                return `${node.name || node.id}${girInfo}${title ? `: ${title}` : ''}`
-                            }}
-                            nodeColor={(node: any) => {
-                                // Highlight GIR nodes with a special color
-                                if (node.data?.isGIR) {
-                                    return '#FFD700' // Gold for GIRs
-                                }
-                                return getDepartmentColor(node.id)
-                            }}
-                            nodeVal={(node: any) => {
-                                // Smaller nodes for better visibility
-                                return node.data?.isGIR ? 10 : 8
-                            }}
-                            nodeRelSize={4}
-                            linkColor={(link: any) => link.color || '#999'}
-                            linkWidth={2}
-                            linkDirectionalArrowLength={6}
-                            linkDirectionalArrowRelPos={1}
-                            linkDirectionalParticles={2}
-                            linkDirectionalParticleSpeed={0.01}
-                            linkCurvature={(link: any) => link.curvature || 0}
-                            onNodeClick={handleNodeClick}
-                            onNodeRightClick={handleNodeRightClick}
-                            onNodeDrag={(node: any) => {
-                                // Fix node position while dragging
-                                node.fx = node.x
-                                node.fy = node.y
-                            }}
-                            onNodeDragEnd={(node: any) => {
-                                // Keep node fixed after dragging
-                                node.fx = node.x
-                                node.fy = node.y
-                            }}
-                            // Force simulation parameters
-                            d3Force="charge"
-                            d3ForceStrength={(node: any) => {
-                                // Repulsion strength
-                                return node.data?.isGIR ? -2000 : -600
-                            }}
-                            d3ForceLinkDistance={(link: any) => {
-                                // Link distance
-                                const sourceId = typeof link.source === 'string' ? link.source : link.source.id
-                                const targetId = typeof link.target === 'string' ? link.target : link.target.id
-                                const sourceNode = graphData.nodes.find((n: any) => n.id === sourceId)
-                                const targetNode = graphData.nodes.find((n: any) => n.id === targetId)
-                                const sourceIsGIR = sourceNode?.data?.isGIR
-                                const targetIsGIR = targetNode?.data?.isGIR
-
-                                // Increase distance for exploded nodes
-                                if (explodedNode && (sourceId === explodedNode || targetId === explodedNode)) {
-                                    return 1000
-                                }
-
-                                // Longer distance for GIR connections
-                                if (sourceIsGIR && targetIsGIR) {
-                                    return 600
-                                }
-                                // Base link distance
-                                return (sourceIsGIR || targetIsGIR) ? 450 : 350
-                            }}
-                            cooldownTicks={200}
-                            onEngineStop={() => {
-                                // Graph has settled
-                            }}
-                        />
+                        {viewMode === '2d' ? (
+                            <ForceGraph2D
+                                ref={fgRef}
+                                graphData={graphData}
+                                width={undefined}
+                                height={650}
+                                nodeLabel={(node: any) => {
+                                    const title = node.data?.subjectTitle || ''
+                                    if (node.data?.isGIRRequirement) {
+                                        return node.data.subjectTitle || node.id
+                                    }
+                                    const girInfo = node.data?.isGIR ? ' (GIR)' : ''
+                                    return `${node.name || node.id}${girInfo}${title ? `: ${title}` : ''}`
+                                }}
+                                nodeColor={(node: any) => {
+                                    if (node.data?.isGIRRequirement || node.data?.isGIR) return '#FFD700'
+                                    return getDepartmentColor(node.id)
+                                }}
+                                nodeVal={(node: any) => (node.data?.isGIRRequirement || node.data?.isGIR) ? 10 : 8}
+                                nodeRelSize={4}
+                                linkColor={(link: any) => link.color || '#999'}
+                                linkWidth={2}
+                                linkDirectionalArrowLength={6}
+                                linkDirectionalArrowRelPos={1}
+                                linkDirectionalParticles={2}
+                                linkDirectionalParticleSpeed={0.01}
+                                linkCurvature={(link: any) => link.curvature || 0}
+                                onNodeClick={handleNodeClick}
+                                onNodeRightClick={handleNodeRightClick}
+                                onNodeDrag={(node: any) => {
+                                    node.fx = node.x
+                                    node.fy = node.y
+                                }}
+                                onNodeDragEnd={(node: any) => {
+                                    node.fx = node.x
+                                    node.fy = node.y
+                                }}
+                                d3Force="charge"
+                                d3ForceStrength={(node: any) => (node.data?.isGIR ? -2000 : -600)}
+                                d3ForceLinkDistance={(link: any) => {
+                                    const sourceId = typeof link.source === 'string' ? link.source : link.source.id
+                                    const targetId = typeof link.target === 'string' ? link.target : link.target.id
+                                    const sourceNode = graphData.nodes.find((n: any) => n.id === sourceId)
+                                    const targetNode = graphData.nodes.find((n: any) => n.id === targetId)
+                                    const sourceIsGIR = sourceNode?.data?.isGIR
+                                    const targetIsGIR = targetNode?.data?.isGIR
+                                    if (explodedNode && (sourceId === explodedNode || targetId === explodedNode)) return 1000
+                                    if (sourceIsGIR && targetIsGIR) return 600
+                                    return (sourceIsGIR || targetIsGIR) ? 450 : 350
+                                }}
+                                cooldownTicks={200}
+                            />
+                        ) : (
+                            <ForceGraph3D
+                                ref={fg3dRef}
+                                graphData={graphData}
+                                width={undefined}
+                                height={650}
+                                nodeLabel={(node: any) => {
+                                    const title = node.data?.subjectTitle || ''
+                                    if (node.data?.isGIRRequirement) return node.data.subjectTitle || node.id
+                                    const girInfo = node.data?.isGIR ? ' (GIR)' : ''
+                                    return `${node.name || node.id}${girInfo}${title ? `: ${title}` : ''}`
+                                }}
+                                nodeColor={(node: any) => {
+                                    if (node.data?.isGIRRequirement || node.data?.isGIR) return '#FFD700'
+                                    return getDepartmentColor(node.id)
+                                }}
+                                nodeVal={(node: any) => (node.data?.isGIRRequirement || node.data?.isGIR) ? 10 : 8}
+                                nodeRelSize={4}
+                                linkColor={(link: any) => link.color || '#999'}
+                                linkWidth={3}
+                                linkDirectionalArrowLength={6}
+                                linkDirectionalArrowRelPos={1}
+                                linkDirectionalParticles={2}
+                                linkDirectionalParticleSpeed={0.01}
+                                onNodeClick={handleNodeClick}
+                                onNodeRightClick={handleNodeRightClick}
+                                onNodeDrag={(node: any) => {
+                                    node.fx = node.x
+                                    node.fy = node.y
+                                    node.fz = node.z
+                                }}
+                                onNodeDragEnd={(node: any) => {
+                                    node.fx = node.x
+                                    node.fy = node.y
+                                    node.fz = node.z
+                                }}
+                                d3Force="charge"
+                                d3ForceStrength={(node: any) => (node.data?.isGIR ? -2000 : -600)}
+                                d3ForceLinkDistance={(link: any) => {
+                                    const sourceId = typeof link.source === 'string' ? link.source : link.source.id
+                                    const targetId = typeof link.target === 'string' ? link.target : link.target.id
+                                    const sourceNode = graphData.nodes.find((n: any) => n.id === sourceId)
+                                    const targetNode = graphData.nodes.find((n: any) => n.id === targetId)
+                                    const sourceIsGIR = sourceNode?.data?.isGIR
+                                    const targetIsGIR = targetNode?.data?.isGIR
+                                    if (explodedNode && (sourceId === explodedNode || targetId === explodedNode)) return 1000
+                                    if (sourceIsGIR && targetIsGIR) return 600
+                                    return (sourceIsGIR || targetIsGIR) ? 450 : 350
+                                }}
+                                cooldownTicks={200}
+                            />
+                        )}
                     </div>
                 ) : (
                     <Center h="100%">
@@ -602,6 +679,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             }
         }
     }
+
 
     // Get available academic years
     const years = await Class.distinct('academicYear', { offered: true })

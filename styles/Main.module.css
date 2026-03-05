@@ -1,5 +1,5 @@
 .mainLink {
-  color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-black));
+  color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-1));
   display: block;
   width: 100%;
   padding: var(--mantine-spacing-xs);
@@ -15,5 +15,5 @@
 }
 
 .mainContainer {
-  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
 }

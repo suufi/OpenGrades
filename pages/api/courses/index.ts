@@ -1,6 +1,6 @@
 import CourseOption from '@/models/CourseOption'
-import { auth } from '@/utils/auth'
 import { withApiLogger } from '@/utils/apiLogger'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -16,9 +16,8 @@ async function handler (
 ) {
     await mongoConnection()
     const { method, body } = req
-    const session = await auth(req, res)
-
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const user = await getUserFromRequest(req, res)
+    if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
 
     switch (method) {
@@ -43,11 +42,7 @@ async function handler (
 
         case 'POST':
             try {
-                if (!session) {
-                    return res.status(401).json({ success: false, message: 'Unauthorized' })
-                }
-
-                if (!session.user || session.user?.trustLevel < 2) {
+                if (user?.trustLevel < 2) {
                     return res.status(403).json({ success: false, message: 'Forbidden' })
                 }
 

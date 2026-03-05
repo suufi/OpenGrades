@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Progress, Rating, RingProgress, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, Tooltip, UnstyledButton, em } from '@mantine/core'
+import { ActionIcon, Alert, Anchor, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Progress, Rating, RingProgress, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, Tooltip, UnstyledButton, em } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { zod4Resolver } from 'mantine-form-zod-resolver'
 import { useLocalStorage, useMediaQuery } from '@mantine/hooks'
@@ -11,7 +11,7 @@ import { Spotlight, SpotlightActionData } from '@mantine/spotlight'
 
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 
 // eslint-disable-next-line camelcase
@@ -62,6 +62,8 @@ const letterGradeColors = {
   D: '#BE4BDB',
   F: '#FA5252'
 }
+
+const COURSE_NUMBER_PATTERN = /\b([A-Z]{1,4}\d*\.\d{1,4}[A-Z]?|\d{1,2}[A-Z]?\.\d{1,4}[A-Z]?)\b/g
 
 interface ClassReviewCommentProps {
   classReview: IClassReview,
@@ -843,6 +845,8 @@ interface ClassPageProps {
   gradePointsProp: IClassReview[]
   myReview: IClassReview
   reportsProp: IReport[]
+  favoriteClasses?: string[]
+  referencedClasses?: { subjectNumber: string; subjectTitle: string; description?: string; term?: string }[]
   embeddingStatus?: {
     hasDescriptionEmbedding: boolean
     embeddedReviewIds: string[]
@@ -977,7 +981,7 @@ const ContentSubmissionCard = ({
 }
 
 
-const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses, favoriteClasses, referencedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter()
 
   const refreshData = () => {
@@ -986,6 +990,10 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
 
   const [reviews, setReviews] = useState(classReviewsProp)
   const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
+  const [isFavorite, setIsFavorite] = useState((favoriteClasses || []).includes(classProp.subjectNumber))
+  const referencedClassMap = useMemo(() => {
+    return new Map((referencedClasses || []).map((c) => [c.subjectNumber?.toUpperCase(), c]))
+  }, [referencedClasses])
   const handleVoteChange = (reviewId: string, newVote: number, previousVote: number) => {
     setReviews((prevReviews) => {
       return prevReviews.map((review) => {
@@ -1018,6 +1026,86 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         return review
       })
     })
+  }
+
+  const toggleFavorite = async () => {
+    const method = isFavorite ? 'DELETE' : 'POST'
+    const res = await fetch('/api/me/favorites', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subjectNumber: classProp.subjectNumber })
+    })
+    const data = await res.json()
+    if (res.ok && data?.success) {
+      setIsFavorite(!isFavorite)
+      showNotification({
+        title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
+        message: `${classProp.subjectNumber} ${isFavorite ? 'removed from' : 'added to'} your favorites.`
+      })
+    } else {
+      showNotification({
+        title: 'Error',
+        message: data?.message || 'Failed to update favorites.',
+        color: 'red'
+      })
+    }
+  }
+
+  const renderDescriptionWithLinks = (text: string) => {
+    if (!text) return null
+    const nodes: Array<string | JSX.Element> = []
+    let lastIndex = 0
+    const regex = new RegExp(COURSE_NUMBER_PATTERN)
+
+    let match
+    while ((match = regex.exec(text)) !== null) {
+      const matchText = match[0]
+      const start = match.index
+      const end = start + matchText.length
+      const normalized = matchText.toUpperCase()
+
+      if (start > lastIndex) {
+        nodes.push(text.slice(lastIndex, start))
+      }
+
+      const preview = referencedClassMap.get(normalized)
+      if (preview) {
+        nodes.push(
+          <Tooltip
+            key={`${normalized}-${start}`}
+            withArrow
+            position="top"
+            multiline
+            w={300}
+            label={
+              <Stack gap={4}>
+                <Text size="sm" fw={600}>{preview.subjectNumber}: {preview.subjectTitle}</Text>
+                {preview.term && <Text size="xs" c="dimmed">{preview.term}</Text>}
+                {preview.description && <Text size="xs" lineClamp={4}>{preview.description}</Text>}
+              </Stack>
+            }
+          >
+            <Anchor
+              component={Link}
+              href={`/classes/aggregate/${normalized}`}
+              className={styles.courseMention}
+            >
+              {matchText}
+            </Anchor>
+          </Tooltip>
+        )
+      } else {
+        nodes.push(matchText)
+      }
+
+      lastIndex = end
+    }
+
+    if (lastIndex < text.length) {
+      nodes.push(text.slice(lastIndex))
+    }
+
+    return nodes
   }
 
   const deleteClass = async () => {
@@ -1111,9 +1199,21 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         <link rel="icon" href="/static/images/favicon.ico" />
       </Head>
 
-      <Title>
-        ({classProp.subjectNumber}) {classProp.subjectTitle}
-      </Title>
+      <Group justify="space-between" align="center">
+        <Title>
+          ({classProp.subjectNumber}) {classProp.subjectTitle}
+        </Title>
+        <Tooltip label={isFavorite ? 'Remove from favorites' : 'Add to favorites'} withArrow>
+          <ActionIcon
+            variant={isFavorite ? 'filled' : 'light'}
+            color={isFavorite ? 'yellow' : 'gray'}
+            onClick={toggleFavorite}
+            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <IconStar size={18} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
 
       <Title order={4}>
         {classProp.instructors.join(', ')} - {classProp.term}
@@ -1165,7 +1265,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
       <Card withBorder shadow="sm" p='lg' >
         {classProp.aliases && classProp.aliases.length > 0 && <><Text size='sm' c='dimmed'> Alias{classProp.aliases.length > 1 ? 'es' : ''}: {classProp.aliases.join(', ')} </Text><br /></>}
         <Text>
-          {classProp.description}
+          {renderDescriptionWithLinks(classProp.description)}
         </Text>
       </Card>
 
@@ -1298,6 +1398,7 @@ export const getServerSideProps = (async (context) => {
     if (session.user && session.user?.email) {
       const user: IUser = await User.findOne({ email: session.user.email })
       myReview = await ClassReview.findOne({ class: id, author: user._id }).populate('class').lean()
+      const favoriteClasses = user?.favoriteClasses || []
 
       let reviewsData: IClassReview[] = []
       // if (user.trustLevel < 2) {
@@ -1485,6 +1586,18 @@ export const getServerSideProps = (async (context) => {
         }))
       }
 
+      const descriptionNumbers = extractCourseNumbers(classData.description || '')
+      const excludeNumbers = new Set<string>([
+        (classData.subjectNumber || '').toUpperCase(),
+        ...(classData.aliases || []).map((a: string) => a.toUpperCase())
+      ])
+      const referencedNumbers = descriptionNumbers.filter((n) => !excludeNumbers.has(n))
+      const referencedClasses = referencedNumbers.length > 0
+        ? await Class.find({ subjectNumber: { $in: referencedNumbers }, offered: true })
+          .select('subjectNumber subjectTitle description term')
+          .lean()
+        : []
+
       return {
         props: {
           userProp: JSON.parse(JSON.stringify(user)),
@@ -1496,7 +1609,9 @@ export const getServerSideProps = (async (context) => {
           reportsProp: JSON.parse(JSON.stringify(reports)),
           lastGradeReportUpload,
           embeddingStatus,
-          relatedClasses: JSON.parse(JSON.stringify(relatedClasses))
+          relatedClasses: JSON.parse(JSON.stringify(relatedClasses)),
+          favoriteClasses: JSON.parse(JSON.stringify(favoriteClasses)),
+          referencedClasses: JSON.parse(JSON.stringify(referencedClasses))
         }
       }
     }

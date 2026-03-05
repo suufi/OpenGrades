@@ -1,17 +1,199 @@
 import Class from '../models/Class'
 import { IClass } from '../types'
+import { parseUnitsField } from './courseParser'
 
-function extractCourseNumbers(reqString: string): string[] {
+function mapGIRRequirementToCode(reqString: string): string | null {
+    const reqLower = reqString.toLowerCase()
+
+    if (reqLower.includes('calculus ii') || reqLower.includes('calc ii')) {
+        return 'CAL2'
+    }
+    if (reqLower.includes('calculus i') || reqLower.includes('calc i')) {
+        return 'CAL1'
+    }
+    if (reqLower.includes('physics ii')) {
+        return 'PHY2'
+    }
+    if (reqLower.includes('physics i')) {
+        return 'PHY1'
+    }
+    if (reqLower.includes('chemistry')) {
+        return 'CHEM'
+    }
+    if (reqLower.includes('biology')) {
+        return 'BIOL'
+    }
+    if (reqLower.includes('lab')) {
+        return 'LAB'
+    }
+
+    return null
+}
+
+function extractGIRRequirements(reqString: string): string[] {
     if (!reqString) return []
 
-    // Match course numbers: department code, dot, 1-4 digits, optional letter
-    const coursePattern = /\b([A-Z]{1,4}\d*\.\d{1,4}[A-Z]?|\d{1,2}[A-Z]?\.\d{1,4}[A-Z]?)\b/gi
-    const matches = reqString.match(coursePattern) || []
+    const girPatterns = [
+        /calculus\s+ii\s*\(gir\)/gi,
+        /calc\s+ii\s*\(gir\)/gi,
+        /calculus\s+2\s*\(gir\)/gi,
+        /calc\s+2\s*\(gir\)/gi,
+        /physics\s+ii\s*\(gir\)/gi,
+        /physics\s+2\s*\(gir\)/gi,
+        /lab\s+ii\s*\(gir\)/gi,
+        /lab\s+2\s*\(gir\)/gi,
+        /calculus\s+i\s*\(gir\)/gi,
+        /calc\s+i\s*\(gir\)/gi,
+        /calculus\s+1\s*\(gir\)/gi,
+        /calc\s+1\s*\(gir\)/gi,
+        /physics\s+i\s*\(gir\)/gi,
+        /physics\s+1\s*\(gir\)/gi,
+        /chemistry\s*\(gir\)/gi,
+        /biology\s*\(gir\)/gi,
+        /lab\s*\(gir\)/gi,
+        /partial\s+lab\s*\(gir\)/gi,
+    ]
+
+    const girCodes = new Set<string>()
+
+    for (const pattern of girPatterns) {
+        pattern.lastIndex = 0
+        const match = reqString.match(pattern)?.[0]
+        if (match) {
+            const code = mapGIRRequirementToCode(match)
+            if (code) {
+                girCodes.add(code)
+            }
+        }
+    }
+
+    return Array.from(girCodes)
+}
+
+/**
+ * Get GIR code for a class if it is a GIR-equivalent (from units / girAttribute).
+ * Uses girAttribute when present; otherwise parses cls.units via parseUnitsField.
+ * Returns e.g. 'PHY2' so caller can use GIR:PHY2 as the node id; returns null if not a GIR.
+ */
+function getGIRCodeForClass(cls: { subjectNumber?: string; girAttribute?: string[]; units?: string } | null): string | null {
+    if (!cls) return null
+
+    let codes: string[] = cls.girAttribute?.length ? cls.girAttribute : []
+    if (codes.length === 0 && cls.units) {
+        codes = parseUnitsField(cls.units).girAttributes || []
+    }
+    const code = codes[0]
+    if (!code || code === 'REST') return null
+
+    return code
+}
+
+/**
+ * Find all course numbers that satisfy a GIR requirement
+ */
+async function findClassesForGIRCode(girCode: string): Promise<string[]> {
+    const classes = await Class.find({
+        offered: true,
+        girAttribute: girCode
+    })
+        .select('subjectNumber')
+        .lean()
+
+    return classes.map((c: any) => c.subjectNumber).filter(Boolean)
+}
+
+const CORE_GIR_CODES = ['BIOL', 'CAL1', 'CAL2', 'CHEM', 'PHY1', 'PHY2'] as const
+const CORE_GIR_SET = new Set<string>(CORE_GIR_CODES)
+
+const GIR_LABELS: Record<string, string> = {
+    CAL1: 'Calculus I (GIR)',
+    CAL2: 'Calculus II (GIR)',
+    PHY1: 'Physics I (GIR)',
+    PHY2: 'Physics II (GIR)',
+    CHEM: 'Chemistry (GIR)',
+    BIOL: 'Biology (GIR)',
+}
+
+const COURSE_NUMBER_PATTERN = /\b([A-Z]{1,4}\d*\.\d{1,4}[A-Z]?|\d{1,2}[A-Z]?\.\d{1,4}[A-Z]?)\b/gi
+
+/**
+ * Build map of subject number (and aliases) -> GIR code for all offered GIR-equivalent courses.
+ */
+async function buildSubjectNumberToGIRCodeFromDB(): Promise<Map<string, string>> {
+    const map = new Map<string, string>()
+    const classes = await Class.find({
+        offered: true,
+        girAttribute: { $in: CORE_GIR_CODES }
+    })
+        .select('subjectNumber aliases girAttribute')
+        .lean()
+    for (const c of classes as any[]) {
+        const code = Array.isArray(c.girAttribute) ? c.girAttribute[0] : c.girAttribute
+        if (!code || !CORE_GIR_CODES.includes(code as any)) continue
+        if (c.subjectNumber) map.set(c.subjectNumber, code)
+        for (const alias of c.aliases || []) {
+            if (alias) map.set(alias, code)
+        }
+    }
+    return map
+}
+
+/**
+ * Extract course numbers and GIR requirements separately
+ * Returns object with explicit course numbers and GIR codes
+ */
+function extractPrerequisites(reqString: string): { courseNumbers: string[]; girCodes: string[] } {
+    if (!reqString) return { courseNumbers: [], girCodes: [] }
+
+    COURSE_NUMBER_PATTERN.lastIndex = 0
+    const explicitMatches = reqString.match(COURSE_NUMBER_PATTERN) || []
+    const courseNumbers = [...new Set(explicitMatches.map(s => s.toUpperCase()))]
+
+    // Extract GIR requirements
+    const girCodes = extractGIRRequirements(reqString)
+
+    return { courseNumbers, girCodes }
+}
+
+/**
+ * Extract course numbers from prerequisite string, including GIR requirements
+ * Returns array of course numbers (both explicit and from GIR requirements)
+ * NOTE: For graph building, use extractPrerequisites instead to get GIR codes separately
+ */
+async function extractCourseNumbersWithGIR(reqString: string): Promise<string[]> {
+    if (!reqString) return []
+
+    COURSE_NUMBER_PATTERN.lastIndex = 0
+    const explicitMatches = reqString.match(COURSE_NUMBER_PATTERN) || []
+    const explicitNumbers = [...new Set(explicitMatches.map(s => s.toUpperCase()))]
+
+    // Then, extract GIR requirements and find matching classes
+    const girCodes = extractGIRRequirements(reqString)
+    const girClassNumbers: string[] = []
+
+    for (const girCode of girCodes) {
+        const classes = await findClassesForGIRCode(girCode)
+        girClassNumbers.push(...classes)
+    }
+
+    // Combine and deduplicate
+    return [...new Set([...explicitNumbers, ...girClassNumbers])]
+}
+
+/**
+ * Extract course numbers from prerequisite string (synchronous version)
+ * Only extracts explicit course numbers, not GIR requirements
+ * Use extractCourseNumbersWithGIR for GIR support
+ */
+function extractCourseNumbers(reqString: string): string[] {
+    if (!reqString) return []
+    COURSE_NUMBER_PATTERN.lastIndex = 0
+    const matches = reqString.match(COURSE_NUMBER_PATTERN) || []
 
     return [...new Set(matches.map(s => s.toUpperCase()))]
 }
 
-export { extractCourseNumbers }
+export { extractCourseNumbers, extractCourseNumbersWithGIR, extractGIRRequirements, extractPrerequisites }
 
 export async function getPrerequisiteGraph(
     classId: string,
@@ -28,8 +210,8 @@ export async function getPrerequisiteGraph(
         throw new Error('Class not found')
     }
 
-    const prereqNumbers = extractCourseNumbers(sourceClass.prerequisites || '')
-    const coreqNumbers = extractCourseNumbers(sourceClass.corequisites || '')
+    const prereqNumbers = await extractCourseNumbersWithGIR(sourceClass.prerequisites || '')
+    const coreqNumbers = await extractCourseNumbersWithGIR(sourceClass.corequisites || '')
 
     const prerequisites = await Class.find({
         subjectNumber: { $in: prereqNumbers },
@@ -81,7 +263,7 @@ export async function getPrerequisiteChain(
         const newPath = [...path, currentClass.subjectNumber]
         visited.set(currentId, { class: currentClass, depth, path: newPath })
 
-        const prereqNumbers = extractCourseNumbers(currentClass.prerequisites || '')
+        const prereqNumbers = await extractCourseNumbersWithGIR(currentClass.prerequisites || '')
 
         // Find prereqs in database
         const prerequisites = await Class.find({
@@ -117,9 +299,11 @@ export interface GraphNode {
         subjectNumber: string
         subjectTitle: string
         department: string
-        type: 'root' | 'prerequisite' | 'corequisite' | 'requiredBy'
+        type: 'root' | 'prerequisite' | 'corequisite' | 'requiredBy' | 'girRequirement'
         isGIR?: boolean
         girAttributes?: string[]
+        isGIRRequirement?: boolean
+        girCode?: string
     }
 }
 
@@ -131,6 +315,29 @@ export interface GraphEdge {
     data?: {
         type: 'prerequisite' | 'corequisite'
     }
+}
+
+function makeGIRNode(girCode: string): GraphNode {
+    const id = `GIR:${girCode}`
+    const label = GIR_LABELS[girCode] || `${girCode} (GIR)`
+    return {
+        id,
+        label,
+        data: {
+            subjectNumber: id,
+            subjectTitle: label,
+            department: 'GIR',
+            type: 'girRequirement',
+            isGIRRequirement: true,
+            girCode
+        }
+    }
+}
+
+function ensureGIRNodeInMap(nodesMap: Map<string, GraphNode>, girNodeId: string): void {
+    if (nodesMap.has(girNodeId)) return
+    const girCode = girNodeId.replace('GIR:', '')
+    nodesMap.set(girNodeId, makeGIRNode(girCode))
 }
 
 /**
@@ -187,52 +394,96 @@ export async function buildGraphData(
         if (!currentClass) continue
 
         // Get prerequisites
-        const prereqNumbers = extractCourseNumbers(currentClass.prerequisites || '')
-        for (const prereqNum of prereqNumbers) {
+        const prereqData = extractPrerequisites(currentClass.prerequisites || '')
+
+        // Handle explicit course number prerequisites (resolve GIR-equivalent courses to GIR nodes)
+        for (const prereqNum of prereqData.courseNumbers) {
             const prereqClass = await Class.findOne({
-                subjectNumber: prereqNum,
+                $or: [{ subjectNumber: prereqNum }, { aliases: prereqNum }],
                 offered: true
-            }).lean() as IClass | null
+            })
+                .select('subjectNumber subjectTitle department girAttribute units')
+                .lean() as IClass | null
 
-            if (prereqClass && !nodesMap.has(prereqNum)) {
-                nodesMap.set(prereqNum, {
-                    id: prereqNum,
-                    label: prereqNum,
-                    data: {
-                        subjectNumber: prereqClass.subjectNumber,
-                        subjectTitle: prereqClass.subjectTitle || '',
-                        department: prereqClass.department || '',
-                        type: 'prerequisite'
-                    }
-                })
-            }
+            const girCode = getGIRCodeForClass(prereqClass)
+            const effectiveId = girCode ? `GIR:${girCode}` : prereqNum
 
-            if (prereqClass) {
+            if (girCode) {
+                ensureGIRNodeInMap(nodesMap, effectiveId)
                 edges.push({
-                    id: `${prereqNum}->${currentSubject}`,
-                    source: prereqNum,
+                    id: `${effectiveId}->${currentSubject}`,
+                    source: effectiveId,
                     target: currentSubject,
                     label: 'prereq',
                     data: { type: 'prerequisite' }
                 })
-
-                if (!visitedPrereq.has(prereqNum)) {
-                    visitedPrereq.add(prereqNum)
-                    prereqQueue.push({ subjectNumber: prereqNum, depth: depth + 1 })
+            } else {
+                if (prereqClass && !nodesMap.has(prereqNum)) {
+                    nodesMap.set(prereqNum, {
+                        id: prereqNum,
+                        label: prereqNum,
+                        data: {
+                            subjectNumber: prereqClass.subjectNumber,
+                            subjectTitle: prereqClass.subjectTitle || '',
+                            department: prereqClass.department || '',
+                            type: 'prerequisite'
+                        }
+                    })
+                }
+                if (prereqClass) {
+                    edges.push({
+                        id: `${prereqNum}->${currentSubject}`,
+                        source: prereqNum,
+                        target: currentSubject,
+                        label: 'prereq',
+                        data: { type: 'prerequisite' }
+                    })
+                    if (!visitedPrereq.has(prereqNum)) {
+                        visitedPrereq.add(prereqNum)
+                        prereqQueue.push({ subjectNumber: prereqNum, depth: depth + 1 })
+                    }
                 }
             }
         }
 
+        for (const girCode of prereqData.girCodes) {
+            const girNodeId = `GIR:${girCode}`
+            ensureGIRNodeInMap(nodesMap, girNodeId)
+            edges.push({
+                id: `${girNodeId}->${currentSubject}`,
+                source: girNodeId,
+                target: currentSubject,
+                label: 'prereq',
+                data: { type: 'prerequisite' }
+            })
+        }
+
         // Get corequisites (only for root)
         if (currentSubject === rootId) {
-            const coreqNumbers = extractCourseNumbers(currentClass.corequisites || '')
-            for (const coreqNum of coreqNumbers) {
-                const coreqClass = await Class.findOne({
-                    subjectNumber: coreqNum,
-                    offered: true
-                }).lean() as IClass | null
+            const coreqData = extractPrerequisites(currentClass.corequisites || '')
 
-                if (coreqClass && !nodesMap.has(coreqNum)) {
+            // Handle explicit course number corequisites (resolve GIR-equivalent to GIR nodes)
+            for (const coreqNum of coreqData.courseNumbers) {
+                const coreqClass = await Class.findOne({
+                    $or: [{ subjectNumber: coreqNum }, { aliases: coreqNum }],
+                    offered: true
+                })
+                    .select('subjectNumber subjectTitle department girAttribute units')
+                    .lean() as IClass | null
+
+                const girCode = getGIRCodeForClass(coreqClass)
+                const effectiveId = girCode ? `GIR:${girCode}` : coreqNum
+
+                if (girCode) {
+                    ensureGIRNodeInMap(nodesMap, effectiveId)
+                    edges.push({
+                        id: `${rootId}<->${effectiveId}`,
+                        source: rootId,
+                        target: effectiveId,
+                        label: 'coreq',
+                        data: { type: 'corequisite' }
+                    })
+                } else if (coreqClass && !nodesMap.has(coreqNum)) {
                     nodesMap.set(coreqNum, {
                         id: coreqNum,
                         label: coreqNum,
@@ -243,7 +494,6 @@ export async function buildGraphData(
                             type: 'corequisite'
                         }
                     })
-
                     edges.push({
                         id: `${rootId}<->${coreqNum}`,
                         source: rootId,
@@ -252,6 +502,18 @@ export async function buildGraphData(
                         data: { type: 'corequisite' }
                     })
                 }
+            }
+
+            for (const girCode of coreqData.girCodes) {
+                const girNodeId = `GIR:${girCode}`
+                ensureGIRNodeInMap(nodesMap, girNodeId)
+                edges.push({
+                    id: `${rootId}<->${girNodeId}`,
+                    source: rootId,
+                    target: girNodeId,
+                    label: 'coreq',
+                    data: { type: 'corequisite' }
+                })
             }
         }
     }
@@ -279,8 +541,8 @@ export async function buildGraphData(
             })
         }
 
-        const prereqNums = extractCourseNumbers(reqClass.prerequisites || '')
-        const coreqNums = extractCourseNumbers(reqClass.corequisites || '')
+        const prereqNums = await extractCourseNumbersWithGIR(reqClass.prerequisites || '')
+        const coreqNums = await extractCourseNumbersWithGIR(reqClass.corequisites || '')
 
         if (prereqNums.includes(rootId)) {
             edges.push({
@@ -326,7 +588,7 @@ export async function buildFullNetworkGraph(
     }
 
     const classes = await Class.find(query)
-        .select('subjectNumber subjectTitle department prerequisites corequisites girAttribute')
+        .select('subjectNumber subjectTitle department prerequisites corequisites girAttribute aliases units')
         .lean() as IClass[]
 
     const nodesMap = new Map<string, GraphNode>()
@@ -334,53 +596,116 @@ export async function buildFullNetworkGraph(
     const classSet = new Set(classes.map(c => c.subjectNumber))
     const nodeDegrees = new Map<string, number>()
 
+    const subjectNumberToGIRCode = await buildSubjectNumberToGIRCodeFromDB()
+    for (const cls of classes) {
+        const code = getGIRCodeForClass(cls)
+        if (code) {
+            subjectNumberToGIRCode.set(cls.subjectNumber, code)
+            for (const alias of cls.aliases || []) {
+                subjectNumberToGIRCode.set(alias, code)
+            }
+        }
+    }
+
     // Initialize degrees
     for (const cls of classes) {
         nodeDegrees.set(cls.subjectNumber, 0)
     }
 
+    // Track GIR requirement nodes
+    const girRequirementNodes = new Set<string>()
+
     // Add edges for prerequisites and corequisites
     for (const cls of classes) {
-        const prereqNumbers = extractCourseNumbers(cls.prerequisites || '')
-        const coreqNumbers = extractCourseNumbers(cls.corequisites || '')
+        const prereqData = extractPrerequisites(cls.prerequisites || '')
+        const coreqData = extractPrerequisites(cls.corequisites || '')
 
-        for (const prereq of prereqNumbers) {
-            if (classSet.has(prereq)) {
+        for (const prereq of prereqData.courseNumbers) {
+            const girCode = subjectNumberToGIRCode.get(prereq)
+
+            const collapseToGIR = girCode && CORE_GIR_SET.has(girCode)
+            const sourceId = collapseToGIR ? `GIR:${girCode}` : prereq
+            const includeEdge = collapseToGIR || classSet.has(prereq)
+            if (includeEdge) {
+                if (collapseToGIR) girRequirementNodes.add(sourceId)
                 edges.push({
-                    id: `${prereq}->${cls.subjectNumber}`,
-                    source: prereq,
+                    id: `${sourceId}->${cls.subjectNumber}`,
+                    source: sourceId,
                     target: cls.subjectNumber,
                     data: { type: 'prerequisite' }
                 })
-                nodeDegrees.set(prereq, (nodeDegrees.get(prereq) || 0) + 1)
+                nodeDegrees.set(sourceId, (nodeDegrees.get(sourceId) || 0) + 1)
                 nodeDegrees.set(cls.subjectNumber, (nodeDegrees.get(cls.subjectNumber) || 0) + 1)
             }
         }
 
-        for (const coreq of coreqNumbers) {
-            if (classSet.has(coreq)) {
+        for (const girCode of prereqData.girCodes) {
+            if (!CORE_GIR_SET.has(girCode)) continue
+            const girNodeId = `GIR:${girCode}`
+            girRequirementNodes.add(girNodeId)
+            edges.push({
+                id: `${girNodeId}->${cls.subjectNumber}`,
+                source: girNodeId,
+                target: cls.subjectNumber,
+                data: { type: 'prerequisite' }
+            })
+            nodeDegrees.set(girNodeId, (nodeDegrees.get(girNodeId) || 0) + 1)
+            nodeDegrees.set(cls.subjectNumber, (nodeDegrees.get(cls.subjectNumber) || 0) + 1)
+        }
+
+        for (const coreq of coreqData.courseNumbers) {
+            const girCode = subjectNumberToGIRCode.get(coreq)
+
+            const collapseToGIRCoreq = girCode && CORE_GIR_SET.has(girCode)
+            const targetId = collapseToGIRCoreq ? `GIR:${girCode}` : coreq
+            const includeEdge = collapseToGIRCoreq || classSet.has(coreq)
+            if (includeEdge) {
+                if (collapseToGIRCoreq) girRequirementNodes.add(targetId)
                 edges.push({
-                    id: `${cls.subjectNumber}<->${coreq}`,
+                    id: `${cls.subjectNumber}<->${targetId}`,
                     source: cls.subjectNumber,
-                    target: coreq,
+                    target: targetId,
                     data: { type: 'corequisite' }
                 })
-                nodeDegrees.set(coreq, (nodeDegrees.get(coreq) || 0) + 1)
+                nodeDegrees.set(targetId, (nodeDegrees.get(targetId) || 0) + 1)
                 nodeDegrees.set(cls.subjectNumber, (nodeDegrees.get(cls.subjectNumber) || 0) + 1)
             }
+        }
+
+        for (const girCode of coreqData.girCodes) {
+            if (!CORE_GIR_SET.has(girCode)) continue
+            const girNodeId = `GIR:${girCode}`
+            girRequirementNodes.add(girNodeId)
+            edges.push({
+                id: `${cls.subjectNumber}<->${girNodeId}`,
+                source: cls.subjectNumber,
+                target: girNodeId,
+                data: { type: 'corequisite' }
+            })
+            nodeDegrees.set(girNodeId, (nodeDegrees.get(girNodeId) || 0) + 1)
+            nodeDegrees.set(cls.subjectNumber, (nodeDegrees.get(cls.subjectNumber) || 0) + 1)
         }
     }
 
-    // Add nodes
+    for (const girNodeId of girRequirementNodes) {
+        const girCode = girNodeId.replace('GIR:', '')
+        if (!CORE_GIR_SET.has(girCode)) continue
+        const degree = nodeDegrees.get(girNodeId) || 0
+        if (includeIsolated || degree > 0) {
+            nodesMap.set(girNodeId, makeGIRNode(girCode))
+        }
+    }
+
     for (const cls of classes) {
+        const girCodeForClass = subjectNumberToGIRCode.get(cls.subjectNumber)
+        if (girCodeForClass && CORE_GIR_SET.has(girCodeForClass)) continue
         const degree = nodeDegrees.get(cls.subjectNumber) || 0
 
         if (includeIsolated || degree > 0) {
             // Only treat a subset of GIRs as central "hub" GIR nodes:
             // plus specific math classes 18.03 and 18.06.
             const girAttributes = cls.girAttribute || []
-            const coreGirAttributes = new Set(['BIOL', 'CAL1', 'CAL2', 'CHEM', 'PHY1', 'PHY2'])
-            const hasCoreGirAttribute = girAttributes.some(attr => coreGirAttributes.has(attr))
+            const hasCoreGirAttribute = girAttributes.some(attr => CORE_GIR_SET.has(attr))
             const isCoreMathGir = cls.subjectNumber === '18.03' || cls.subjectNumber === '18.06'
             const isCoreGir = hasCoreGirAttribute || isCoreMathGir
 
@@ -399,8 +724,36 @@ export async function buildFullNetworkGraph(
         }
     }
 
+    const nodeIds = new Set(nodesMap.keys())
+    for (const edge of edges) {
+        const src = edge.source as string
+        const tgt = edge.target as string
+        let newSource = src
+        let newTarget = tgt
+        if (!nodeIds.has(src)) {
+            const girCode = subjectNumberToGIRCode.get(src)
+            if (girCode && CORE_GIR_SET.has(girCode)) newSource = `GIR:${girCode}`
+        }
+        if (!nodeIds.has(tgt)) {
+            const girCode = subjectNumberToGIRCode.get(tgt)
+            if (girCode && CORE_GIR_SET.has(girCode)) newTarget = `GIR:${girCode}`
+        }
+        if (newSource !== src || newTarget !== tgt) {
+            edge.source = newSource
+            edge.target = newTarget
+            edge.id = edge.data?.type === 'corequisite' ? `${newSource}<->${newTarget}` : `${newSource}->${newTarget}`
+        }
+    }
+    const seen = new Set<string>()
+    const dedupedEdges = edges.filter((e) => {
+        const key = `${e.source}|${e.target}|${(e.data as any)?.type ?? ''}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+
     return {
         nodes: Array.from(nodesMap.values()),
-        edges
+        edges: dedupedEdges
     }
 }

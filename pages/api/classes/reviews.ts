@@ -8,7 +8,7 @@ import mongoConnection from '../../../utils/mongoConnection'
 import { z } from 'zod'
 import { TimeRange } from '../../../types'
 
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 
 import mongoose from 'mongoose'
@@ -28,13 +28,13 @@ async function handler (
 ) {
   await mongoConnection()
   const { method, body } = req
-  const session = await auth(req, res)
-  if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+  const requestUser = await getUserFromRequest(req, res)
+  if (!requestUser) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
   switch (method) {
     case 'GET':
       try {
-        if (session.user?.trustLevel < 2) {
+        if (requestUser?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
         const classes = await ClassReview.find({}).populate(['class', 'author']).lean()
@@ -52,7 +52,7 @@ async function handler (
         console.log(typeof body)
         // console.log(session)
 
-        const author = await User.findOne({ email: session.user?.email })
+        const author = await User.findOne({ email: requestUser?.email })
 
         if (author.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })

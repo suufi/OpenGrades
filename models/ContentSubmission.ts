@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 import { IContentSubmission } from '../types'
 
 const { Schema } = mongoose
@@ -34,4 +34,4 @@ const ContentSubmissionSchema = new mongoose.Schema<IContentSubmission>({
   }
 }, { timestamps: true })
 
-export default (mongoose.models.ContentSubmission || mongoose.model('ContentSubmission', ContentSubmissionSchema))
+export default (mongoose.models.ContentSubmission as Model<IContentSubmission> || mongoose.model<IContentSubmission>('ContentSubmission', ContentSubmissionSchema))

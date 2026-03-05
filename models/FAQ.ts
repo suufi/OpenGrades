@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 import { IFAQ } from '../types'
 
 const { Schema } = mongoose
@@ -22,4 +22,4 @@ const FAQSchema = new mongoose.Schema<IFAQ>({
     }
 }, { timestamps: true })
 
-export default (mongoose.models.FAQ || mongoose.model('FAQ', FAQSchema))
+export default (mongoose.models.FAQ as Model<IFAQ> || mongoose.model<IFAQ>('FAQ', FAQSchema))

@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import User from '@/models/User'
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -27,14 +27,14 @@ async function handler (
 ) {
     await mongoConnection()
     const { method, body } = req
-    const session = await auth(req, res)
-
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const requestUser = await getUserFromRequest(req, res)
+    if (!requestUser?.email) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const email = requestUser.email.toLowerCase()
 
     switch (method) {
         case 'GET':
             try {
-                const user = await User.findOne({ email: session.user.id.toLowerCase() })
+                const user = await User.findOne({ email })
                     .populate('courseAffiliation')
                     .populate('classesTaken')
                     .lean()
@@ -154,7 +154,7 @@ async function handler (
                 let finalProgramTerms = programTerms
 
                 if ((finalProgramTerms.length === 0) && (undergradTerms && undergradTerms.length > 0)) {
-                    const userForAff = await User.findOne({ email: session.user.id.toLowerCase() })
+                    const userForAff = await User.findOne({ email })
                         .populate('courseAffiliation')
                         .populate('classesTaken')
                         .lean()
@@ -191,13 +191,13 @@ async function handler (
 
 
                 const updateResult = await User.findOneAndUpdate(
-                    { email: session.user.id.toLowerCase() },
+                    { email },
                     { $set: { programTerms: finalProgramTerms } },
                     { new: true }
                 )
 
 
-                const user = await User.findOne({ email: session.user.id.toLowerCase() })
+                const user = await User.findOne({ email })
                     .populate('courseAffiliation')
                     .lean()
 

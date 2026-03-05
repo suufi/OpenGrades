@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { auth } from '@/utils/auth'
 import { withApiLogger } from '@/utils/apiLogger'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
 import mongoConnection from '../../../utils/mongoConnection'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 
 const parseGradeReport = (gradeReport) => {
     // Normalize all input formatting issues
@@ -104,9 +104,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     await mongoConnection()
     const { method, body } = req
 
-    const session = await auth(req, res)
-
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const user = await getUserFromRequest(req, res)
+    if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
     if (method === 'POST') {
 

@@ -68,11 +68,12 @@ function filterGIRClasses(classes: IClass[]): IClass[] {
  * Check if user has prerequisites/corequisites for a course
  * Returns info about which prereqs/coreqs the user has
  */
-function checkPrerequisitesMet(
+async function checkPrerequisitesMet(
     course: IClass,
     userTakenClasses: IClass[]
-): { hasPrereqs: boolean; hasCoreqs: boolean; missingPrereqs: string[]; missingCoreqs: string[] } {
+): Promise<{ hasPrereqs: boolean; hasCoreqs: boolean; missingPrereqs: string[]; missingCoreqs: string[] }> {
     const userSubjectNumbers = new Set<string>()
+    
     userTakenClasses.forEach(cls => {
         if (cls.subjectNumber) userSubjectNumbers.add(cls.subjectNumber)
         if (cls.aliases && Array.isArray(cls.aliases)) {
@@ -80,9 +81,9 @@ function checkPrerequisitesMet(
         }
     })
 
-    const prereqNumbers = extractCourseNumbers(course.prerequisites || '')
-    const coreqNumbers = extractCourseNumbers(course.corequisites || '')
-
+    const { extractCourseNumbersWithGIR } = await import('./prerequisiteGraph')
+    const prereqNumbers = await extractCourseNumbersWithGIR(course.prerequisites || '')
+    const coreqNumbers = await extractCourseNumbersWithGIR(course.corequisites || '')
     const hasPrereqs = prereqNumbers.length === 0 || prereqNumbers.every(num => userSubjectNumbers.has(num))
     const hasCoreqs = coreqNumbers.length === 0 || coreqNumbers.some(num => userSubjectNumbers.has(num))
 
@@ -243,18 +244,19 @@ export async function collaborativeFiltering(
 
     const userClasses = user.classesTaken as IClass[]
 
-    return sortedRecommendations
-        .filter(rec => finalSubjects.has(rec.subjectNumber))
-        .slice(0, limit)
-        .map(rec => {
-            const cls = finalClasses.find(c => c.subjectNumber === rec.subjectNumber)
-            if (!cls) return null
-            
-            let reason = `${rec.count} students with similar course history took this class`
-            let score = rec.score
+    const results = await Promise.all(
+        sortedRecommendations
+            .filter(rec => finalSubjects.has(rec.subjectNumber))
+            .slice(0, limit)
+            .map(async rec => {
+                const cls = finalClasses.find(c => c.subjectNumber === rec.subjectNumber)
+                if (!cls) return null
+                
+                let reason = `${rec.count} students with similar course history took this class`
+                let score = rec.score
 
-            if (userClasses && userClasses.length > 0) {
-                const prereqCheck = checkPrerequisitesMet(cls, userClasses)
+                if (userClasses && userClasses.length > 0) {
+                    const prereqCheck = await checkPrerequisitesMet(cls, userClasses)
                 
                 if (prereqCheck.hasPrereqs && prereqCheck.hasCoreqs) {
                     score *= 1.3
@@ -268,13 +270,15 @@ export async function collaborativeFiltering(
                 }
             }
 
-            return {
-                class: cls,
-                score,
-                reason
-            }
-        })
-        .filter(Boolean) as Array<{ class: IClass; score: number; reason: string }>
+                return {
+                    class: cls,
+                    score,
+                    reason
+                }
+            })
+    )
+    
+    return results.filter(Boolean) as Array<{ class: IClass; score: number; reason: string }>
 }
 
 /**
@@ -471,8 +475,8 @@ export async function contentBasedRecommendations(
         }
     })
 
-    const boosted = scored.map(item => {
-        const prereqCheck = checkPrerequisitesMet(item.class, userClasses)
+    const boosted = await Promise.all(scored.map(async item => {
+        const prereqCheck = await checkPrerequisitesMet(item.class, userClasses)
         let finalScore = item.score
         let reason = item.reason
 
@@ -492,7 +496,7 @@ export async function contentBasedRecommendations(
             score: finalScore,
             reason
         }
-    })
+    }))
 
     return boosted
         .sort((a, b) => b.score - a.score)
@@ -577,9 +581,10 @@ export async function hybridRecommendations(
             console.log(`  ✓ Got ${hybridResults?.length || 0} hybrid search results`)
 
             if (hybridResults && Array.isArray(hybridResults)) {
-                semanticResults = hybridResults
-                    .filter(r => r.class._id.toString() !== classId && r.class.subjectNumber !== sourceClass.subjectNumber)
-                    .map(r => {
+                semanticResults = await Promise.all(
+                    hybridResults
+                        .filter(r => r.class._id.toString() !== classId && r.class.subjectNumber !== sourceClass.subjectNumber)
+                        .map(async r => {
                         const dept = r.class.subjectNumber?.split('.')[0] || ''
                         const isBoosted = departmentBoosts.has(dept) && (departmentBoosts.get(dept) || 0) > 0
 
@@ -591,7 +596,7 @@ export async function hybridRecommendations(
                         let finalScore = r.score * semanticWeight
 
                         if (userTakenClasses && userTakenClasses.length > 0) {
-                            const prereqCheck = checkPrerequisitesMet(r.class, userTakenClasses)
+                            const prereqCheck = await checkPrerequisitesMet(r.class, userTakenClasses)
                             
                             if (prereqCheck.hasPrereqs && prereqCheck.hasCoreqs) {
                                 finalScore *= 1.3
@@ -602,9 +607,12 @@ export async function hybridRecommendations(
                             } else if (prereqCheck.hasCoreqs) {
                                 finalScore *= 1.1
                                 reason += '\n✓ You have the corequisites'
-                            } else if (prereqCheck.missingPrereqs.length > 0 && prereqCheck.missingPrereqs.length < prereqCheck.missingPrereqs.length + (r.class.prerequisites ? extractCourseNumbers(r.class.prerequisites).length : 0)) {
-                                finalScore *= 1.05
-                                reason += `\n⚠ You have some prerequisites (${prereqCheck.missingPrereqs.length} missing)`
+                            } else if (prereqCheck.missingPrereqs.length > 0) {
+                                const totalRequired = (r.class.prerequisites ? extractCourseNumbers(r.class.prerequisites).length : 0)
+                                if (totalRequired > 0 && prereqCheck.missingPrereqs.length < totalRequired) {
+                                    finalScore *= 1.05
+                                    reason += `\n⚠ You have some prerequisites (${prereqCheck.missingPrereqs.length} missing)`
+                                }
                             }
                         }
 
@@ -614,6 +622,7 @@ export async function hybridRecommendations(
                             reason
                         }
                     })
+                )
             } else {
                 console.warn(`⚠️  hybridSearchES returned invalid result for ${sourceClass.subjectNumber}`)
             }

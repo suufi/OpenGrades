@@ -6,7 +6,7 @@ import { IClass } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 
 import AuditLog from '@/models/AuditLog'
@@ -57,9 +57,10 @@ async function handler(
 ) {
   await mongoConnection()
   const { method, body } = req
-  const session = await auth(req, res)
 
-  if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+  const user = await getUserFromRequest(req, res)
+
+  if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
   switch (method) {
     case 'GET':
@@ -96,7 +97,7 @@ async function handler(
         }
 
         if (reviewsOnly === 'true') {
-          query._id = { $in: await ClassReview.distinct('class') } // Only classes with reviews
+          query._id = { $in: await ClassReview.distinct('class', { partial: false }) } // Only classes with full reviews
         }
 
 
@@ -388,13 +389,8 @@ async function handler(
         // const classExists = await Class.exists()
         console.log(body)
         console.log(typeof body)
-        // console.log(session)
 
-        if (!session) {
-          return res.status(403).json({ success: false, message: 'Please sign in.' })
-        }
-
-        if (!session.user || session.user?.trustLevel < 2) {
+        if (!user || user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
@@ -463,7 +459,7 @@ async function handler(
         }
 
         await AuditLog.create({
-          actor: session.user._id,
+          actor: user._id,
           type: 'FetchDepartment',
           description: `Fetched ${body.selectedDepartments.join(', ')} departments for ${body.term} that are ${body.reviewable ? 'reviewable' : 'not reviewable'}.`
         })
@@ -753,7 +749,7 @@ async function handler(
         console.log(body)
         console.log(typeof body)
 
-        if (session.user && session.user?.trustLevel < 2) {
+        if (user && user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
@@ -782,7 +778,7 @@ async function handler(
         console.log(body)
         console.log(typeof body)
 
-        if (session.user && session.user?.trustLevel < 2) {
+        if (user && user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 

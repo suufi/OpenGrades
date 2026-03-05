@@ -2,8 +2,7 @@
 import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getServerSession } from 'next-auth'
-import authOptions from '../auth/[...nextauth]'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { getRelevantContext, buildContextString } from '@/utils/vectorSearch'
 import { streamChatCompletion, checkOllamaHealth } from '@/utils/ollama'
 import User from '@/models/User'
@@ -18,13 +17,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
-        if (!session) {
+        const requestUser = await getUserFromRequest(req, res)
+        if (!requestUser?.email) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }
 
         // Check grade report recency
-        const userForAccess = await User.findOne({ email: session.user?.email }).select('_id lastGradeReportUpload')
+        const userForAccess = await User.findOne({ email: requestUser.email }).select('_id lastGradeReportUpload')
         if (!userForAccess || !hasRecentGradeReport(userForAccess.lastGradeReportUpload)) {
             return res.status(403).json({
                 success: false,
@@ -68,7 +67,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
         // Filter out courses user has already taken
         const takenSubjectNumbersSet = new Set<string>()
-        const user = await User.findOne({ email: session.user?.email })
+        const user = await User.findOne({ email: requestUser.email })
             .populate('classesTaken')
             .lean()
         const userTakenClasses = user?.classesTaken || []
@@ -123,7 +122,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         const contextLength = contextString.length
 
 
-        const userWithAffiliation = await User.findOne({ email: session.user?.email })
+        const userWithAffiliation = await User.findOne({ email: requestUser.email })
             .populate('courseAffiliation')
             .lean()
 

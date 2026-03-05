@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 
 export interface ICourseEmbedding {
     _id?: mongoose.Types.ObjectId
@@ -66,4 +66,4 @@ const CourseEmbeddingSchema = new mongoose.Schema<ICourseEmbedding>({
 
 CourseEmbeddingSchema.index({ class: 1, embeddingType: 1 })
 
-export default (mongoose.models.CourseEmbedding || mongoose.model('CourseEmbedding', CourseEmbeddingSchema))
+export default (mongoose.models.CourseEmbedding as Model<ICourseEmbedding> || mongoose.model<ICourseEmbedding>('CourseEmbedding', CourseEmbeddingSchema))

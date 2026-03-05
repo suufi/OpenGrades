@@ -4,8 +4,8 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../../../utils/mongoConnection'
 
 import AuditLog from '@/models/AuditLog'
-import { auth } from '@/utils/auth'
 import { withApiLogger } from '@/utils/apiLogger'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import formidable from 'formidable'
 import * as Minio from 'minio'
 import mongoose from 'mongoose'
@@ -36,9 +36,9 @@ async function handler(
 ) {
   await mongoConnection()
   const { method, body } = req
-  const session = await auth(req, res)
+  const user = await getUserFromRequest(req, res)
 
-  if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+  if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
   switch (method) {
     case 'GET':
@@ -54,7 +54,6 @@ async function handler(
       return res.status(200).json({ success: true, data: {} })
     case 'POST':
       try {
-        const user = await User.findOne({ email: session.user?.email }).lean() as { _id: any; kerb: string; trustLevel: number } | null
         if (!user || user.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
@@ -139,7 +138,7 @@ async function handler(
       }
     case 'PUT':
       try {
-        if (session.user && session.user?.trustLevel < 1) {
+        if (user && user?.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
@@ -147,37 +146,9 @@ async function handler(
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
 
-        // const schema = z.object({
-        //   _id: z.string(),
-        //   contentURL: z.string().trim().url({ message: 'Please provide a valid URL.' }).refine((val) => !val.includes('canvas.mit.edu'), { message: 'Canvas is not a valid website for filehosting.' }),
-        //   contentTitle: z.string(),
-        //   type: z.enum(['Syllabus', 'Course Description', 'Textbook Reading Assignments', 'Miscellaneous'])
-        // })
-
-        // const data = schema.parse(body)
-
-        // const author = await User.findOne({ email: session.user?.email })
-
-        // if (!(await ContentSubmission.exists({ class: req.query.classId, author: author._id }))) {
-        //   return res.status(404).json({ success: false, message: 'Class review does not exist.' })
-        // }
-
-        // await ContentSubmission.updateOne({ _id: req.query.classId, author: author._id }, {
-        //   overallRating: data.overallRating,
-        //   author: author._id,
-        //   firstYear: data.firstYear,
-        //   retaking: data.retaking,
-        //   droppedClass: data.droppedClass,
-        //   hoursPerWeek: data.hoursPerWeek,
-        //   recommendationLevel: data.recommendationLevel,
-        //   classComments: data.classComments,
-        //   numericGrade: data.numericGrade,
-        //   letterGrade: data.letterGrade,
-        //   methodOfGradeCalculation: data.methodOfGradeCalculation
-        // })
-
-        return res.status(200).json({
-          success: true
+        return res.status(501).json({
+          success: false,
+          message: 'Not implemented yet.'
         })
       } catch (error: unknown) {
         if (error instanceof Error) {

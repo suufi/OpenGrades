@@ -2,8 +2,7 @@
 import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getServerSession } from 'next-auth'
-import authOptions from '../auth/[...nextauth]'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import User from '@/models/User'
 import AuditLog from '@/models/AuditLog'
 import CourseEmbedding from '@/models/CourseEmbedding'
@@ -21,12 +20,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
         await mongoConnection()
 
-        const session = await getServerSession(req, res, authOptions)
-        if (!session || !session.user?.email) {
+        const requestUser = await getUserFromRequest(req, res)
+        if (!requestUser?.email) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }
 
-        const user = await User.findOne({ email: session.user.email })
+        const user = await User.findOne({ email: requestUser.email })
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' })
         }

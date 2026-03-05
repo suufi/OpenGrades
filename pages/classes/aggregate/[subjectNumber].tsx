@@ -9,13 +9,14 @@ import { Accordion, Avatar, Badge, Box, Button, Card, Center, Container, Divider
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 
 import GradeReportModal from '@/components/GradeReportModal'
 import ContentSubmission from '@/models/ContentSubmission'
 import User from '@/models/User'
 import styles from '@/styles/ClassPage.module.css'
+import aggregateStyles from '@/styles/Aggregate2.module.css'
 import { BarChart, DonutChart } from '@mantine/charts'
 import { showNotification } from '@mantine/notifications'
 import moment from 'moment-timezone'
@@ -38,6 +39,49 @@ const letterGradeColors = {
     C: '#4C6EF5',
     D: '#BE4BDB',
     F: '#FA5252'
+}
+
+const HOURS_MIDPOINTS: Record<string, number> = {
+    '0-2 hours': 1,
+    '3-5 hours': 4,
+    '6-8 hours': 7,
+    '9-11 hours': 10,
+    '12-14 hours': 13,
+    '15-17 hours': 16,
+    '18-20 hours': 19,
+    '21-23 hours': 22,
+    '24-26 hours': 25,
+    '37-40 hours': 38.5
+}
+
+const hoursToMidpoint = (hoursPerWeek: string | undefined) => {
+    if (!hoursPerWeek) return null
+    return HOURS_MIDPOINTS[hoursPerWeek] ?? null
+}
+
+const termRank = (term: string) => {
+    const suffix = term?.slice(-2).toUpperCase()
+    switch (suffix) {
+        case 'FA': return 0
+        case 'JA': return 1
+        case 'SP': return 2
+        case 'SU': return 3
+        default: return 4
+    }
+}
+
+const compareTermsSequential = (aTerm: string, bTerm: string) => {
+    const aYear = parseInt(aTerm?.slice(0, 4), 10) || 0
+    const bYear = parseInt(bTerm?.slice(0, 4), 10) || 0
+    if (aYear !== bYear) return aYear - bYear
+    return termRank(aTerm) - termRank(bTerm)
+}
+
+const compareTermsLatest = (aTerm: string, bTerm: string) => {
+    const aYear = parseInt(aTerm?.slice(0, 4), 10) || 0
+    const bYear = parseInt(bTerm?.slice(0, 4), 10) || 0
+    if (aYear !== bYear) return bYear - aYear
+    return termRank(bTerm) - termRank(aTerm)
 }
 
 interface AggregateProps {
@@ -121,7 +165,6 @@ function ClassReviewComment({ classReview,
 
     return (
         <Paper className={styles.comment} withBorder radius="md" p="md">
-            {/* Header: Author info and badges */}
             <Group justify="space-between" mb="sm">
                 <Group>
                     <Avatar alt={author.name} radius="xl" />
@@ -139,9 +182,7 @@ function ClassReviewComment({ classReview,
                 </Group>
             </Group>
 
-            {/* Metrics Grid */}
             <Grid mb="md" gutter="md">
-                {/* Overall Rating */}
                 <Grid.Col span={{ base: 4, sm: 4 }}>
                     <Group gap="xs" align="center">
                         <Tooltip label={`${classReview.overallRating}/7 overall rating`}>
@@ -164,7 +205,6 @@ function ClassReviewComment({ classReview,
                     </Group>
                 </Grid.Col>
 
-                {/* Hours Per Week */}
                 <Grid.Col span={{ base: 4, sm: 4 }}>
                     <Group gap="xs" align="center">
                         <Tooltip label={`${classReview.hoursPerWeek ?? 'Unknown'} per week (${workloadInfo.label})`}>
@@ -187,7 +227,6 @@ function ClassReviewComment({ classReview,
                     </Group>
                 </Grid.Col>
 
-                {/* Recommendation */}
                 <Grid.Col span={{ base: 4, sm: 4 }}>
                     <Group gap="xs" align="center">
                         <Tooltip label={RecommendationLevels[classReview.recommendationLevel]}>
@@ -211,26 +250,24 @@ function ClassReviewComment({ classReview,
                 </Grid.Col>
             </Grid>
 
-            {/* Comments Section - Only show if there's content */}
             {(classReview.classComments || classReview.backgroundComments) && (
                 <Stack gap="xs">
                     {classReview.classComments && (
                         <Box>
                             <Group gap="xs" mb={4}>
                                 <IconMessage size={14} color="gray" />
-                                <Text size="xs" fw={600} c="dimmed">Class Comments</Text>
+                                <Text size="xs" c="dimmed">Class Comments</Text>
                             </Group>
-                            <Text size="sm" style={{ fontStyle: 'italic', lineHeight: 1.5 }}>
-                                "{classReview.classComments}"
+                            <Text size="sm" style={{ lineHeight: 1.5 }}>
+                                {classReview.classComments}
                             </Text>
                         </Box>
                     )}
-
                     {classReview.backgroundComments && (
                         <Box>
                             <Group gap="xs" mb={4}>
                                 <IconMessage size={14} color="gray" />
-                                <Text size="xs" fw={600} c="dimmed">Background & Tips</Text>
+                                <Text size="xs" c="dimmed">Background</Text>
                             </Group>
                             <Text size="sm" style={{ fontStyle: 'italic', lineHeight: 1.5 }}>
                                 "{classReview.backgroundComments}"
@@ -240,7 +277,6 @@ function ClassReviewComment({ classReview,
                 </Stack>
             )}
 
-            {/* Footer with vote count */}
             <Divider my="sm" />
             <Group justify='flex-end'>
                 <Group gap="xs">
@@ -260,6 +296,62 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
     const [classes, setClasses] = useState(classesProp)
     const [onlyOffered, setOnlyOffered] = useState(true)
     const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
+
+    const classesSorted = useMemo(
+        () => [...classes].sort((a, b) => compareTermsSequential(a.term, b.term)),
+        [classes]
+    )
+    const offeredTermCount = useMemo(
+        () => classes.filter((c) => c.offered).length,
+        [classes]
+    )
+    const latestClass = useMemo(() => {
+        return [...classes].sort((a: any, b: any) => {
+            if (b.academicYear !== a.academicYear) return b.academicYear - a.academicYear
+            return compareTermsLatest(a.term, b.term)
+        })[0] || {}
+    }, [classes])
+
+    const totalReviews = reviewsProp.length
+    const avgRating = totalReviews > 0
+        ? (reviewsProp.reduce((sum, r) => sum + (r.overallRating || 0), 0) / totalReviews)
+        : 0
+
+    const hoursValues = reviewsProp
+        .map((r) => hoursToMidpoint(r.hoursPerWeek))
+        .filter((v) => typeof v === 'number') as number[]
+    const avgHours = hoursValues.length > 0
+        ? (hoursValues.reduce((sum, v) => sum + v, 0) / hoursValues.length)
+        : 0
+
+    const gradesData = useMemo(() => {
+        const counts = gradePointsProp.reduce((acc, { letterGrade }) => {
+            if (!letterGrade) return acc
+            acc[letterGrade] = (acc[letterGrade] || 0) + 1
+            return acc
+        }, {} as Record<string, number>)
+        return Object.entries(counts).map(([name, value]) => ({
+            name,
+            value,
+            color: letterGradeColors[name as keyof typeof letterGradeColors] || 'gray'
+        }))
+    }, [gradePointsProp])
+
+    const gradesByTerm = useMemo(() => {
+        return gradePointsProp
+            .sort((a, b) => compareTermsSequential(a.class.term, b.class.term))
+            .reduce((acc, { class: { term }, letterGrade }) => {
+                const existing = acc.find((entry) => entry.term === term)
+                if (existing) {
+                    existing[letterGrade]++
+                } else {
+                    const entry: any = { term, A: 0, B: 0, C: 0, D: 0, F: 0, DR: 0, P: 0 }
+                    entry[letterGrade] = 1
+                    acc.push(entry)
+                }
+                return acc
+            }, [] as { term: string }[])
+    }, [gradePointsProp])
 
     const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => {
         const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
@@ -298,293 +390,336 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                 color: 'red',
             })
         } finally {
-            router.replace(router.asPath) // Refresh data
+            router.replace(router.asPath)
         }
     }
 
-
     return (
-        <Container style={{ padding: 'var(--mantine-spacing-lg)', maxWidth: 1200 }}>
-            <Button variant='transparent' onClick={() => router.back()}>
-                ← Back
-            </Button>
-            <Space h='lg' />
+        <Box className={aggregateStyles.page}>
+            <Container size="lg" className={aggregateStyles.container}>
+                <Stack gap="lg">
+                    <Box>
+                        <Button
+                            variant="subtle"
+                            size="xs"
+                            color="gray"
+                            onClick={() => router.back()}
+                        >
+                            ← Back
+                        </Button>
+                    </Box>
 
-            <Space h='lg' />
-            <Title>Aggregated for {router.query.subjectNumber}</Title>
-            <Space h='lg' />
+                    <Card className={aggregateStyles.hero} withBorder>
+                        <Group justify="space-between" align="flex-start">
+                            <Stack gap={4}>
+                                <Text className={aggregateStyles.overline}>Aggregated Course View</Text>
+                                <Title order={1} className={aggregateStyles.title}>
+                                    {latestClass?.subjectNumber || router.query.subjectNumber}: {latestClass?.subjectTitle || ''}
+                                </Title>
+                                <Text c="dimmed">
+                                    {totalReviews} full reviews • {submissionsProp.length} content submissions • {offeredTermCount} offered terms
+                                </Text>
+                            </Stack>
+                            {latestClass?.offered === false && (
+                                <Badge color="red" variant="light">Not Offered</Badge>
+                            )}
+                        </Group>
+                    </Card>
 
-            <Title order={2}>Summary</Title>
-            <Center>
-                <Group align='center' gap='xl'>
-                    {
-                        gradePointsProp.length > 0 ?
-                            (
-                                <DonutChart
-                                    size={300}
-                                    labelsType='value'
-                                    startAngle={0}
-                                    endAngle={360}
-                                    withLabels
-                                    withTooltip
-                                    data={gradePointsProp.reduce((acc, { letterGrade }) => {
-                                        const existing = acc.find((entry) => entry.name === letterGrade)
-                                        if (existing) {
-                                            existing.value++
-                                        } else {
-                                            acc.push({ name: letterGrade, value: 1, color: letterGradeColors[letterGrade] })
+                    <Grid gutter="md">
+                        <Grid.Col span={{ base: 12, md: 4 }}>
+                            <Card withBorder className={aggregateStyles.statCard}>
+                                <Group gap="sm">
+                                    <IconThumbUp size={18} />
+                                    <Text fw={600}>Average Rating</Text>
+                                </Group>
+                                <Text className={aggregateStyles.statValue}>{avgRating.toFixed(2)} / 7</Text>
+                                <Text c="dimmed" size="sm">From {totalReviews} reviews</Text>
+                            </Card>
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, md: 4 }}>
+                            <Card withBorder className={aggregateStyles.statCard}>
+                                <Group gap="sm">
+                                    <IconClock size={18} />
+                                    <Text fw={600}>Avg Hours/Week</Text>
+                                </Group>
+                                <Text className={aggregateStyles.statValue}>{avgHours > 0 ? avgHours.toFixed(1) : 'N/A'}</Text>
+                                <Text c="dimmed" size="sm">Estimated workload</Text>
+                            </Card>
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, md: 4 }}>
+                            <Card withBorder className={aggregateStyles.statCard}>
+                                <Group gap="sm">
+                                    <IconArrowUpCircle size={18} />
+                                    <Text fw={600}>Latest Term</Text>
+                                </Group>
+                                <Text className={aggregateStyles.statValue}>{latestClass?.term || 'Unknown'}</Text>
+                                <Text c="dimmed" size="sm">{latestClass?.instructors?.join(', ') || '—'}</Text>
+                            </Card>
+                        </Grid.Col>
+                    </Grid>
+
+                    <Title order={2}>Summary</Title>
+                    <Center>
+                        <Group align='center' gap='xl'>
+                            {
+                                gradePointsProp.length > 0 ?
+                                    (
+                                        <DonutChart
+                                            size={300}
+                                            labelsType='value'
+                                            startAngle={0}
+                                            endAngle={360}
+                                            withLabels
+                                            withTooltip
+                                            data={gradePointsProp.reduce((acc, { letterGrade }) => {
+                                                const existing = acc.find((entry) => entry.name === letterGrade)
+                                                if (existing) {
+                                                    existing.value++
+                                                } else {
+                                                    acc.push({ name: letterGrade, value: 1, color: letterGradeColors[letterGrade] })
+                                                }
+                                                return acc
+                                            }, [] as { name: string, value: number, color: string }[]
+                                            )}
+                                        />)
+                                    : <Text c='dimmed'>
+                                        {
+                                            lastGradeReportUpload ? "No grade points for this class yet." :
+                                                <>
+                                                    You must <UnstyledButton style={{ textDecoration: "underline", color: "blue" }} onClick={() => setGradeReportModalOpened(true)}>upload</UnstyledButton> a grade report with partial reviews in the past four months to display grade data.
+                                                </>
                                         }
-                                        return acc
-                                    }, [] as { name: string, value: number, color: string }[]
-                                    )}
-                                />)
-                            : <Text c='dimmed'>
-                                {
-                                    lastGradeReportUpload ? "No grade points for this class yet." :
-                                        <>
+                                    </Text>
+                            }
+                            <GradeReportModal opened={gradeReportModalOpened} onClose={() => setGradeReportModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
 
-                                            You must <UnstyledButton style={{ textDecoration: "underline", color: "blue" }} onClick={() => setGradeReportModalOpened(true)}>upload</UnstyledButton> a grade report with partial reviews in the past four months to display grade data.
-                                        </>
-                                }
-                            </Text>
-                    }
-                    <GradeReportModal opened={gradeReportModalOpened} onClose={() => setGradeReportModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
+                            {
+                                reviewsProp.length > 0 ?
+                                    (
+                                        <DonutChart
+                                            size={300}
+                                            labelsType='value'
+                                            startAngle={0}
+                                            endAngle={360}
+                                            withLabels
+                                            withTooltip
+                                            data={reviewsProp.reduce((acc, { recommendationLevel }) => {
+                                                const existing = acc.find((entry) => entry.name === RecommendationLevels[recommendationLevel])
+                                                if (existing) {
+                                                    existing.value++
+                                                } else {
+                                                    const colors = {
+                                                        1: 'red',
+                                                        2: 'orange',
+                                                        3: 'yellow',
+                                                        4: 'green',
+                                                        5: 'blue'
+                                                    }
+                                                    acc.push({ name: RecommendationLevels[recommendationLevel], value: 1, color: colors[recommendationLevel] })
+                                                }
+                                                return acc
+                                            }, [] as { name: string, value: number, color: string }[]
+                                            )}
+                                        />
+                                    ) : <Text c='dimmed'>No reviews for this class yet.</Text>
+                            }
+                        </Group>
+                    </Center>
 
                     {
-                        reviewsProp.length > 0 ?
-                            (
-                                <DonutChart
-                                    size={300}
-                                    labelsType='value'
-                                    startAngle={0}
-                                    endAngle={360}
-                                    withLabels
-                                    withTooltip
-                                    data={reviewsProp.reduce((acc, { recommendationLevel }) => {
-                                        const existing = acc.find((entry) => entry.name === RecommendationLevels[recommendationLevel])
-                                        if (existing) {
-                                            existing.value++
-                                        } else {
-                                            const colors = {
-                                                1: 'red',
-                                                2: 'orange',
-                                                3: 'yellow',
-                                                4: 'green',
-                                                5: 'blue'
-                                            }
-                                            acc.push({ name: RecommendationLevels[recommendationLevel], value: 1, color: colors[recommendationLevel] })
+                        (reviewsProp.length > 0 || gradePointsProp.length > 0) && (
+                            <>
+                                <Space h='lg' />
+                                <Title order={2}>By Term</Title>
+                                <Space h='sm' />
+                            </>
+                        )
+                    }
+                    <Flex gap='md' wrap='wrap'>
+                        {reviewsProp.length > 0 &&
+                            <BarChart
+                                h={400}
+                                type='percent'
+                                withLegend
+                                data={reviewsProp.reduce((acc, { class: { term }, recommendationLevel }) => {
+                                    const existing = acc.find((entry) => entry.term === term)
+                                    const recommendationLevelString = RecommendationLevels[recommendationLevel]
+                                    if (existing) {
+                                        existing[recommendationLevelString]++
+                                    } else {
+                                        const newEntry = {
+                                            term,
                                         }
-                                        return acc
-                                    }, [] as { name: string, value: number, color: string }[]
-                                    )}
-                                />
-                            ) : <Text c='dimmed'>No reviews for this class yet.</Text>
-                    }
-                </Group>
-            </Center>
+                                        for (const level of Object.values(RecommendationLevels)) {
+                                            newEntry[level] = 0
+                                        }
 
-            {
-                (reviewsProp.length > 0 || gradePointsProp.length > 0) && (
-                    <>
-                        <Space h='lg' />
-                        <Title order={2}>By Term</Title>
-                        <Space h='sm' />
-                    </>
-                )
-            }
-            <Flex gap='md' wrap='wrap'>
-                {reviewsProp.length > 0 &&
-                    <BarChart
-                        h={400}
-                        type='percent'
-                        withLegend
-                        data={reviewsProp.reduce((acc, { class: { term }, recommendationLevel }) => {
-                            const existing = acc.find((entry) => entry.term === term)
-                            const recommendationLevelString = RecommendationLevels[recommendationLevel]
-                            if (existing) {
-                                existing[recommendationLevelString]++
-                            } else {
-                                const newEntry = {
-                                    term,
-                                }
-                                for (const level of Object.values(RecommendationLevels)) {
-                                    newEntry[level] = 0
-                                }
-
-                                newEntry[recommendationLevelString] = 1
-                                acc.push(newEntry)
-                            }
-                            return acc
-                        }, [] as { term: string }[])
-                        }
-                        dataKey='term'
-                        series={[
-                            { name: 'Definitely not recommend', color: 'red', stackId: 'recommendation' },
-                            { name: 'Unlikely to recommend', color: 'orange', stackId: 'recommendation' },
-                            { name: 'Recommend with reservations', color: 'yellow', stackId: 'recommendation' },
-                            { name: 'Likely to recommend', color: 'green', stackId: 'recommendation' },
-                            { name: 'Recommend with enthusiasm', color: 'blue', stackId: 'recommendation' },
-                        ]}
-
-                    />
-                }
-
-                {gradePointsProp.length > 0 &&
-                    <BarChart
-                        h={400}
-                        type='percent'
-                        withLegend
-                        data={gradePointsProp.sort((a, b) => a.class.term.localeCompare(b.class.term)).reduce((acc, { class: { term }, letterGrade }) => {
-                            const existing = acc.find((entry) => entry.term === term)
-                            if (existing) {
-                                existing[letterGrade]++
-                            } else {
-                                const newEntry = {
-                                    term,
-                                    A: 0,
-                                    B: 0,
-                                    C: 0,
-                                    D: 0,
-                                    F: 0,
-                                    DR: 0,
-                                    P: 0
-                                }
-
-                                newEntry[letterGrade] = 1
-
-                                acc.push(newEntry)
-                            }
-                            return acc
-                        }, [] as { term: string }[])
-                        }
-                        dataKey='term'
-                        series={[
-                            { name: 'A', color: letterGradeColors.A, stackId: 'grades' },
-                            { name: 'B', color: letterGradeColors.B, stackId: 'grades' },
-                            { name: 'C', color: letterGradeColors.C, stackId: 'grades' },
-                            { name: 'D', color: letterGradeColors.D, stackId: 'grades' },
-                            { name: 'F', color: letterGradeColors.F, stackId: 'grades' },
-                            { name: 'DR', color: 'gray', stackId: 'grades' },
-                            { name: 'P', color: 'purple', stackId: 'grades' }
-                        ]}
-
-                    />
-                }
-            </Flex>
-
-            <Space h='lg' />
-
-            <Space h='xl' />
-            <Flex justify='space-between' align='center'>
-                <Title order={2}>Classes</Title>
-                <Switch checked={onlyOffered} onChange={(e) => setOnlyOffered(e.currentTarget.checked)} label="Only show classes offered" />
-            </Flex>
-            <Space h='sm' />
-            <Stack gap='sm'>
-                <Accordion chevronPosition='left' variant='filled' multiple>
-                    {
-                        classes.sort((a, b) => a.term.localeCompare(b.term)).filter(c => !onlyOffered || c.offered).map(c => (
-                            <Accordion.Item key={c._id} value={c._id}>
-                                <Accordion.Control>
-                                    <Card key={c._id} shadow='xs' variant='outlined' withBorder>
-                                        <Stack>
-                                            <Flex justify='space-between'>
-                                                <Title order={4}> {c.subjectNumber}: {c.subjectTitle} <Text c='dimmed'> {c.aliases.length > 0 && "aka"} {c.aliases.join(', ')} </Text> </Title>
-                                                <Title order={5}> {c.term} </Title>
-                                            </Flex>
-                                            <Flex justify='space-between'>
-                                                <Text> {c.instructors.join(", ")} </Text>
-                                                <Group>
-                                                    {!c.offered && <Badge color='red'> Not offered </Badge>}
-                                                    <Badge variant={reviewsProp.filter(r => r.class._id === c._id).length == 0 ? 'transparent' : 'filled'} color='purple'> {reviewsProp.filter(r => r.class._id === c._id).length} review{reviewsProp.filter(r => r.class._id === c._id).length === 1 ? '' : 's'} </Badge>
-                                                </Group>
-                                            </Flex>
-                                        </Stack>
-                                    </Card>
-                                </Accordion.Control>
-                                <Accordion.Panel>
-                                    {
-                                        reviewsProp.filter(r => r.class._id === c._id).length == 0 && <Text> No reviews for this class yet. </Text>
+                                        newEntry[recommendationLevelString] = 1
+                                        acc.push(newEntry)
                                     }
-                                    {
-                                        reviewsProp.filter(r => r.class._id === c._id).map(r => (
-                                            <>
-                                                <ClassReviewComment
-                                                    key={r._id}
-                                                    classReview={r}
-                                                    author={{ name: 'Anonymous', hiddenName: 'Anonymous' }}
-                                                    reported={false}
-                                                    trustLevel={0}
-                                                    userVote={null}
-                                                    upvotes={r.upvotes}
-                                                    downvotes={r.downvotes}
-                                                    onVoteChange={() => { }}
-                                                />
-                                                <Space h='sm' />
-                                            </>
-                                        ))
-                                    }
-                                </Accordion.Panel>
-                            </Accordion.Item>
-                        ))
-                    }
-                </Accordion>
-            </Stack>
+                                    return acc
+                                }, [] as { term: string }[])
+                                }
+                                dataKey='term'
+                                series={[
+                                    { name: 'Definitely not recommend', color: 'red', stackId: 'recommendation' },
+                                    { name: 'Unlikely to recommend', color: 'orange', stackId: 'recommendation' },
+                                    { name: 'Recommend with reservations', color: 'yellow', stackId: 'recommendation' },
+                                    { name: 'Likely to recommend', color: 'green', stackId: 'recommendation' },
+                                    { name: 'Recommend with enthusiasm', color: 'blue', stackId: 'recommendation' },
+                                ]}
 
-            {relatedClasses && (
-                <>
+                            />
+                        }
+
+                        {gradePointsProp.length > 0 &&
+                            <BarChart
+                                h={400}
+                                type='percent'
+                                withLegend
+                                data={gradePointsProp.sort((a, b) => compareTermsSequential(a.class.term, b.class.term)).reduce((acc, { class: { term }, letterGrade }) => {
+                                    const existing = acc.find((entry) => entry.term === term)
+                                    if (existing) {
+                                        existing[letterGrade]++
+                                    } else {
+                                        const newEntry = {
+                                            term,
+                                            A: 0,
+                                            B: 0,
+                                            C: 0,
+                                            D: 0,
+                                            F: 0,
+                                            DR: 0,
+                                            P: 0
+                                        }
+
+                                        newEntry[letterGrade] = 1
+
+                                        acc.push(newEntry)
+                                    }
+                                    return acc
+                                }, [] as { term: string }[])
+                                }
+                                dataKey='term'
+                                series={[
+                                    { name: 'A', color: letterGradeColors.A, stackId: 'grades' },
+                                    { name: 'B', color: letterGradeColors.B, stackId: 'grades' },
+                                    { name: 'C', color: letterGradeColors.C, stackId: 'grades' },
+                                    { name: 'D', color: letterGradeColors.D, stackId: 'grades' },
+                                    { name: 'F', color: letterGradeColors.F, stackId: 'grades' },
+                                    { name: 'DR', color: 'gray', stackId: 'grades' },
+                                    { name: 'P', color: 'purple', stackId: 'grades' }
+                                ]}
+
+                            />
+                        }
+                    </Flex>
+
+                    <Space h='lg' />
+
                     <Space h='xl' />
-                    <RelatedClasses
-                        subjectNumber={router.query.subjectNumber as string}
-                        prerequisites={relatedClasses.prerequisites}
-                        corequisites={relatedClasses.corequisites}
-                        requiredBy={relatedClasses.requiredBy}
-                    />
-                </>
-            )}
+                    <Flex justify='space-between' align='center'>
+                        <Title order={2}>Classes</Title>
+                        <Switch checked={onlyOffered} onChange={(e) => setOnlyOffered(e.currentTarget.checked)} label="Only show classes offered" />
+                    </Flex>
+                    <Space h='sm' />
+                    <Stack gap='sm'>
+                        <Accordion chevronPosition='left' variant='filled' multiple>
+                            {
+                                classesSorted.filter(c => !onlyOffered || c.offered).map(c => (
+                                    <Accordion.Item key={c._id} value={c._id}>
+                                        <Accordion.Control>
+                                            <Card key={c._id} shadow='xs' variant='outlined' withBorder>
+                                                <Stack>
+                                                    <Flex justify='space-between'>
+                                                        <Title order={4}> {c.subjectNumber}: {c.subjectTitle} <Text c='dimmed'> {c.aliases.length > 0 && "aka"} {c.aliases.join(', ')} </Text> </Title>
+                                                        <Title order={5}> {c.term} </Title>
+                                                    </Flex>
+                                                    <Flex justify='space-between'>
+                                                        <Text> {c.instructors.join(", ")} </Text>
+                                                        <Group>
+                                                            {!c.offered && <Badge color='red'> Not offered </Badge>}
+                                                            <Badge variant={reviewsProp.filter(r => r.class._id === c._id).length == 0 ? 'transparent' : 'filled'} color='purple'> {reviewsProp.filter(r => r.class._id === c._id).length} review{reviewsProp.filter(r => r.class._id === c._id).length === 1 ? '' : 's'} </Badge>
+                                                        </Group>
+                                                    </Flex>
+                                                </Stack>
+                                            </Card>
+                                        </Accordion.Control>
+                                        <Accordion.Panel>
+                                            {
+                                                reviewsProp.filter(r => r.class._id === c._id).length == 0 && <Text> No reviews for this class yet. </Text>
+                                            }
+                                            {
+                                                reviewsProp.filter(r => r.class._id === c._id).map(r => (
+                                                    <>
+                                                        <ClassReviewComment
+                                                            key={r._id}
+                                                            classReview={r}
+                                                            author={{ name: 'Anonymous', hiddenName: 'Anonymous' }}
+                                                            reported={false}
+                                                            trustLevel={0}
+                                                            userVote={null}
+                                                            upvotes={r.upvotes}
+                                                            downvotes={r.downvotes}
+                                                            onVoteChange={() => { }}
+                                                        />
+                                                        <Space h='sm' />
+                                                    </>
+                                                ))
+                                            }
+                                        </Accordion.Panel>
+                                    </Accordion.Item>
+                                ))
+                            }
+                        </Accordion>
+                    </Stack>
 
-            <Space h='xl' />
-            <Title order={2}>Content Submissions</Title>
-            <Space h='sm' />
-            {
-                submissionsProp.length === 0 ? (
-                    <Text c='dimmed'>No content submissions for this class yet.</Text>
-                ) : (
-                    <Accordion chevronPosition='left' variant='separated' multiple>
-                        {submissionsProp
-                            .sort((a, b) => a.class.term.localeCompare(b.class.term))
-                            .map((s) => (
-                                <Accordion.Item key={s._id} value={s._id}>
-                                    <Accordion.Control>
-                                        <Flex justify='space-between' align='center'>
-                                            <Stack gap={0}>
-                                                <Text fw={600}>{s.contentTitle}</Text>
-                                                <Text c='dimmed' size='sm'>{s.type} • {s.class.subjectNumber} {s.class.subjectTitle} • {s.class.term}</Text>
-                                            </Stack>
-                                            <Badge variant='light'>{moment(s.createdAt).tz('America/New_York').format('MMM DD, YYYY')}</Badge>
-                                        </Flex>
-                                    </Accordion.Control>
-                                    <Accordion.Panel>
-                                        <Group gap='sm'>
-                                            {s.contentURL && (
-                                                <Button component='a' href={s.contentURL} target='_blank' rel='noopener noreferrer' variant='light'>Open Link</Button>
-                                            )}
-                                            {s.bucketPath && (
-                                                <Button component='a' href={`/api/content/${encodeURIComponent(s.bucketPath)}`} target='_blank' rel='noopener noreferrer' variant='light'>Download</Button>
-                                            )}
-                                            {!s.contentURL && !s.bucketPath && (
-                                                <Text c='dimmed'>No file or URL attached.</Text>
-                                            )}
-                                        </Group>
-                                    </Accordion.Panel>
-                                </Accordion.Item>
-                            ))}
-                    </Accordion>
-                )
-            }
-        </Container >
+                    <Space h='xl' />
+                    <Title order={2}>Content Submissions</Title>
+                    <Space h='sm' />
+                    {
+                        submissionsProp.length === 0 ? (
+                            <Text c='dimmed'>No content submissions for this class yet.</Text>
+                        ) : (
+                            <Accordion chevronPosition='left' variant='separated' multiple>
+                                {submissionsProp
+                                    .sort((a, b) => compareTermsSequential(a.class.term, b.class.term))
+                                    .map((s) => (
+                                        <Accordion.Item key={s._id} value={s._id}>
+                                            <Accordion.Control>
+                                                <Flex justify='space-between' align='center'>
+                                                    <Stack gap={0}>
+                                                        <Text fw={600}>{s.contentTitle}</Text>
+                                                        <Text c='dimmed' size='sm'>{s.type} • {s.class.subjectNumber} {s.class.subjectTitle} • {s.class.term}</Text>
+                                                    </Stack>
+                                                    <Badge variant='light'>{moment(s.createdAt).tz('America/New_York').format('MMM DD, YYYY')}</Badge>
+                                                </Flex>
+                                            </Accordion.Control>
+                                            <Accordion.Panel>
+                                                <Group gap='sm'>
+                                                    {s.contentURL && (
+                                                        <Button component='a' href={s.contentURL} target='_blank' rel='noopener noreferrer' variant='light'>Open Link</Button>
+                                                    )}
+                                                    {s.bucketPath && (
+                                                        <Button component='a' href={`/api/content/${encodeURIComponent(s.bucketPath)}`} target='_blank' rel='noopener noreferrer' variant='light'>Download</Button>
+                                                    )}
+                                                    {!s.contentURL && !s.bucketPath && (
+                                                        <Text c='dimmed'>No file or URL attached.</Text>
+                                                    )}
+                                                </Group>
+                                            </Accordion.Panel>
+                                        </Accordion.Item>
+                                    ))}
+                            </Accordion>
+                        )
+                    }
 
+                </Stack>
+            </Container>
+        </Box>
     )
+
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -667,7 +802,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     ])
 
     const gradePointsData = await ClassReview.find({
-        class: { $in: classIds },
+        class: { $in: classIds }
     }).populate('class').select('letterGrade').lean()
 
     const lastGradeReportUpload = hasRecentGradeReport(user.lastGradeReportUpload, 4)
@@ -679,9 +814,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     // Sort classes to find the latest one for prerequisites
     const sortedClasses = [...classes].sort((a: any, b: any) => {
-        // Sort by academic year descending, then term
         if (b.academicYear !== a.academicYear) return b.academicYear - a.academicYear
-        return b.term.localeCompare(a.term)
+        return compareTermsLatest(a.term, b.term)
     })
     const latestClass = sortedClasses[0] || {}
 

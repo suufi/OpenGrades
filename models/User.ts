@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 
 import type { IUser } from '../types'
 
@@ -100,7 +100,10 @@ const UserSchema = new mongoose.Schema<IUser>({
   qaEmailOptOut: {
     type: Boolean,
     default: false  // False = opted-in (receive Q&A emails)
-  }
+  },
+  favoriteClasses: [{
+    type: String
+  }]
 }, { timestamps: true })
 
-export default (mongoose.models.User || mongoose.model('User', UserSchema))
+export default (mongoose.models.User as Model<IUser> || mongoose.model<IUser>('User', UserSchema))

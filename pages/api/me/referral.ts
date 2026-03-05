@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import mongoConnection from '../../../utils/mongoConnection'
 
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 
 import mongoose from 'mongoose'
@@ -15,19 +15,16 @@ async function handler (
     await mongoConnection()
     const { method, body } = req
 
-    const session = await auth(req, res)
-    if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const requestUser = await getUserFromRequest(req, res)
+    if (!requestUser?.email) return res.status(403).json({ success: false, message: 'Please sign in.' })
+    const email = requestUser.email.toLowerCase()
 
     switch (method) {
         case 'GET':
             try {
-                if (session.user?.id) {
-                    const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').lean()
+                const user = await User.findOne({ email }).populate('classesTaken').lean()
 
-                    return res.status(200).json({ success: true, data: !!user.referredBy })
-                } else {
-                    throw new Error("User doesn't have ID.")
-                }
+                return res.status(200).json({ success: true, data: !!user.referredBy })
             } catch (error: unknown) {
                 if (error instanceof Error) {
                     return res.status(400).json({ success: false, message: error.toString() })
@@ -36,15 +33,15 @@ async function handler (
             break
         case 'PATCH':
             try {
-                if (await User.exists({ email: session.user?.id.toLowerCase() })) {
+                if (await User.exists({ email })) {
                     const referredByUser = body.referredBy ? await User.exists({ kerb: body.referredBy }) : false
                     if (!referredByUser) {
                         throw new Error('User does not exist.')
                     }
-                    if (referredByUser === session.user.kerb) {
+                    if (referredByUser === requestUser.kerb) {
                         throw new Error('You cannot refer yourself.')
                     }
-                    await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() }, {
+                    await User.findOneAndUpdate({ email }, {
                         referredBy: referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : null
                     })
 

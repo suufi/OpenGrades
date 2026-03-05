@@ -196,10 +196,10 @@ export async function getRelevantContext(
         })
     }
 
-    const classes = Array.from(classMap.values())
+    let classes = Array.from(classMap.values())
 
     return {
-        classes,
+        classes: classes.slice(0, limit * 2),
         reviews,
         contentSnippets
     }

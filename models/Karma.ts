@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Model } from 'mongoose'
 import { IKarma } from '../types'
 
 const { Schema } = mongoose
@@ -19,4 +19,4 @@ const KarmaScehma = new mongoose.Schema<IKarma>({
     }
 }, { timestamps: true })
 
-export default (mongoose.models.Karma || mongoose.model('Karma', KarmaScehma))
+export default (mongoose.models.Karma as Model<IKarma> || mongoose.model<IKarma>('Karma', KarmaScehma))

@@ -41,6 +41,7 @@ export const navConfig: NavItem[] = [
     { label: 'AI Search', icon: Robot, href: '/ai-search', color: 'violet', section: 'main', badge: 'NEW' },
     { label: 'Discover', icon: Diamonds, href: '/discover', color: 'pink', section: 'main' },
     { label: 'Classes', icon: Books, href: '/classes', color: 'orange', section: 'main' },
+    { label: 'Favorites', icon: Star, href: '/favorites', color: 'yellow', section: 'main' },
     { label: 'Class Network', icon: Network, href: '/class-network', color: 'indigo', section: 'main' },
     { label: 'Prereq Graph', icon: GitBranch, href: '/prereq-graph', color: 'lime', section: 'main' },
     { label: 'Statistics', icon: Graph, href: '/statistics', color: 'cyan', section: 'main' },

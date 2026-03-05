@@ -23,7 +23,7 @@ export function NavLink({ icon: Icon, label, href, color, active, external, badg
         <Link
             href={href}
             passHref
-            style={{ textDecoration: 'none' }}
+            style={{ textDecoration: 'none', color: 'inherit' }}
             target={external ? '_blank' : undefined}
             rel={external ? 'noopener noreferrer' : undefined}
         >

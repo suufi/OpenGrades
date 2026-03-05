@@ -1,7 +1,7 @@
 // @ts-nocheck
 import '@/models/Class'
 import ClassReview from '@/models/ClassReview'
-import { auth } from '@/utils/auth'
+import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -33,19 +33,21 @@ async function handler(
   await mongoConnection()
   const { method, body } = req
 
-  const session = await auth(req, res)
+  const user = await getUserFromRequest(req, res)
 
-  if (!session) return res.status(403).json({ success: false, message: 'Please sign in.' })
+  if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
+  const email = user?.email?.toLowerCase()
 
   switch (method) {
     case 'GET':
       try {
-        if (session.user?.id) {
-          const user = await User.findOne({ email: session.user.id.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+        if (user?.email) {
+          const userDoc = await User.findOne({ email: user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+          const reviewCount = await ClassReview.countDocuments({ author: userDoc?._id })
 
-          return res.status(200).json({ success: true, data: { session, user } })
+          return res.status(200).json({ success: true, data: { user: { ...userDoc, reviewCount } } })
         } else {
-          throw new Error("User doesn't have ID.")
+          throw new Error("User doesn't have email.")
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -55,9 +57,9 @@ async function handler(
       break
     case 'PUT':
       try {
-        const user = await User.findOne({ email: session.user?.id.toLowerCase() }).lean()
+        const userDoc = await User.findOne({ email: user?.email.toLowerCase() }).lean()
 
-        if (user) {
+        if (userDoc) {
           const schema = z.object({
             kerb: z.string().optional(),
             name: z.string().optional(),
@@ -107,7 +109,7 @@ async function handler(
             updateData.courseAffiliation = uniqueAffiliations
           }
 
-          await User.findOneAndUpdate({ email: session.user?.id.toLowerCase() },
+          await User.findOneAndUpdate({ email },
             updateData
           )
 
@@ -146,11 +148,11 @@ async function handler(
             await ClassReview.create(reviewsToMake)
 
             if (reviewsToMake.length > 0) {
-              await User.updateOne({ email: session.user?.id.toLowerCase() }, { lastGradeReportUpload: new Date() })
+              await User.updateOne({ email }, { lastGradeReportUpload: new Date() })
             }
           }
 
-          return res.status(200).json({ success: true, data: await User.findOne({ email: session.user?.id.toLowerCase() }).populate('classesTaken').lean() })
+          return res.status(200).json({ success: true, data: await User.findOne({ email }).populate('classesTaken').lean() })
         } else {
           throw new Error("User doesn't have ID.")
         }
