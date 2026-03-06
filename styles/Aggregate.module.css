@@ -1,0 +1,50 @@
+.page {
+    min-height: 100vh;
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+    padding: var(--mantine-spacing-xl) 0;
+}
+
+.container {
+    padding: var(--mantine-spacing-md);
+}
+
+.hero {
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+}
+
+.overline {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
+}
+
+.title {
+    line-height: 1.15;
+}
+
+.statCard {
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+}
+
+.statValue {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.chartCard {
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+}
+
+.sectionCard {
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+}
+
+.termRow {
+    width: 100%;
+}
