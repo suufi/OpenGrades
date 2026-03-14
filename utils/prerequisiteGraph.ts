@@ -81,7 +81,7 @@ function extractGIRRequirements(reqString: string): string[] {
 function getGIRCodeForClass(cls: { subjectNumber?: string; girAttribute?: string[]; units?: string } | null): string | null {
     if (!cls) return null
 
-    let codes: string[] = cls.girAttribute?.length ? cls.girAttribute : []
+    let codes: string[] = Array.isArray(cls.girAttribute) && cls.girAttribute.length ? cls.girAttribute : []
     if (codes.length === 0 && cls.units) {
         codes = parseUnitsField(cls.units).girAttributes || []
     }
