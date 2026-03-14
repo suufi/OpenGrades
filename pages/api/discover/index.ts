@@ -1,10 +1,12 @@
 // @ts-nocheck
+import mongoose from 'mongoose'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getUserFromRequest } from '@/utils/authMiddleware'
+import { getClassesPageStats } from '@/utils/plausible'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -96,7 +98,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           }
         },
         { $match: { count: { $gte: 3 } } }
-      ])
+      ]),
+      getClassesPageStats({ dateRange: '30d', limit: 30 })
     ])
 
     console.log(`[Discover] Parallel queries done in ${Date.now() - t1}ms`)
@@ -173,6 +176,62 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       .sort((a, b) => b.improvement - a.improvement)
       .slice(0, 10)
 
+    const plausibleStats = await getClassesPageStats({ dateRange: '30d', limit: 50 })
+    const pageviewsBySubject = (plausibleStats || []).reduce(
+      (acc, s) => {
+        if (s.subjectNumber) {
+          acc[s.subjectNumber] = (acc[s.subjectNumber] ?? 0) + s.pageviews
+        }
+        return acc
+      },
+      {} as Record<string, number>
+    )
+    const classIdStats = (plausibleStats || []).filter((s) => s.classId && mongoose.Types.ObjectId.isValid(s.classId))
+    if (classIdStats.length > 0) {
+      const classDocs = await Class.find({
+        _id: { $in: classIdStats.map((s) => new mongoose.Types.ObjectId(s.classId!)) },
+        offered: true
+      })
+        .select('subjectNumber')
+        .lean()
+      const classIdToSubject = new Map<string, string>()
+      for (const doc of classDocs) {
+        const id = (doc as any)._id?.toString?.()
+        if (id && (doc as any).subjectNumber) classIdToSubject.set(id, (doc as any).subjectNumber)
+      }
+      for (const s of classIdStats) {
+        const subj = s.classId && classIdToSubject.get(s.classId)
+        if (subj) pageviewsBySubject[subj] = (pageviewsBySubject[subj] ?? 0) + s.pageviews
+      }
+    }
+    const subjectNumbers = Object.entries(pageviewsBySubject)
+      .filter(([subj]) => subj && !subj.endsWith('.UR') && !subj.endsWith('.URG'))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([subj]) => subj)
+    const popularClasses =
+      subjectNumbers.length > 0
+        ? await Class.find({
+            subjectNumber: { $in: subjectNumbers },
+            offered: true
+          })
+            .select('subjectNumber subjectTitle department academicYear term units instructors _id')
+            .sort({ academicYear: -1 })
+            .lean()
+        : []
+    const oneClassPerSubject = new Map<string, any>()
+    for (const cls of popularClasses) {
+      const subj = (cls as any).subjectNumber
+      if (subj && !oneClassPerSubject.has(subj)) oneClassPerSubject.set(subj, cls)
+    }
+    const popular = subjectNumbers
+      .map((subj) => {
+        const cls = oneClassPerSubject.get(subj)
+        if (!cls) return null
+        return { ...cls, pageviews: pageviewsBySubject[subj] ?? 0, subjectNumber: subj, linkToAggregate: true }
+      })
+      .filter(Boolean)
+
     console.log(`[Discover] Total time: ${Date.now() - startTime}ms`)
 
     return res.status(200).json({
@@ -181,7 +240,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         hiddenGems,
         trending,
         newClasses: newClassesFinal,
-        highestImprovement
+        highestImprovement,
+        popular
       }
     })
 
