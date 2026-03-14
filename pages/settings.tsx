@@ -101,15 +101,15 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 
     try {
       const response = await fetch('/api/classes?' + new URLSearchParams({
-        page: lazyState.page,
-        limit: lazyState.rows,
+        page: String(lazyState.page),
+        limit: String(lazyState.rows),
         sortField: lazyState.sortField || '',
-        sortOrder: lazyState.sortOrder || '',
+        sortOrder: String(lazyState.sortOrder || ''),
         search: lazyState.globalFilter || '',
         ...Object.fromEntries(
-          Object.entries(lazyState.filters).map(([key, value]) => [key, value.value])
+          Object.entries(lazyState.filters).map(([key, value]) => [key, String(value.value)])
         )
-      }))
+      } as Record<string, string>))
 
       const result = await response.json()
 

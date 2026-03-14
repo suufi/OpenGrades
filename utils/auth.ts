@@ -240,5 +240,5 @@ export function auth (
         | [NextApiRequest, NextApiResponse]
         | []
 ) {
-    return getServerSession(...args, config)
+    return getServerSession(...args, config as NextAuthOptions) as Promise<Session | null>
 }

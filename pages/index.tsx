@@ -302,7 +302,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           ...prevValues,
           classes: {
             ...prevValues.classes,
-            ...classes,
+            ...(classes as any),
           },
         }))
       } else {
@@ -588,7 +588,8 @@ interface ServerSideProps {
   session: any,
   userProp: IUser,
   reviewsProp: IClassReview[],
-  academicYearsProp: number[]
+  academicYearsProp: number[],
+  referralsProp: number
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
@@ -630,13 +631,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
   }
 
   return {
-    // redirect: {
-    // destination: '/api/auth/signin',
-    // permanent: false
-    // }
-    props: {
-
-    }
+    props: {} as ServerSideProps
   }
 }
 

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
-import { getServerSession } from 'next-auth'
+import { getServerSession, Session } from 'next-auth'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import {
@@ -40,7 +40,7 @@ const ForceGraph2D = dynamic(
         ssr: false,
         loading: () => <Center h={600}><Loader size="xl" /></Center>
     }
-)
+) as any
 
 const ForceGraph3D = dynamic(
     () => import('react-force-graph-3d'),
@@ -646,7 +646,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const session = await getServerSession(context.req, context.res, authOptions)
+    const session = await getServerSession(context.req, context.res, authOptions) as Session | null
 
     if (!session) {
         return {

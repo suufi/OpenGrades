@@ -156,7 +156,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     }
 
-    const aggregateByDate = (items: { createdAt: string }[]) => {
+    const aggregateByDate = (items: { createdAt: string | Date }[]) => {
         const map = new Map<string, number>()
         for (const item of items) {
             const date = new Date(item.createdAt).toLocaleDateString()
@@ -207,13 +207,13 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         scales: {
             x: { title: { display: true, text: "Date" } },
             y: {
-                type: 'linear',
+                type: 'linear' as const,
                 title: { display: true, text: "Users" }
             },
             y1: {
-                type: 'linear',
+                type: 'linear' as const,
                 title: { display: true, text: "Reviews" },
-                position: "right",
+                position: "right" as const,
                 grid: { drawOnChartArea: false }
             }
         },
@@ -256,7 +256,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         })
     })
 
-    const generateBarData = (valueExtractor, colorScheme, sortFunction) => {
+    const generateBarData = (valueExtractor, colorScheme, sortFunction?) => {
         if (!sortFunction) {
             sortFunction = (a, b) => Number(b) - Number(a)
         }

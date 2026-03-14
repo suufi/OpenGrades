@@ -154,6 +154,9 @@ export interface IClassReview {
     methodOfGradeCalculation: string
     verified: boolean,
     partial: boolean
+    userVote?: number | null
+    upvotes?: number
+    downvotes?: number
 }
 
 export interface IClassGrade {

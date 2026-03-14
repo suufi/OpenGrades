@@ -14,7 +14,7 @@ import { IconFile, IconGridPattern, IconList, IconSearch, IconUserCircle } from 
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
-const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: IClass & { classReviewCount: number, contentSubmissionCount: number, userCount: number, withDescription: boolean, searchTerm: string, highlight: object }) => {
+const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount = 0, withDescription = false, searchTerm = '', highlight }: IClass & { classReviewCount: number, contentSubmissionCount: number, userCount?: number, withDescription?: boolean, searchTerm?: string, highlight?: object }) => {
   const router = useRouter()
 
   let formattedDescription = (
@@ -122,6 +122,13 @@ const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTit
 interface ClassesProps {
   classesProp: IClass[]
   classReviewCountsProp: { _id: string, count: number }[]
+}
+
+type ClassAPIEntry = IClass & {
+  classReviewCount?: number
+  contentSubmissionCount?: number
+  userCount?: number
+  highlight?: object
 }
 
 const Classes: NextPage = () => {
@@ -523,7 +530,7 @@ const Classes: NextPage = () => {
           <Text c='gray'> Found {totalClasses.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} result{totalClasses === 1 ? '' : 's'}. ({Math.round(timeForResults)} ms) </Text>
 
           <Group>
-            <Select size='md' placeholder="Sort by" data={[
+            <Select placeholder="Sort by" data={[
               { label: 'Relevance', value: 'relevance' },
               { label: 'Alphabetical', value: 'alphabetical' },
               { label: 'Reviews', value: 'reviews' },
@@ -549,15 +556,15 @@ const Classes: NextPage = () => {
             <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 1500: 2, 1200: 3 }}>
               <Masonry gutter={'0.5rem'}>
                 {
-                  classes.map((classEntry: IClass) => (
+                  classes.map((classEntry: ClassAPIEntry) => (
                     <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} {...classEntry} />
                   ))
                 }
               </Masonry>
             </ResponsiveMasonry>) : (
-            <Stack spacing="md">
+            <Stack gap="md">
               {
-                classes.map((classEntry: IClass) => (
+                classes.map((classEntry: ClassAPIEntry) => (
                   <ClassButton key={classEntry._id} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} withDescription searchTerm={searchTerm} highlight={classEntry.highlight} {...classEntry} />
                 ))
               }
