@@ -36,10 +36,10 @@ const formatTermDisplay = (term: string): string => {
         'JA': '❄️ IAP'
     }
 
-    return `${semesterMap[semester] || semester} ${year}`
+    return `${semesterMap[semester] || semester} ${semester != 'FA' ? Number(year) : Number(year) - 1}`
 }
 
-export default function DegreeTermsModal ({ opened, onClose, onSave, embedded, initialTerms, autoAssignClassOf, eligibleOverride, selectedUndergradProgramIds }: DegreeTermsModalProps) {
+export default function DegreeTermsModal({ opened, onClose, onSave, embedded, initialTerms, autoAssignClassOf, eligibleOverride, selectedUndergradProgramIds }: DegreeTermsModalProps) {
     const [loading, setLoading] = useState(false)
     const [termAssignments, setTermAssignments] = useState<TermAssignment[]>([])
     const [programs, setPrograms] = useState<CourseOption[]>([])
