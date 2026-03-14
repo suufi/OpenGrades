@@ -92,7 +92,7 @@ async function handler(
           if (data.classOf) updateData.classOf = data.classOf
           const flagsToSet = data.flags ?? data.identityFlags
           if (flagsToSet) updateData.flags = flagsToSet
-          if (data.flatClasses) {
+          if (data.flatClasses && data.flatClasses.length > 0) {
             updateData.classesTaken = data.flatClasses.map((id: string) => new mongoose.Types.ObjectId(id))
             updateData.lastGradeReportUpload = new Date()
           }
