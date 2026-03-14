@@ -52,6 +52,9 @@ RUN \
     --mount=type=secret,id=OLLAMA_API_KEY \
     --mount=type=secret,id=JWT_SECRET \
     --mount=type=secret,id=JWT_EXPIRES_IN \
+    --mount=type=secret,id=PLAUSIBLE_DOMAIN \
+    --mount=type=secret,id=PLAUSIBLE_API_KEY \
+    --mount=type=secret,id=PLAUSIBLE_API_DOMAIN \
     export MONGODB_CONNECTION_URI=$(cat /run/secrets/MONGODB_CONNECTION_URI) && \
     export MIT_OIDC_WELLKNOWN=$(cat /run/secrets/MIT_OIDC_WELLKNOWN) && \
     export MIT_OIDC_CLIENT_ID=$(cat /run/secrets/MIT_OIDC_CLIENT_ID) && \
