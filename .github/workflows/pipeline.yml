@@ -59,6 +59,9 @@ jobs:
             OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
+            PLAUSIBLE_DOMAIN=${{ secrets.PLAUSIBLE_DOMAIN }}
+            PLAUSIBLE_API_KEY=${{ secrets.PLAUSIBLE_API_KEY }}
+            PLAUSIBLE_API_DOMAIN=${{ secrets.PLAUSIBLE_API_DOMAIN }}
 
   deploy:
     name: Deploy Image
@@ -101,6 +104,9 @@ jobs:
           echo "OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}" >> .env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
           echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
+          echo "PLAUSIBLE_DOMAIN=${{ secrets.PLAUSIBLE_DOMAIN }}" >> .env
+          echo "PLAUSIBLE_API_KEY=${{ secrets.PLAUSIBLE_API_KEY }}" >> .env
+          echo "PLAUSIBLE_API_DOMAIN=${{ secrets.PLAUSIBLE_API_DOMAIN }}" >> .env
 
 
 

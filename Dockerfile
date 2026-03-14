@@ -76,6 +76,9 @@ RUN \
     export OLLAMA_API_KEY=$(cat /run/secrets/OLLAMA_API_KEY) && \
     export JWT_SECRET=$(cat /run/secrets/JWT_SECRET) && \
     export JWT_EXPIRES_IN=$(cat /run/secrets/JWT_EXPIRES_IN) && \
+    export PLAUSIBLE_DOMAIN=$(cat /run/secrets/PLAUSIBLE_DOMAIN) && \
+    export PLAUSIBLE_API_KEY=$(cat /run/secrets/PLAUSIBLE_API_KEY) && \
+    export PLAUSIBLE_API_DOMAIN=$(cat /run/secrets/PLAUSIBLE_API_DOMAIN) && \
 
     yarn run build
 

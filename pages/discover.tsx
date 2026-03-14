@@ -21,13 +21,13 @@ import {
     List,
     Button
 } from '@mantine/core'
-import { IconFlame, IconStars, IconTrendingUp, IconDiamond, IconAlertTriangle, IconUpload, IconPencil } from '@tabler/icons'
+import { IconFlame, IconStars, IconTrendingUp, IconDiamond, IconAlertTriangle, IconUpload, IconPencil, IconEye } from '@tabler/icons'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import authOptions from 'pages/api/auth/[...nextauth]'
+import authOptions from '@/pages/api/auth/[...nextauth]'
 import { useEffect, useState } from 'react'
 
 interface EligibilityStatus {
@@ -46,12 +46,13 @@ interface DiscoverData {
     trending: Array<IClass & { trendingScore: number; recentReviews: number; recentAdds: number }>
     newClasses: Array<IClass & { firstOffered: number }>
     highestImprovement: Array<IClass & { currentRating: number; previousRating: number; improvement: number }>
+    popular?: Array<IClass & { pageviews: number; subjectNumber: string; linkToAggregate?: boolean }>
 }
 
 const ClassCard = ({ classData, badge, onNavigate }: any) => {
     return (
         <UnstyledButton
-            onClick={() => onNavigate(classData._id)}
+            onClick={() => onNavigate(classData)}
             style={{ width: '100%' }}
         >
             <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
@@ -104,8 +105,12 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
         fetchData()
     }, [eligibility.eligible])
 
-    const handleNavigate = (classId: string) => {
-        router.push(`/classes/${classId}`)
+    const handleNavigate = (classData: { _id: string; subjectNumber?: string; linkToAggregate?: boolean }) => {
+        if (classData.linkToAggregate && classData.subjectNumber) {
+            router.push(`/classes/aggregate/${encodeURIComponent(classData.subjectNumber)}`)
+        } else {
+            router.push(`/classes/${classData._id}`)
+        }
     }
 
     if (!eligibility.eligible) {
@@ -237,6 +242,9 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
                     <Tabs.Tab value="improvement" leftSection={<IconTrendingUp size={16} />}>
                         Rising Stars
                     </Tabs.Tab>
+                    <Tabs.Tab value="popular" leftSection={<IconEye size={16} />}>
+                        Most Viewed
+                    </Tabs.Tab>
                 </Tabs.List>
 
                 <Tabs.Panel value="hidden-gems">
@@ -324,6 +332,31 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
                                 />
                             </Grid.Col>
                         )) || <Text c="dimmed">No improvement data available</Text>}
+                    </Grid>
+                </Tabs.Panel>
+
+                <Tabs.Panel value="popular">
+                    <Space h="md" />
+                    <Text c="dimmed" mb="lg">
+                        Most viewed class pages in the last 30 days
+                    </Text>
+                    <Grid>
+                        {(data?.popular && data.popular.length > 0)
+                            ? data.popular.map((cls) => (
+                                <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
+                                    <ClassCard
+                                        classData={cls}
+                                        badge={
+                                            <Badge color="violet" variant="light">
+                                                <IconEye size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                                                {cls.pageviews?.toLocaleString() ?? 0} views
+                                            </Badge>
+                                        }
+                                        onNavigate={handleNavigate}
+                                    />
+                                </Grid.Col>
+                            ))
+                            : <Text c="dimmed">No view data available yet. Check back later!</Text>}
                     </Grid>
                 </Tabs.Panel>
             </Tabs>
