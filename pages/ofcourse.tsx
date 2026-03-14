@@ -13,7 +13,7 @@ import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from "next"
 import { getServerSession, Session } from "next-auth"
 import Head from "next/head"
 import { useRouter } from "next/router"
-import authOptions from "pages/api/auth/[...nextauth]"
+import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from "react"
 ChartJS.register(...registerables)
 

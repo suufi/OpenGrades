@@ -32,7 +32,7 @@ const GradeChart = ({ data }: GradeChartProps) => {
 
   // const { classes } = useStyles()
 
-  function processPoints (points: GradePoint[]) {
+  function processPoints(points: GradePoint[]) {
     const reportedGradeCutoffs: Record<LetterGrade, number[]> = {
       A: [-1, -1],
       B: [-1, -1],
@@ -43,10 +43,6 @@ const GradeChart = ({ data }: GradeChartProps) => {
     }
 
     points.forEach((point) => {
-      console.log('point', point)
-      console.log('reported cutfoff', reportedGradeCutoffs)
-      console.log(point.numericGrade, reportedGradeCutoffs[point.letterGrade][0])
-
       if (reportedGradeCutoffs[point.letterGrade][0] === -1 || reportedGradeCutoffs[point.letterGrade][1] === -1) {
         if (point.letterGrade === LetterGrade.A) {
           reportedGradeCutoffs[point.letterGrade][0] = point.numericGrade
@@ -85,8 +81,6 @@ const GradeChart = ({ data }: GradeChartProps) => {
         //   }
         // }
       }
-
-      console.log(reportedGradeCutoffs)
     })
 
     return Object.fromEntries(Object.entries(reportedGradeCutoffs).filter(([, boundaries]) => !boundaries.includes(-1)))
@@ -139,7 +133,6 @@ const GradeChart = ({ data }: GradeChartProps) => {
   const keyPoints = Object.values(processedPoints).flat()
 
   const regions = [{ start: 0, end: 100, color: colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[2], letter: 'Unknown' }, ...Object.entries(processedPoints).map(entry => {
-    console.log(entry)
     return {
       start: entry[1][0],
       end: entry[1][1],

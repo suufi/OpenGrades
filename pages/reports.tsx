@@ -13,7 +13,7 @@ import { showNotification } from '@mantine/notifications'
 import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth/next'
 import { useRouter } from 'next/router'
-import authOptions from "pages/api/auth/[...nextauth]"
+import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from 'react'
 import Report from '../models/Report'
 import { IReport } from '../types'
@@ -23,7 +23,7 @@ const ResolveModal = ({ reportId, callback }: { reportId?: string, callback: Fun
 
   const [value, setValue] = useState('')
 
-  async function resolveReport () {
+  async function resolveReport() {
     await fetch('/api/reports', {
       method: 'DELETE',
       headers: {

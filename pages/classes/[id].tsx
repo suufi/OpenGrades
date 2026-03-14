@@ -1081,7 +1081,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
               <Stack gap={4}>
                 <Text size="sm" fw={600}>{preview.subjectNumber}: {preview.subjectTitle}</Text>
                 {preview.term && <Text size="xs" c="dimmed">{preview.term}</Text>}
-                {preview.description && <Text size="xs" lineClamp={4}>{preview.description}</Text>}
+                {preview.description && <Text size="xs" lineClamp={4} c='light'>{preview.description}</Text>}
               </Stack>
             }
           >
@@ -1264,7 +1264,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
       <Space h="lg" />
       <Card withBorder shadow="sm" p='lg' >
         {classProp.aliases && classProp.aliases.length > 0 && <><Text size='sm' c='dimmed'> Alias{classProp.aliases.length > 1 ? 'es' : ''}: {classProp.aliases.join(', ')} </Text><br /></>}
-        <Text>
+        <Text c='light'>
           {renderDescriptionWithLinks(classProp.description)}
         </Text>
       </Card>

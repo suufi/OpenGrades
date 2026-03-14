@@ -142,7 +142,6 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
 
     const potentialGrad = (userProfile as any)?.year === 'G'
     if (potentialGrad && wasMITUndergrad === null) {
-      console.log('Blocking submission: grad student must confirm MIT undergrad status first.')
       setIsGradStudent(true)
       setActive(2)
       return
@@ -175,7 +174,6 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
       setFormLoading(false)
 
       const finalGrad = potentialGrad || isGradStudent
-      console.log('finalGrad:', finalGrad, 'wasMITUndergrad:', wasMITUndergrad)
       if (finalGrad) {
         if (wasMITUndergrad === true) {
           setDegreeTermsSaved(false)
@@ -193,7 +191,6 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
 
       // Undergrad flow: redirect
       window.location.href = '/classes'
-      console.log('Redirecting to /classes')
     } catch (e: any) {
       console.error(e)
       showNotification({ title: 'Error!', message: 'Failed to submit profile.' })

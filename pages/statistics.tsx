@@ -11,7 +11,7 @@ import { Chart as ChartJS, registerables } from "chart.js"
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from "next"
 import { getServerSession, Session } from "next-auth"
 import { useRouter } from "next/router"
-import authOptions from "pages/api/auth/[...nextauth]"
+import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from "react"
 import { Bar, Line } from "react-chartjs-2"
 

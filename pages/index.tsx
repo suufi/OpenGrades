@@ -26,7 +26,7 @@ import { GetServerSideProps } from 'next'
 import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth/next'
 import { useRouter } from 'next/router'
-import authOptions from "pages/api/auth/[...nextauth]"
+import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useEffect, useState } from 'react'
 import { News } from 'tabler-icons-react'
 
@@ -37,7 +37,7 @@ const scaleY = {
   transitionProperty: 'transform, opacity',
 }
 
-function getEmojiForTerm (term: string) {
+function getEmojiForTerm(term: string) {
   term = term.substring(4)
   switch (term) {
     case 'FA':
@@ -99,7 +99,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   const hasAssignedTerms = userProp.programTerms && userProp.programTerms.length > 0
 
-  async function verifyReferralKerb (kerb: string) {
+  async function verifyReferralKerb(kerb: string) {
     const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
     const body = await res.json()
     if (res.ok && body.data) {
@@ -135,7 +135,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     })
   }, [academicYearTaken, selectedTerm])
 
-  async function addClasses (values: any) {
+  async function addClasses(values: any) {
     console.log(values)
     setContentLoading(true)
     const classesTaken = values.flatClasses.map((classId: string) => ({ _id: classId }))
@@ -172,7 +172,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     router.replace(router.asPath)
   }
 
-  async function deleteClass (classId: string) {
+  async function deleteClass(classId: string) {
     setContentLoading(true)
 
     await fetch('/api/me/classes', {
@@ -205,7 +205,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     router.replace(router.asPath)
   }
 
-  async function updateFlags (flags: string[]) {
+  async function updateFlags(flags: string[]) {
 
     await fetch('/api/me/flags', {
       method: 'PATCH',
@@ -236,7 +236,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     router.replace(router.asPath)
   }
 
-  async function updateReferral (kerb: string) {
+  async function updateReferral(kerb: string) {
     await fetch('/api/me/referral', {
       method: 'PATCH',
       headers: {
