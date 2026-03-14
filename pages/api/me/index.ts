@@ -98,10 +98,11 @@ async function handler(
           }
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
           if (typeof data.emailOptIn === 'boolean') updateData.emailOptIn = data.emailOptIn
-          if (user.trustLevel < 1) updateData.trustLevel = 1
+          const currentTrustLevel = (userDoc as any).trustLevel ?? 0
+          if (currentTrustLevel < 1) updateData.trustLevel = 1
 
           if (data.undergradProgramIds && data.undergradProgramIds.length > 0) {
-            const existingAffiliations = user.courseAffiliation || []
+            const existingAffiliations = (userDoc as any).courseAffiliation || []
             const newAffiliations = data.undergradProgramIds.map(id => new mongoose.Types.ObjectId(id))
             const allAffiliations = [...existingAffiliations, ...newAffiliations]
             const uniqueAffiliations = Array.from(new Set(allAffiliations.map(a => a.toString()))).map(id => new mongoose.Types.ObjectId(id))
@@ -115,7 +116,8 @@ async function handler(
 
           if (data.partialReviews) {
             const reviewsToMake = []
-            const existingReviews = await ClassReview.find({ author: user._id }).lean()
+            const authorId = (userDoc as any)._id
+            const existingReviews = await ClassReview.find({ author: authorId }).lean()
             const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
             for (const review of data.partialReviews) {
@@ -137,7 +139,7 @@ async function handler(
 
               reviewsToMake.push({
                 class: review.class,
-                author: user._id,
+                author: authorId,
                 letterGrade: normalizeGrade(review.letterGrade),
                 droppedClass: review.droppedClass,
                 display: false,
@@ -152,7 +154,8 @@ async function handler(
             }
           }
 
-          return res.status(200).json({ success: true, data: await User.findOne({ email }).populate('classesTaken').lean() })
+          const updatedUser = await User.findOne({ email }).populate('classesTaken').lean()
+          return res.status(200).json({ success: true, data: updatedUser })
         } else {
           throw new Error("User doesn't have ID.")
         }
