@@ -414,7 +414,7 @@ function ContentFetcher(props: AppProps) {
   const router = useRouter()
 
   if (status === 'unauthenticated') {
-    if (router.pathname.startsWith('/about')) {
+    if (router.pathname.startsWith('/about') || router.pathname.startsWith('/privacy')) {
       return <Component {...pageProps} />
     }
     return <NotLoggedIn />

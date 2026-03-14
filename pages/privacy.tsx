@@ -5,7 +5,7 @@ import { NextPage } from "next"
 import Head from "next/head"
 
 const PrivacyPolicyPage: NextPage = () => {
-    const lastUpdated = "January 5, 2026"
+    const lastUpdated = "March 13, 2026"
     const contactEmail = "opengrades@mit.edu"
 
     return (
@@ -63,7 +63,7 @@ const PrivacyPolicyPage: NextPage = () => {
             <Title order={3} mb="xs">Grade Reports</Title>
             <Text mb="lg">
                 When you paste your grade report, we extract <strong>which classes you took</strong> and <strong>your letter grades</strong>.
-                This data populates your class history and can create partial reviews. <strong>Numeric grades are not permanently stored</strong> —
+                This data populates your class history and can create partial reviews. <strong>Grade reports uploaded by users are not permanently stored</strong> —
                 only letter grade categories (A, B, C, D, F, P, DR) are saved with reviews.
             </Text>
 
@@ -109,7 +109,7 @@ const PrivacyPolicyPage: NextPage = () => {
             <List mb="lg">
                 <List.Item>
                     <strong>Embeddings:</strong> Your review text may be converted to numerical vectors for semantic search.
-                    Embeddings are generated using self-hosted models — we do not send your data to OpenAI, Google, or other external AI providers.
+                    Public MIT course-catalog embeddings may use an external provider (OpenAI). Private user-contributed text (reviews and uploaded content) stays on self-hosted infrastructure.
                 </List.Item>
                 <List.Item>
                     <strong>Opt-out:</strong> You can enable <code>aiEmbeddingOptOut</code> in your settings. If enabled,
