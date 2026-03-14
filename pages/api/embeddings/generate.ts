@@ -7,7 +7,7 @@ import ClassReview from '@/models/ClassReview'
 import ContentSubmission from '@/models/ContentSubmission'
 import CourseEmbedding from '@/models/CourseEmbedding'
 import { Ollama } from 'ollama'
-import { IClass, IClassReview, IContentSubmission, IUser } from '@/types'
+import { IClass, IClassReview, IUser } from '@/types'
 
 const EMBEDDING_MODEL = 'qwen3-embedding:4b'
 const EMBEDDING_DIMENSIONS = 2560
@@ -288,7 +288,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 }
             }
 
-            const contentSubmissions = await ContentSubmission.aggregate([
+            type AggregatedContentSubmission = {
+                _id: string
+                class?: any
+                display?: boolean
+                contentSummary?: string
+                extractedText?: string
+                classData?: { _id?: any }
+            }
+
+            const contentSubmissions: AggregatedContentSubmission[] = await ContentSubmission.aggregate([
                 {
                     $match: {
                         display: true,
@@ -330,7 +339,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
             const bulkOps: any[] = []
 
-            for (const content of contentSubmissions as IContentSubmission[]) {
+            for (const content of contentSubmissions) {
                 try {
                     const classId = content.classData?._id || content.class
                     if (!classId) continue

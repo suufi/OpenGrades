@@ -33,7 +33,7 @@ const GradeChart = ({ data }: GradeChartProps) => {
   // const { classes } = useStyles()
 
   function processPoints(points: GradePoint[]) {
-    const reportedGradeCutoffs: Record<LetterGrade, number[]> = {
+    const reportedGradeCutoffs: Record<'A' | 'B' | 'C' | 'D' | 'F' | 'DR', number[]> = {
       A: [-1, -1],
       B: [-1, -1],
       C: [-1, -1],

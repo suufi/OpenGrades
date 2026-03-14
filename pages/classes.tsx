@@ -28,33 +28,30 @@ const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTit
   )
 
   const regex = /("[^"]+"|[^,| ]+)/g
+  const replaceHighlight = (fullText: string, snippet: string) => {
+    const snippetSansMark = snippet.replace(/<\/?mark>/g, '')
+    const i = fullText.toLowerCase().indexOf(snippetSansMark.toLowerCase())
+    if (i < 0) return fullText
 
+    const before = fullText.slice(0, i)
+    const after = fullText.slice(i + snippetSansMark.length)
+    const markedParts = snippet.split(/(<mark>.*?<\/mark>)/g).map((part, idx) => {
+      if (part.startsWith('<mark>') && part.endsWith('</mark>')) {
+        return <Mark key={idx}>{part.replace(/^<mark>|<\/mark>$/g, '')}</Mark>
+      }
+      return part
+    })
+
+    return (
+      <>
+        {before}
+        {markedParts}
+        {after}
+      </>
+    )
+  }
 
   if (highlight) {
-
-    function replaceHighlight(fullText: string, snippet: string) {
-      const snippetSansMark = snippet.replace(/<\/?mark>/g, '')
-      const i = fullText.toLowerCase().indexOf(snippetSansMark.toLowerCase())
-      if (i < 0) return fullText
-
-      const before = fullText.slice(0, i)
-      const after = fullText.slice(i + snippetSansMark.length)
-      const markedParts = snippet.split(/(<mark>.*?<\/mark>)/g).map((part, idx) => {
-        if (part.startsWith('<mark>') && part.endsWith('</mark>')) {
-          return <Mark key={idx}>{part.replace(/^<mark>|<\/mark>$/g, '')}</Mark>
-        }
-        return part
-      })
-
-      return (
-        <>
-          {before}
-          {markedParts}
-          {after}
-        </>
-      )
-    }
-
     Object.entries(highlight).forEach(([field, snippets]) => {
       if (!Array.isArray(snippets)) return
 

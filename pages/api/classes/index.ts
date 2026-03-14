@@ -12,7 +12,7 @@ import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
 import { getESClient } from '@/utils/esClient'
 import { decode } from 'html-entities'
-import mongoose from 'mongoose'
+import mongoose, { PipelineStage } from 'mongoose'
 import { parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
 import eecsRenumbering from '@/utils/eecs-renumbering.json'
 import { SearchResponse } from '@elastic/elasticsearch/lib/api/types'
@@ -303,7 +303,7 @@ async function handler(
           aggregationPipeline.push({ $sort: sortQuery })
         }
 
-        let classes = await Class.aggregate(aggregationPipeline)
+        let classes = await Class.aggregate(aggregationPipeline as PipelineStage[])
 
         // If `all` is set to true, return all classes without pagination
         if (all === 'true') {

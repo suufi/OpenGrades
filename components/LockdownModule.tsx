@@ -1,5 +1,5 @@
 import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Switch, Text, Textarea, TextInput, Title } from '@mantine/core'
-import { useForm, UseFormReturnType } from '@mantine/form'
+import { useForm } from '@mantine/form'
 import { zod4Resolver } from 'mantine-form-zod-resolver'
 import { showNotification } from '@mantine/notifications'
 import { useSession } from 'next-auth/react'
@@ -33,7 +33,7 @@ type UserProfile = {
   classOf?: number,
   affiliation?: string,
   flags?: IdentityFlags[],
-  classes: string[] | { [key: string]: string[] },
+  classes: { [key: string]: string[] },
   flatClasses?: string[],
   referredBy?: string
 }
@@ -508,11 +508,11 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
                               <Title order={3}>{formatTermSeasonYear(fallTerm, { withEmoji: true })}</Title>
-                              <ClassSearch term={fallTerm} display={formatTermDisplay(fallTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={fallTerm} display={formatTermDisplay(fallTerm)} form={form} />
                               <Title order={3}>{formatTermSeasonYear(iapTerm, { withEmoji: true })}</Title>
-                              <ClassSearch term={iapTerm} display={formatTermDisplay(iapTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={iapTerm} display={formatTermDisplay(iapTerm)} form={form} />
                               <Title order={3}>{formatTermSeasonYear(springTerm, { withEmoji: true })}</Title>
-                              <ClassSearch term={springTerm} display={formatTermDisplay(springTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={springTerm} display={formatTermDisplay(springTerm)} form={form} />
                             </React.Fragment>
                           )
                         })

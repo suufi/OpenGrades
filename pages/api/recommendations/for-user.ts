@@ -10,6 +10,7 @@ import {
 } from '@/utils/recommendations'
 import User from '@/models/User'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
+import { IClass } from '@/types'
 
 /**
  * Personalized recommendations API endpoint
@@ -117,7 +118,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                                     cls._id.toString(),
                                     25,
                                     0.8,
-                                    user.classesTaken || []
+                                    user.classesTaken as IClass[] || []
                                 )
                                 console.log(`  ✓ Got ${recs.length} recommendations for ${cls.subjectNumber || cls._id}`)
                                 return recs

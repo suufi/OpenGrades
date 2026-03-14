@@ -16,7 +16,7 @@ import { IClass, IClassReview, IUser } from '@/types'
 import { buildTermCode, compareTermsSequential, formatAcademicYear, formatTermDisplay, getTermEmoji, TERM_SELECT_OPTIONS } from '@/utils/formatTerm'
 import mongoConnection from '@/utils/mongoConnection'
 import { Accordion, ActionIcon, Alert, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title, Transition } from '@mantine/core'
-import { useForm, UseFormReturnType } from '@mantine/form'
+import { useForm } from '@mantine/form'
 import { useDebouncedState, useDisclosure, useLocalStorage, useMounted } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
 import { IconCheck, IconCircleCheck, IconCircleX, IconQuestionMark } from '@tabler/icons'
@@ -40,7 +40,7 @@ interface FormValues {
   classes: {
     [key: string]: string[]
   },
-  flatClasses?: string[]
+  flatClasses: string[]
 }
 
 const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp, referralsProp }) => {
@@ -105,7 +105,8 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   const form = useForm<FormValues>({
     initialValues: {
-      classes: {}
+      classes: {},
+      flatClasses: []
     },
 
     transformValues: (values) => ({
@@ -299,13 +300,20 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         })
 
         // Merge parsed classes into form's state
+        const classIdsByTerm = Object.entries(classes).reduce<Record<string, string[]>>((acc, [term, classList]) => {
+          acc[term] = classList
+            .map((c) => c._id)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0)
+          return acc
+        }, {})
+
         form.setValues((prevValues) => ({
           ...prevValues,
           classes: {
             ...prevValues.classes,
-            ...(classes as Record<string, IClass[]>),
+            ...classIdsByTerm,
           },
-        }) as Partial<FormValues>)
+        }))
       } else {
         showNotification({
           title: 'Error adding classes',
@@ -487,7 +495,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   </Grid.Col>
                 </Grid>
                 <Divider variant='dotted' label={"Select your classes"} />
-                <ClassSearch term={academicYearTaken && selectedTerm ? buildTermCode(academicYearTaken, selectedTerm) : ""} display={academicYearTaken && selectedTerm ? formatTermDisplay(buildTermCode(academicYearTaken, selectedTerm)) : ""} form={form as UseFormReturnType<FormValues>} />
+                <ClassSearch term={academicYearTaken && selectedTerm ? buildTermCode(academicYearTaken, selectedTerm) : ""} display={academicYearTaken && selectedTerm ? formatTermDisplay(buildTermCode(academicYearTaken, selectedTerm)) : ""} form={form} />
                 <Button type="submit" disabled={
                   form.getTransformedValues().flatClasses?.length === 0
                 }> Submit </Button>

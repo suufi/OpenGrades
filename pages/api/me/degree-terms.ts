@@ -60,7 +60,7 @@ async function handler (
 
                 const uniqueTerms = new Set<string>()
                 if (user.classesTaken) {
-                    for (const cls of user.classesTaken) {
+                    for (const cls of user.classesTaken as IClass[]) {
                         if (cls.term) {
                             uniqueTerms.add(cls.term)
                         }

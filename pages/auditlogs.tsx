@@ -39,7 +39,7 @@ const AuditLogs: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
           {auditLogsProp.map((auditLog: IAuditLog) => (
             <Table.Tr key={auditLog._id} style={{ width: '100%' }}>
               <Table.Td>{auditLog.createdAt.toString()}</Table.Td>
-              <Table.Td>{auditLog.actor.name}</Table.Td>
+              <Table.Td>{(auditLog.actor as IUser).name}</Table.Td>
               <Table.Td>{auditLog.type}</Table.Td>
               <Table.Td>{auditLog.description}</Table.Td>
             </Table.Tr>

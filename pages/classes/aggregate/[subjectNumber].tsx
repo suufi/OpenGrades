@@ -699,7 +699,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const { subjectNumber } = context.query
+    const subjectNumber = context.query.subjectNumber as string
 
     await mongoConnection()
 
