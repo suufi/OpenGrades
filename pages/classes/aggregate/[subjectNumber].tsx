@@ -793,8 +793,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const latestClass = sortedClasses[0] || {}
 
     // Fetch related classes data
-    const prereqNumbers = extractCourseNumbers((latestClass as any).prerequisites || '')
-    const coreqNumbers = extractCourseNumbers((latestClass as any).corequisites || '')
+    const prereqNumbers = extractCourseNumbers((latestClass as IClass).prerequisites || '')
+    const coreqNumbers = extractCourseNumbers((latestClass as IClass).corequisites || '')
 
     const [prerequisiteClasses, corequisiteClasses, requiredByClasses] = await Promise.all([
         Class.find({
@@ -817,17 +817,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     ])
 
     const relatedClasses = {
-        prerequisites: prerequisiteClasses.map((c: any) => ({
+        prerequisites: prerequisiteClasses.map((c) => ({
             subjectNumber: c.subjectNumber,
             subjectTitle: c.subjectTitle,
             department: c.department
         })),
-        corequisites: corequisiteClasses.map((c: any) => ({
+        corequisites: corequisiteClasses.map((c) => ({
             subjectNumber: c.subjectNumber,
             subjectTitle: c.subjectTitle,
             department: c.department
         })),
-        requiredBy: requiredByClasses.map((c: any) => ({
+        requiredBy: requiredByClasses.map((c) => ({
             subjectNumber: c.subjectNumber,
             subjectTitle: c.subjectTitle,
             department: c.department

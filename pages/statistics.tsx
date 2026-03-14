@@ -1,7 +1,7 @@
 import GradeReportModal from "@/components/GradeReportModal"
 import ClassReview from "@/models/ClassReview"
 import User from "@/models/User"
-import { IUser } from "@/types"
+import { IClass, IUser } from "@/types"
 import { compareDepartmentCodes } from "@/utils/departments"
 import mongoConnection from "@/utils/mongoConnection"
 import { hasRecentGradeReport } from "@/utils/hasRecentGradeReport"
@@ -14,6 +14,7 @@ import { useRouter } from "next/router"
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from "react"
 import { Bar, Line } from "react-chartjs-2"
+import { auth } from "@/utils/auth"
 
 ChartJS.register(...registerables)
 
@@ -107,23 +108,20 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     const labels = Array.from(
         new Set(
-            people.flatMap((person: IUser) =>
+            people.flatMap((person) =>
                 person.courseAffiliation.map(aff => aff.departmentCode)
             )
         )
     ).sort(compareDepartmentCodes)
 
-    const filteredPeople = people.filter((person: IUser) => displayLevel === 'all' || (displayLevel === "G" ? person.year === "G" : ['1', '2', '3', '4'].includes(person.year)))
-
-    // create a chart.js dataset for the number of people in each department under each courseOption
-    // for each courseOption make a distinct dataset with the number of people in that courseOption, ultimately we are grouping by the departmentCode
+    const filteredPeople = people.filter((person) => displayLevel === 'all' || (displayLevel === "G" ? person.year === "G" : ['1', '2', '3', '4'].includes(person.year)))
 
     const departmentData = {
         labels,
         datasets: [
             ...Array.from(
                 new Set(
-                    filteredPeople.flatMap((person: IUser) =>
+                    filteredPeople.flatMap((person) =>
                         person.courseAffiliation.map(aff => aff.courseOption)
                     )
                 )
@@ -131,7 +129,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
                 label: courseOption,
                 data: labels.map(dep =>
                     filteredPeople.reduce(
-                        (total, person: IUser) =>
+                        (total, person) =>
                             total + person.courseAffiliation.filter(a => a.departmentCode === dep && a.courseOption === courseOption).length,
                         0
                     )
@@ -356,7 +354,7 @@ interface ServerSideProps {
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
     await mongoConnection()
 
-    const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+    const session = await auth(context.req, context.res)
 
     if (session) {
         if (session.user && session.user?.email) {
@@ -384,13 +382,13 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         let people = await User.find(
             { courseAffiliation: { $ne: null } },
             { courseAffiliation: 1, year: 1, createdAt: 1, _id: 0 }
-        ).populate('courseAffiliation', 'departmentCode courseOption').lean() as any
+        ).populate('courseAffiliation', 'departmentCode courseOption').lean()
 
 
         let classReviews = await ClassReview.find(
             {},
             { class: 1, overallRating: 1, recommendationLevel: 1, letterGrade: 1, createdAt: 1, _id: 0 }
-        ).populate('class', 'department crossListedDepartments subjectNumber aliases').lean() as any
+        ).populate('class', 'department crossListedDepartments subjectNumber aliases').lean()
 
         return {
             props: {

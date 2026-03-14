@@ -29,6 +29,7 @@ import '@mantine/spotlight/styles.css'
 
 
 import mainClasses from '@/styles/Main.module.css'
+import { ICourseOption, IUser } from '@/types'
 
 const getAvailableAcademicYears = () => {
   const startYear = 2021
@@ -241,7 +242,7 @@ function useEditProfileModal() {
               </Button>
             </Group>
             <Group gap="xs">
-              {userProfile.courseAffiliation.map((course: any, idx: number) => (
+              {userProfile.courseAffiliation.map((course: ICourseOption, idx: number) => (
                 <Badge key={idx} color="blue" variant="light" size="md">
                   {formatCourseOptionCode(course)} ({course.courseLevel})
                 </Badge>
@@ -281,7 +282,7 @@ function useEditProfileModal() {
               description="Your reviews help train our recommendation system running on MIT SIPB servers. All AI processing is local—no external services. Only class comments and review metadata (first year, retaking, dropped status) are used. No identifiable information is shared."
               checked={!userProfile?.aiEmbeddingOptOut}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, aiEmbeddingOptOut: !event.currentTarget.checked } as any)
+                setUserProfile({ ...userProfile, aiEmbeddingOptOut: !event.currentTarget.checked } as IUser)
 
                 fetch('/api/me/privacy', {
                   method: 'PUT',
@@ -301,7 +302,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, aiEmbeddingOptOut: !(!event.currentTarget.checked) } as any)
+                    setUserProfile({ ...userProfile, aiEmbeddingOptOut: !(!event.currentTarget.checked) } as IUser)
                   }
                 })
               }}
@@ -317,7 +318,7 @@ function useEditProfileModal() {
               description="Get notified when someone has questions about classes you've taken. (Feature coming soon)"
               checked={!userProfile?.qaEmailOptOut}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, qaEmailOptOut: !event.currentTarget.checked } as any)
+                setUserProfile({ ...userProfile, qaEmailOptOut: !event.currentTarget.checked } as IUser)
 
                 fetch('/api/me/privacy', {
                   method: 'PUT',
@@ -337,7 +338,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, qaEmailOptOut: !(!event.currentTarget.checked) } as any)
+                    setUserProfile({ ...userProfile, qaEmailOptOut: !(!event.currentTarget.checked) } as IUser)
                   }
                 })
               }}
@@ -350,7 +351,7 @@ function useEditProfileModal() {
               description="Get updates, announcements, and general communications from MIT OpenGrades"
               checked={userProfile?.emailOptIn === true}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, emailOptIn: event.currentTarget.checked } as any)
+                setUserProfile({ ...userProfile, emailOptIn: event.currentTarget.checked } as IUser)
 
                 fetch('/api/me', {
                   method: 'PUT',
@@ -370,7 +371,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, emailOptIn: !event.currentTarget.checked } as any)
+                    setUserProfile({ ...userProfile, emailOptIn: !event.currentTarget.checked } as IUser)
                   }
                 })
               }}
@@ -429,13 +430,13 @@ function ContentFetcher(props: AppProps) {
 
   const needsDegreeTermAssignment = (() => {
     const isGrad = userProfile?.year === 'G'
-    const hasProgramTerms = Array.isArray((userProfile as any)?.programTerms) && ((userProfile as any).programTerms.length > 0)
-    const hasMultipleAffiliations = Array.isArray((userProfile as any)?.courseAffiliation) && ((userProfile as any).courseAffiliation.length > 1)
+    const hasProgramTerms = Array.isArray(userProfile?.programTerms) && (userProfile?.programTerms?.length > 0)
+    const hasMultipleAffiliations = Array.isArray(userProfile?.courseAffiliation) && (userProfile?.courseAffiliation?.length > 1)
 
     return isGrad && hasMultipleAffiliations && !hasProgramTerms
   })()
 
-  const needsEmailOptIn = (userProfile as any)?.emailOptIn === null || (userProfile as any)?.emailOptIn === undefined
+  const needsEmailOptIn = userProfile?.emailOptIn === null || userProfile?.emailOptIn === undefined
 
   return (
     !userProfile.banned || userProfile.verified === false

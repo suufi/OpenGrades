@@ -20,6 +20,7 @@ import { getServerSession, Session } from 'next-auth'
 import Head from 'next/head'
 import Link from 'next/link'
 import { config as authOptions } from '@/utils/auth'
+import { IUser } from '@/types'
 
 interface EligibilityStatus {
     eligible: boolean
@@ -196,7 +197,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         }
     }
 
-    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any as any
+    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
 
     if (!user) {
         return {

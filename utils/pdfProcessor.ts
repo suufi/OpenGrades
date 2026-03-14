@@ -1,4 +1,3 @@
-// @ts-ignore
 const { PDFParse } = require('pdf-parse')
 import * as Minio from 'minio'
 import { google } from '@ai-sdk/google'

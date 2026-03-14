@@ -4,6 +4,7 @@ import mongoConnection from '@/utils/mongoConnection'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { IClass, IClassReview } from '@/types'
 
 type Data = {
     success: boolean,
@@ -33,10 +34,10 @@ async function handler(
 
         const subjectNumber = req.query.subjectNumber as string
 
-        const classes = await Class.find({ $or: [{ subjectNumber }, { aliases: { $in: [subjectNumber] } }] }).lean() as any
+        const classes = await Class.find({ $or: [{ subjectNumber }, { aliases: { $in: [subjectNumber] } }] }).lean()
         const classIds = classes.map(c => c._id)
 
-        const reviews = await ClassReview.find({ class: { $in: classIds } }).lean() as any
+        const reviews = await ClassReview.find({ class: { $in: classIds } }).lean()
 
         return res.status(200).json({ success: true, data: { classes, reviews } })
 

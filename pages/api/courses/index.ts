@@ -23,7 +23,7 @@ async function handler (
     switch (method) {
         case 'GET':
             try {
-                const query: any = { active: true }
+                const query: Record<string, any> = { active: true }
 
                 if (req.query.courseLevel) {
                     query.courseLevel = req.query.courseLevel
@@ -65,7 +65,7 @@ async function handler (
                     return response.json()
                 })
 
-                const courses = apiFetch.items.map((course: any) => {
+                const courses = apiFetch.items.map((course: Record<string, any>) => {
                     return {
                         departmentCode: course.departmentCode,
                         departmentName: course.departmentName,
@@ -77,7 +77,7 @@ async function handler (
                 })
 
                 const bulkAddResult = await CourseOption.bulkWrite(
-                    courses.map((course: any) => ({
+                    courses.map((course: Record<string, any>) => ({
                         updateOne: {
                             filter: { courseOption: course.courseOption, departmentCode: course.departmentCode, courseLevel: course.courseLevel },
                             update: { $setOnInsert: course },

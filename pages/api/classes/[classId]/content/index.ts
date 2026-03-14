@@ -58,14 +58,14 @@ async function handler(
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const classDoc = await Class.findById(req.query.classId).lean() as { _id: any; subjectNumber: string; term: string } | null
+        const classDoc = await Class.findById(req.query.classId).lean()
         if (!classDoc) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
 
         const form = formidable({ multiples: false })
 
-        const parsed = await new Promise<{ fields: any; files: any }>((resolve, reject) => {
+        const parsed = await new Promise<{ fields: Record<string, any>; files: Record<string, any> }>((resolve, reject) => {
           form.parse(req, (err, fields, files) => {
             if (err) reject(err)
             else resolve({ fields, files })
@@ -125,7 +125,7 @@ async function handler(
       } catch (error: unknown) {
         console.error('Upload error:', error)
         if (error instanceof Error) {
-          const s3Error = error as any
+          const s3Error = error as Minio.S3Error
           if (s3Error.code) {
             return res.status(400).json({
               success: false,

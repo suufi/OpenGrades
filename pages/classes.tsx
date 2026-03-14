@@ -596,18 +596,4 @@ const Classes: NextPage = () => {
   )
 }
 
-// export async function getServerSideProps (context) {
-//   await mongoConnection()
-
-//   const classesProp: IClass[] = await Class.find({display: true }).lean() as IClass[]
-//   const classReviewCounts = await ClassReview.aggregate().sortByCount('class')
-//   // const session: Session | null = await getServerSession(context.req, context.res, authOptions)
-//   return {
-//     props: {
-//       classesProp: JSON.parse(JSON.stringify(classesProp)),
-//       classReviewCountsProp: JSON.parse(JSON.stringify(classReviewCounts))
-//     }
-//   }
-// }
-
 export default Classes

@@ -3,6 +3,7 @@ import Class from "@/models/Class"
 import ClassReview from "@/models/ClassReview"
 import FAQ from "@/models/FAQ"
 import User from "@/models/User"
+import { IFAQ, IUser } from "@/types"
 import mongoConnection from "@/utils/mongoConnection"
 import { Accordion, Avatar, Container, Divider, Grid, NumberFormatter, Skeleton, Space, Stack, Text, Title } from "@mantine/core"
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from "next"
@@ -21,10 +22,21 @@ const UserAvatar = ({ user }) => {
 }
 
 
-const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ classCount, classReviewCount, userCount, faqs, maintainers, supporters }: any) => {
+const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ classCount, classReviewCount, userCount, faqs, maintainers, supporters }: {
+    classCount: number,
+    classReviewCount: {
+        _id: null,
+        partialTrueCount: number,
+        partialFalseCount: number
+    },
+    userCount: number,
+    faqs: IFAQ[],
+    maintainers: IUser[],
+    supporters: IUser[]
+}) => {
 
 
-    const faqItems = faqs ? faqs.map((item: any) => (
+    const faqItems = faqs ? faqs.map((item) => (
         <Accordion.Item key={item._id} value={item._id}>
             <Accordion.Control>{item.question}</Accordion.Control>
             <Accordion.Panel>
@@ -86,7 +98,7 @@ const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
 
             <Divider m={'xl'} />
             <Title order={2}> Frequently Asked Questions </Title>
-            <Accordion defaultValue={faqItems[0]._id} variant="filled">
+            <Accordion defaultValue={faqItems[0]?.key ?? ''} variant="filled">
                 {faqItems}
             </Accordion>
             <Divider m={'xl'} />
@@ -140,7 +152,7 @@ interface ServerSideProps {
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
     await mongoConnection()
 
-    const faqs = await FAQ.find({}).lean() as any
+    const faqs = await FAQ.find({}).lean()
 
     const classCount = await Class.countDocuments({
         offered: true
@@ -167,11 +179,11 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
     const userCount = await User.countDocuments()
 
-    let maintainers = await User.find({
+    const maintainersData = await User.find({
         supportStatus: 'Maintainer',
-    }).select('kerb classOf avatar name').lean() as any
+    }).select('kerb classOf avatar name').lean()
 
-    maintainers = maintainers.map((maintainer) => {
+    const maintainers = maintainersData.map((maintainer) => {
         return {
             kerb: maintainer.kerb,
             year: maintainer.classOf.toString().slice(2),
@@ -180,11 +192,11 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         }
     })
 
-    let supporters = await User.find({
+    const supportersData = await User.find({
         supportStatus: 'Supporter',
-    }).select('kerb classOf avatar name').lean() as any
+    }).select('kerb classOf avatar name').lean()
 
-    supporters = supporters.map((supporter) => {
+    const supporters = supportersData.map((supporter) => {
         return {
             kerb: supporter.kerb,
             year: supporter.classOf.toString().slice(2),

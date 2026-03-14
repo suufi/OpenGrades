@@ -11,7 +11,7 @@ import { UserContext } from '../components/UserContextProvider'
 import { useDebouncedState, useMediaQuery } from '@mantine/hooks'
 import { IconCheck } from '@tabler/icons'
 import Link from 'next/link'
-import { IClass, ICourseOption, IdentityFlags } from '../types'
+import { IClass, ICourseOption, IdentityFlags, IUser } from '../types'
 import ClassSearch from './ClassSearch'
 import DegreeTermsModal from './DegreeTermsModal'
 import { buildUndergradProgramSelectData } from '@/utils/courseOptions'
@@ -142,7 +142,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
 
   async function submitProfile(values: UserProfile) {
 
-    const potentialGrad = (userProfile as any)?.year === 'G'
+    const potentialGrad = userProfile?.year === 'G'
     if (potentialGrad && wasMITUndergrad === null) {
       setIsGradStudent(true)
       setActive(2)
@@ -212,7 +212,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
   }, [status])
 
   useEffect(() => {
-    if ((userProfile as any)?.year === 'G') {
+    if (userProfile?.year === 'G') {
       setIsGradStudent(true)
     } else {
       setIsGradStudent(false)
@@ -269,7 +269,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
 
             // Add partial reviews to classes
             const classesWithPartialReviews = matchedClasses.map((cls: IClass & { partialReviewGrade?: string; isDroppedClass?: boolean }) => {
-              const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
+              const matchingPR = partialReviews.find((pr: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }) => pr.class === cls._id)
               if (matchingPR) {
                 cls.partialReviewGrade = matchingPR.letterGrade
                 cls.isDroppedClass = matchingPR.droppedClass

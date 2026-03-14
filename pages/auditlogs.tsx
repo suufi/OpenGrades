@@ -5,7 +5,7 @@ import Head from 'next/head'
 import { Container, Table, Title } from '@mantine/core'
 import AuditLog from '../models/AuditLog'
 import User from '../models/User'
-import { IAuditLog } from '../types'
+import { IAuditLog, IUser } from '../types'
 import mongoConnection from '../utils/mongoConnection'
 // eslint-disable-next-line camelcase
 import { Session } from 'next-auth'
@@ -71,7 +71,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         }
       }
 
-      const auditLogs = await AuditLog.find({}).populate('actor').sort({ createdAt: -1 }).lean() as any as IAuditLog[]
+      const auditLogs = await AuditLog.find({}).populate<{ actor: IUser }>('actor').sort({ createdAt: -1 }).lean()
 
       return {
         props: {

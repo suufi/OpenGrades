@@ -46,6 +46,7 @@ import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 import { usePlausibleTracker } from '@/utils/plausible'
 import { buildExactCourseNumberRegex, createMitCourseNumberRegex, normalizeCourseNumber } from '@/utils/courseNumbers'
 import { extractCourseNumbers } from '@/utils/prerequisiteGraph'
+import { auth } from '@/utils/auth'
 
 const RecommendationLevels: Record<number, string> = {
   1: 'Definitely not recommend',
@@ -1386,10 +1387,10 @@ export const getServerSideProps = (async (context) => {
 
   await mongoConnection()
   console.log(id)
-  const classData = await Class.findById(id).lean() as any
-  const contentSubmissionData: IContentSubmission[] = await ContentSubmission.find({ class: id }).lean() as any
+  const classData = await Class.findById(id).lean()
+  const contentSubmissionData: IContentSubmission[] = await ContentSubmission.find({ class: id }).lean()
 
-  const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+  const session = await auth(context.req, context.res)
   let myReview = null
 
   if (session) {
@@ -1399,25 +1400,6 @@ export const getServerSideProps = (async (context) => {
       const favoriteClasses = user?.favoriteClasses || []
 
       let reviewsData: IClassReview[] = []
-      // if (user.trustLevel < 2) {
-      //   reviewsData = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean() as any
-      // } else {
-      //   reviewsData = await ClassReview.find({ class: id }).populate('author').lean() as any
-      // }
-
-      // // Get the user's vote (if any) on each review
-      // const reviewVotes = await ReviewVote.find({ user: user._id }).lean() as any
-      // const reviewVotesMap = reviewVotes.reduce((map, vote) => {
-      //   map[vote.classReview.toString()] = vote.vote
-      //   return map
-      // }, {})
-
-      // reviewsData = reviewsData.map((review) => ({
-      //   ...review,
-      //   userVote: reviewVotesMap[review._id.toString()] || null, // User's vote: 1, -1, or null
-      //   upvotes: review.upvotes || 0,
-      //   downvotes: review.downvotes || 0,
-      // }))
 
       if (user.trustLevel < 2) {
         // Fetch reviews with limited data based on trust level
@@ -1494,12 +1476,12 @@ export const getServerSideProps = (async (context) => {
       }
 
 
-      const gradePointsData = await ClassReview.find({ class: id }).select(['letterGrade', 'numericGrade', 'verified']).lean() as any
+      const gradePointsData = await ClassReview.find({ class: id }).select(['letterGrade', 'numericGrade', 'verified']).lean()
       let reports: IReport[] = []
 
       if (user.trustLevel >= 2) {
         // find all reports for the reviews and content submissions
-        reports = await Report.find({ $or: [{ contentSubmission: { $in: contentSubmissionData.map((contentSubmission: IContentSubmission) => contentSubmission._id) } }, { classReview: { $in: reviewsData.map((review: IClassReview) => review._id) } }] }).populate('reporter contentSubmission classReview').lean() as any
+        reports = await Report.find({ $or: [{ contentSubmission: { $in: contentSubmissionData.map((contentSubmission: IContentSubmission) => contentSubmission._id) } }, { classReview: { $in: reviewsData.map((review: IClassReview) => review._id) } }] }).populate('reporter contentSubmission classReview').lean()
       }
 
       // check if last grade report upload was made in last 4 months
@@ -1508,7 +1490,7 @@ export const getServerSideProps = (async (context) => {
       // Query embedding status for trust level >= 2 users
       let embeddingStatus = null
       if (user.trustLevel >= 2) {
-        const embeddings = await CourseEmbedding.find({ class: id }).select('embeddingType sourceId').lean() as any
+        const embeddings = await CourseEmbedding.find({ class: id }).select('embeddingType sourceId').lean()
 
         const hasDescriptionEmbedding = embeddings.some((e: any) => e.embeddingType === 'description')
         const embeddedReviewIds = embeddings
@@ -1534,13 +1516,13 @@ export const getServerSideProps = (async (context) => {
           subjectNumber: { $in: prereqNumbers },
           offered: true,
           academicYear: classData.academicYear
-        }).select('subjectNumber subjectTitle department academicYear').lean() as any,
+        }).select('subjectNumber subjectTitle department academicYear').lean(),
 
         Class.find({
           subjectNumber: { $in: coreqNumbers },
           offered: true,
           academicYear: classData.academicYear
-        }).select('subjectNumber subjectTitle department academicYear').lean() as any,
+        }).select('subjectNumber subjectTitle department academicYear').lean(),
 
         Class.find({
           offered: true,
@@ -1549,11 +1531,11 @@ export const getServerSideProps = (async (context) => {
             { prerequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } },
             { corequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } }
           ]
-        }).select('subjectNumber subjectTitle department academicYear').lean() as any
+        }).select('subjectNumber subjectTitle department academicYear').lean()
       ])
 
       // Helper to deduplicate by subjectNumber within each related list
-      const dedupeBySubjectNumber = (items: any[]) => {
+      const dedupeBySubjectNumber = (items: IClass[]) => {
         const seen = new Set<string>()
         return items.filter((c) => {
           if (!c?.subjectNumber) return false
@@ -1564,17 +1546,17 @@ export const getServerSideProps = (async (context) => {
       }
 
       const relatedClasses = {
-        prerequisites: dedupeBySubjectNumber(prerequisiteClasses).map((c: any) => ({
+        prerequisites: dedupeBySubjectNumber(prerequisiteClasses).map((c) => ({
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
           department: c.department
         })),
-        corequisites: dedupeBySubjectNumber(corequisiteClasses).map((c: any) => ({
+        corequisites: dedupeBySubjectNumber(corequisiteClasses).map((c) => ({
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
           department: c.department
         })),
-        requiredBy: dedupeBySubjectNumber(requiredByClasses).map((c: any) => ({
+        requiredBy: dedupeBySubjectNumber(requiredByClasses).map((c) => ({
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
           department: c.department

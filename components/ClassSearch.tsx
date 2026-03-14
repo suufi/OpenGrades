@@ -14,7 +14,7 @@ type FormValues = {
     flatClasses: string[]
 }
 
-export default function ClassSearch ({ form, display, term }: { form: UseFormReturnType<FormValues>, display: string, term: string }) {
+export default function ClassSearch ({ form, display, term }: { form: UseFormReturnType<FormValues & Record<string, IClass[]>>, display: string, term: string }) {
     const [{ status, data }, setState] = useState<State>({
         data: [],
         status: 'initial'
@@ -64,7 +64,7 @@ export default function ClassSearch ({ form, display, term }: { form: UseFormRet
                 ...prevValues.classes,
                 [term]: prevValues.classes[term] || [],
             },
-        }))
+        }) as Partial<FormValues & Record<string, IClass[]>>)
     }, [term])
 
 

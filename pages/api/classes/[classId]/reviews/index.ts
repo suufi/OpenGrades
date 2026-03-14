@@ -13,7 +13,8 @@ import ClassReview from '@/models/ClassReview'
 import Karma from '@/models/Karma'
 import User from '@/models/User'
 
-import mongoose from 'mongoose'
+import mongoose, { Types } from 'mongoose'
+import { IClass, IClassReview } from '@/types'
 
 type Data = {
   success: boolean,
@@ -49,7 +50,7 @@ async function handler(
       try {
         const canSeeAuthors = user?.trustLevel >= 2
 
-        let classId = req.query.classId as string
+        let classId = req.query.classId as Types.ObjectId | string
         if (!mongoose.Types.ObjectId.isValid(classId)) {
           const cls = await Class.findOne({ subjectNumber: classId }).select('_id')
           if (!cls) {
@@ -65,8 +66,8 @@ async function handler(
 
         // Extract grades separately (for grade distribution chart)
         const grades = reviews
-          .filter((r: any) => r.letterGrade)
-          .map((r: any) => ({ letterGrade: r.letterGrade, numericGrade: r.numericGrade }))
+          .filter((r) => r.letterGrade)
+          .map((r) => ({ letterGrade: r.letterGrade, numericGrade: r.numericGrade }))
 
         // Shuffle grades
         for (let i = grades.length - 1; i > 0; i--) {
@@ -77,7 +78,7 @@ async function handler(
         // Remove grade data from reviews if user is not trusted (to preserve anonymity)
         // Also add isOwnReview flag for each review
         if (!canSeeAuthors) {
-          reviews = reviews.map((r: any) => ({
+          reviews = reviews.map((r) => ({
             ...r,
             author: undefined,
             letterGrade: undefined,
@@ -85,7 +86,7 @@ async function handler(
             isOwnReview: r.author && user?._id && r.author.toString() === user._id.toString()
           }))
         } else {
-          reviews = reviews.map((r: any) => ({
+          reviews = reviews.map((r) => ({
             ...r,
             isOwnReview: r.author?._id && user?._id && r.author._id.toString() === user._id.toString()
           }))
@@ -114,7 +115,13 @@ async function handler(
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean() as any
+        const classIdParam = Array.isArray(req.query.classId) ? req.query.classId[0] : req.query.classId
+        if (!classIdParam || typeof classIdParam !== 'string') {
+          return res.status(400).json({ success: false, message: 'Invalid class ID' })
+        }
+        const classIdObj = new mongoose.Types.ObjectId(classIdParam)
+
+        const reviewedClass = await Class.findOne({ _id: classIdObj }).lean()
         if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
@@ -138,20 +145,21 @@ async function handler(
         if (!reviewedClass.units.includes('P/D/F') && data.letterGrade === 'P') {
           return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
-        if (!author || await ClassReview.exists({ class: req.query.classId, author: author._id })) {
+        if (!author || await ClassReview.exists({ class: classIdObj, author: author._id })) {
           return res.status(409).json({ success: false, message: 'Class review already exists.' })
         }
 
-        if (!(author.classesTaken as any[]).includes(req.query.classId as string)) {
+        const classesTakenIds = author.classesTaken as Types.ObjectId[]
+        if (!classesTakenIds.some((id: Types.ObjectId) => id.equals(classIdObj))) {
           await User.findByIdAndUpdate(author._id, {
             $push: {
-              classesTaken: new mongoose.Types.ObjectId(req.query.classId as string)
+              classesTaken: classIdObj
             }
           })
         }
 
         await ClassReview.create({
-          class: new mongoose.Types.ObjectId(req.query.classId as string),
+          class: classIdObj,
           overallRating: data.overallRating,
           author: author._id,
           firstYear: data.firstYear,
@@ -169,13 +177,13 @@ async function handler(
         await AuditLog.create({
           actor: author._id,
           type: 'AddReview',
-          description: `Posting a review for ${req.query.classId}`
+          description: `Posting a review for ${classIdParam}`
         })
 
         await Karma.create({
           actor: author._id,
           amount: 50,
-          description: `Posting a review for a class - ${(await Class.findById(req.query.classId).lean().then((c) => c && !Array.isArray(c) ? c.subjectTitle : 'Unknown'))}`
+          description: `Posting a review for a class - ${(await Class.findById(classIdObj).lean().then((c) => c && !Array.isArray(c) ? c.subjectTitle : 'Unknown'))}`
         })
 
         return res.status(200).json({
@@ -197,7 +205,7 @@ async function handler(
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean() as any
+        const reviewedClass = await Class.findOne({ _id: req.query.classId }).lean()
         if (!reviewedClass) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
@@ -226,7 +234,7 @@ async function handler(
           return res.status(400).json({ success: false, message: 'You cannot give a P grade to a class that is not P/D/F.' })
         }
 
-        let changes: any = {
+        let changes: Partial<IClassReview> = {
           overallRating: data.overallRating,
           firstYear: data.firstYear,
           retaking: data.retaking,

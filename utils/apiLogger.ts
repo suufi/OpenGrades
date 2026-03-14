@@ -102,18 +102,18 @@ function wrapResForLogging(
   }
 
   res.status = function (code: number) {
-    (res as any).statusCode = code
+    res.statusCode = code
     return originalStatus(code)
   }
 
   res.json = function (body: any) {
-    const code = (res as any).statusCode ?? 200
+    const code = res.statusCode ?? 200
     logOnce(code)
     return originalJson(body)
   }
 
   res.end = function (chunk?: any, encoding?: any, callback?: any) {
-    const code = (res as any).statusCode ?? 200
+    const code = res.statusCode ?? 200
     logOnce(code)
     if (typeof chunk === 'function') return originalEnd(chunk)
     if (typeof encoding === 'function') return originalEnd(chunk, encoding)
@@ -152,7 +152,7 @@ export function withApiLogger(handler: ApiHandler): ApiHandler {
     try {
       await handler(req, res)
     } catch (error) {
-      const statusCode = (res as any).statusCode
+      const statusCode = res.statusCode
       logApiError(req, error, { ...meta, statusCode })
       if (!res.writableEnded) {
         res.status(500).json({

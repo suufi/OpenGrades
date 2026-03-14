@@ -1,6 +1,7 @@
 import { getESClient, ES_EMBEDDINGS_INDEX } from './esClient'
 import Class from '@/models/Class'
 import { IClass } from '@/types'
+import { SearchHit } from '@elastic/elasticsearch/lib/api/types'
 
 export interface SearchResult {
     class: IClass
@@ -55,7 +56,7 @@ export async function vectorSearchES(
 
         // Build results
         const results: SearchResult[] = []
-        for (const hit of hits as any[]) {
+        for (const hit of hits as SearchHit<{ class: string, embeddingType: string, text: string, sourceText: string }>[]) {
             const classId = hit._source?.class
             const classData = classMap.get(classId)
 

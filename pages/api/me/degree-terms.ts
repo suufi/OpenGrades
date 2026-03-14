@@ -4,6 +4,7 @@ import { withApiLogger } from '@/utils/apiLogger'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
+import { IClass, IUser } from '@/types'
 
 type Data = {
     success: boolean
@@ -35,7 +36,7 @@ async function handler (
                 const user = await User.findOne({ email })
                     .populate('courseAffiliation')
                     .populate('classesTaken')
-                    .lean() as any
+                    .lean()
 
                 if (!user) {
                     return res.status(404).json({ success: false, message: 'User not found' })
@@ -155,14 +156,14 @@ async function handler (
                     const userForAff = await User.findOne({ email })
                         .populate('courseAffiliation')
                         .populate('classesTaken')
-                        .lean() as any
+                        .lean()
 
                     if (!userForAff) {
                         return res.status(404).json({ success: false, message: 'User not found' })
                     }
 
                     const allTermsSet = new Set<string>()
-                    for (const cls of (userForAff.classesTaken || [])) {
+                    for (const cls of (userForAff.classesTaken || []) as IClass[]) {
                         if (cls.term) allTermsSet.add(cls.term)
                     }
                     const allTerms = Array.from(allTermsSet)
@@ -197,7 +198,7 @@ async function handler (
 
                 const user = await User.findOne({ email })
                     .populate('courseAffiliation')
-                    .lean() as any
+                    .lean()
 
                 if (!user) {
                     return res.status(404).json({ success: false, message: 'User not found' })

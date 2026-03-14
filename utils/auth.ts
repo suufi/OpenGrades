@@ -1,6 +1,5 @@
 import CourseOption from '@/models/CourseOption'
 import User from '@/models/User'
-import AuditLog from '@/models/AuditLog'
 import mongoConnection from '@/utils/mongoConnection'
 import type {
     GetServerSidePropsContext,
@@ -9,6 +8,7 @@ import type {
 } from "next"
 import { getServerSession, Profile } from "next-auth"
 import AuditLog from '@/models/AuditLog'
+import type { NextAuthOptions } from "next-auth"
 
 const LATEST_GRAD_YEAR = 2028
 // You'll need to import and pass this
@@ -232,7 +232,8 @@ export const config = {
         colorScheme: 'light' as const,
         brandColor: '#008CFF'
     }
-}
+} satisfies NextAuthOptions
+
 // Use it in server contexts
 export function auth (
     ...args:
@@ -240,5 +241,5 @@ export function auth (
         | [NextApiRequest, NextApiResponse]
         | []
 ) {
-    return getServerSession(...args, config as NextAuthOptions) as Promise<Session | null>
+    return getServerSession(...args, config)
 }

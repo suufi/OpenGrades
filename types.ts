@@ -1,5 +1,6 @@
 import { type DefaultSession } from "next-auth"
 import { ParsedUrlQuery } from 'querystring'
+import { Types } from 'mongoose'
 
 declare module 'next-auth' {
     interface Session {
@@ -33,21 +34,8 @@ declare global {
     }
 }
 
-export enum LetterGrade {
-    A = 'A',
-    B = 'B',
-    C = 'C',
-    D = 'D',
-    F = 'F',
-    DR = 'DR'
-}
-
-export enum IdentityFlags {
-    FirstGeneration = 'First Gen',
-    LowIncome = 'Low Income',
-    BIL = 'BIL',
-    International = 'International'
-}
+export type LetterGrade = 'A' | 'B' | 'C' | 'D' | 'F' | 'DR' | 'P'
+export type IdentityFlags = 'First Generation' | 'Low Income' | 'BIL' | 'International'
 
 export enum TimeRange {
     '0-2 hours' = '0-2 hours',
@@ -67,6 +55,9 @@ export enum SupportStatus {
     Maintainer = 'Maintainer',
     Supporter = 'Supporter'
 }
+
+// Generic reference type for Mongoose relations (unpopulated = ObjectId, populated = T)
+export type Ref<T> = T | Types.ObjectId
 
 export interface IInstructorDetail {
     name: string
@@ -114,16 +105,16 @@ export interface IUser {
     affiliation: string
     banned: boolean
     trustLevel: number
-    classesTaken: IClass[]
+    classesTaken: Ref<IClass>[]
     flags: IdentityFlags[]
-    referredBy: IUser,
+    referredBy: Ref<IUser> | null,
     avatar: string,
     supportStatus: SupportStatus,
-    courseAffiliation: ICourseOption[],
+    courseAffiliation: Ref<ICourseOption>[],
     lastGradeReportUpload: Date,
     emailOptIn?: boolean | null,
     programTerms?: Array<{
-        program: ICourseOption | string,
+        program: Ref<ICourseOption> | string,
         terms: string[]
     }>,
     aiEmbeddingOptOut?: boolean,
@@ -135,8 +126,8 @@ export interface IUser {
 
 export interface IClassReview {
     _id?: string
-    class: IClass
-    author: IUser
+    class: Ref<IClass>
+    author: Ref<IUser>
     approved: boolean
     overallRating: number
     firstYear: boolean
@@ -161,8 +152,8 @@ export interface IClassReview {
 
 export interface IClassGrade {
     _id?: string
-    class: IClass
-    author: IUser
+    class: Ref<IClass>
+    author: Ref<IUser>
     numericGrade: number
     letterGrade: LetterGrade
     methodOfGradeCalculation: string
@@ -174,7 +165,7 @@ export enum AuditLogType {
     FetchDepartment = 'FetchDepartment',
     SubmitContent = 'SubmitContent',
     ApproveContent = 'ApproveContent',
-    RemoveContent = 'Removecontent',
+    RemoveContent = 'RemoveContent',
     ReportContent = 'ReportContent',
     AddReview = 'AddReview',
     EditReview = 'EditReview',
@@ -187,7 +178,7 @@ export enum AuditLogType {
 
 export interface IAuditLog {
     _id?: string
-    actor: IUser
+    actor: Ref<IUser>
     type: AuditLogType
     description: string
     createdAt: Date
@@ -196,8 +187,8 @@ export interface IAuditLog {
 
 export interface IContentSubmission {
     _id?: string
-    class: IClass
-    author: IUser
+    class: Ref<IClass>
+    author: Ref<IUser>
     approved: boolean
     contentURL: string
     bucketPath: string
@@ -228,7 +219,7 @@ export interface IParams extends ParsedUrlQuery {
 
 export interface IKarma {
     _id?: string
-    actor: IUser
+    actor: Ref<IUser>
     amount: number
     description: string
     createdAt: Date
@@ -237,9 +228,9 @@ export interface IKarma {
 
 export interface IReport {
     _id?: string
-    reporter: IUser
-    contentSubmission: IContentSubmission
-    classReview: IClassReview
+    reporter: Ref<IUser>
+    contentSubmission: Ref<IContentSubmission>
+    classReview: Ref<IClassReview>
     reason: string
     resolved: boolean
     outcome: string

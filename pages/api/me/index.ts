@@ -6,7 +6,7 @@ import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
 import User from '../../../models/User'
-import { IClassReview, IdentityFlags } from '../../../types'
+import { IClassReview, IdentityFlags, IUser } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {
@@ -97,11 +97,11 @@ async function handler(
           }
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
           if (typeof data.emailOptIn === 'boolean') updateData.emailOptIn = data.emailOptIn
-          const currentTrustLevel = (userDoc as any).trustLevel ?? 0
+          const currentTrustLevel = userDoc?.trustLevel ?? 0
           if (currentTrustLevel < 1) updateData.trustLevel = 1
 
           if (data.undergradProgramIds && data.undergradProgramIds.length > 0) {
-            const existingAffiliations = (userDoc as any).courseAffiliation || []
+            const existingAffiliations = userDoc?.courseAffiliation || []
             const newAffiliations = data.undergradProgramIds.map(id => new mongoose.Types.ObjectId(id))
             const allAffiliations = [...existingAffiliations, ...newAffiliations]
             const uniqueAffiliations = Array.from(new Set(allAffiliations.map(a => a.toString()))).map(id => new mongoose.Types.ObjectId(id))
@@ -115,7 +115,7 @@ async function handler(
 
           if (data.partialReviews) {
             const reviewsToMake = []
-            const authorId = (userDoc as any)._id
+            const authorId = userDoc?._id
             const existingReviews = await ClassReview.find({ author: authorId }).lean()
             const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 

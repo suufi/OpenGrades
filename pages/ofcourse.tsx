@@ -1,4 +1,4 @@
-import { IClass } from "@/types"
+import { IClass, ICourseOption } from "@/types"
 import GradeReportModal from "@/components/GradeReportModal"
 import Class from "@/models/Class"
 import ClassReview from "@/models/ClassReview"
@@ -16,6 +16,7 @@ import Head from "next/head"
 import { useRouter } from "next/router"
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from "react"
+import { auth } from "@/utils/auth"
 ChartJS.register(...registerables)
 
 const yearsOrdered = [
@@ -33,16 +34,31 @@ const termsOrdered = [
     "SP"
 ]
 
-const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ access, courseOptionsData }) => {
+type ClassEntry = { subjectNumber: string; subjectTitle: string; count: number | string; realCount?: number }
+
+type CourseOptionLite = {
+    id: string
+    departmentCode: string
+    courseOption: string | null
+    courseName: string
+}
+
+const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
+    access,
+    courseOptionsData
+}: {
+    access: boolean
+    courseOptionsData: { courseOption: CourseOptionLite; classes: Record<string, ClassEntry[]>; mengClasses: Record<string, any[]> }[]
+}) => {
     const router = useRouter()
 
     const [selectedCourseOption, setSelectedCourseOption] = useState<string | null>(courseOptionsData?.[0]?.courseOption?.id || null)
 
-    const allCoursesOption = courseOptionsData.find((courseOptionData: any) => courseOptionData.courseOption.id === "All")
+    const allCoursesOption = courseOptionsData.find((courseOptionData) => courseOptionData.courseOption.id === "All")
     const groupedCourseOptions = buildGroupedCourseOptionSelectData(
         courseOptionsData
-            .filter((courseOptionData: any) => courseOptionData.courseOption.id !== "All")
-            .map((courseOptionData: any) => ({
+            .filter((courseOptionData) => courseOptionData.courseOption.id !== "All")
+            .map((courseOptionData) => ({
                 _id: courseOptionData.courseOption.id,
                 departmentCode: courseOptionData.courseOption.departmentCode,
                 courseOption: courseOptionData.courseOption.courseOption,
@@ -138,7 +154,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                     {
                         (() => {
                             const selected = courseOptionsData.find(
-                                (d: any) => d.courseOption.id === selectedCourseOption
+                                (d) => d.courseOption.id === selectedCourseOption
                             )
 
                             if (selected?.mengClasses && Object.keys(selected.mengClasses).length > 0) {
@@ -155,7 +171,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                 {
                     (() => {
                         const selected = courseOptionsData.find(
-                            (d: any) => d.courseOption.id === selectedCourseOption
+                            (d) => d.courseOption.id === selectedCourseOption
                         )
                         const hasMEngData = selected?.mengClasses && Object.keys(selected.mengClasses).length > 0
                         const tabsToRender = hasMEngData ? [...yearsOrdered, mengTab] : yearsOrdered
@@ -166,7 +182,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                                     <Tabs.Panel key={mengTab} value={mengTab}>
                                         {(() => {
                                             const selected = courseOptionsData.find(
-                                                (d: any) => d.courseOption.id === selectedCourseOption
+                                                (d) => d.courseOption.id === selectedCourseOption
                                             )
                                             if (!selected || !selected.mengClasses) return null
 
@@ -190,7 +206,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                                                     const termOrderB = termsOrdered.indexOf(termB)
                                                     return termOrderA - termOrderB
                                                 })
-                                                .map(([yearTerm, classList]: any) => (
+                                                .map(([yearTerm, classList]: [string, ClassEntry[]]) => (
                                                     <div key={yearTerm}>
                                                         <Space h="md" />
                                                         <Title order={4}>{yearTerm}</Title>
@@ -204,7 +220,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                                                                     </Table.Tr>
                                                                 </Table.Thead>
                                                                 <Table.Tbody>
-                                                                    {classList.map((c: any) => (
+                                                                    {classList.map((c) => (
                                                                         <Table.Tr key={c.subjectNumber}>
                                                                             <Table.Td>{c.subjectNumber}</Table.Td>
                                                                             <Table.Td>{c.subjectTitle}</Table.Td>
@@ -232,7 +248,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                                 <Tabs.Panel key={year} value={year}>
                                     {(() => {
                                         const selected = courseOptionsData.find(
-                                            (d: any) => d.courseOption.id === selectedCourseOption
+                                            (d) => d.courseOption.id === selectedCourseOption
                                         )
                                         if (!selected || !selected.classes) return null
 
@@ -251,7 +267,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                                                 const termB = termsOrdered.indexOf(b.split(' ')[2])
                                                 return termA - termB
                                             })
-                                            .map(([yearTerm, classList]: any) => (
+                                            .map(([yearTerm, classList]: [string, ClassEntry[]]) => (
                                                 <div key={yearTerm}>
                                                     <Space h="md" />
                                                     <Title order={4}>{yearTerm}</Title>
@@ -265,7 +281,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                                                                 </Table.Tr>
                                                             </Table.Thead>
                                                             <Table.Tbody>
-                                                                {classList.map((c: any) => (
+                                                                {classList.map((c) => (
                                                                     <Table.Tr key={c.subjectNumber}>
                                                                         <Table.Td>{c.subjectNumber}</Table.Td>
                                                                         <Table.Td>{c.subjectTitle}</Table.Td>
@@ -301,7 +317,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
 
 interface ServerSideProps {
     access: boolean
-    courseOptionsData: any
+    courseOptionsData: { courseOption: CourseOptionLite; classes: Record<string, ClassEntry[]>; mengClasses: Record<string, any[]> }[]
 }
 
 const getYearLabel = (classOf: number, academicYear: number): string | null => {
@@ -316,7 +332,7 @@ const getYearLabel = (classOf: number, academicYear: number): string | null => {
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
     await mongoConnection()
 
-    const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+    const session = await auth(context.req, context.res)
 
     if (session) {
         if (session.user && session.user?.email) {
@@ -387,15 +403,15 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 classOf: { $ne: null }
             }).select('_id classOf programTerms courseAffiliation').populate('courseAffiliation').populate('programTerms.program')
 
-            const userMap = new Map<string, { classOf: number, programTerms?: Array<{ program: any, terms: string[] }>, isMEng: boolean }>()
+            const userMap = new Map<string, { classOf: number, programTerms?: Array<{ program: ICourseOption, terms: string[] }>, isMEng: boolean }>()
             affiliatedUsers.forEach(u => {
-                const isMEng = hasMEngProgram && u.courseAffiliation?.some((aff: any) =>
+                const isMEng = hasMEngProgram && u.courseAffiliation?.some((aff) =>
                     aff._id.toString() === mengProgram._id.toString()
                 )
 
                 userMap.set(u._id.toString(), {
                     classOf: u.classOf,
-                    programTerms: u.programTerms || [],
+                    programTerms: u.programTerms?.map((pt) => ({ program: pt.program as ICourseOption, terms: pt.terms })) || [],
                     isMEng: isMEng || false
                 })
             })
@@ -408,7 +424,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             const yearTermMap: Record<string, Map<string, TermEntry>> = {}
             const mengTermMap: Record<string, Map<string, TermEntry>> = {}
             for (const review of reviews) {
-                const classDoc = review.class as any
+                const classDoc = review.class as IClass
                 const authorId = review.author.toString()
                 const userData = userMap.get(authorId)
 
@@ -517,7 +533,6 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             })
         }
 
-        type ClassEntry = { subjectNumber: string; subjectTitle: string; count: number | string; realCount?: number }
         const allData: { courseOption: any; classes: Record<string, ClassEntry[]>; mengClasses: Record<string, any[]> } = {
             courseOption: {
                 id: "All",

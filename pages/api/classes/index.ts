@@ -15,6 +15,7 @@ import { decode } from 'html-entities'
 import mongoose from 'mongoose'
 import { parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
 import eecsRenumbering from '@/utils/eecs-renumbering.json'
+import { SearchResponse } from '@elastic/elasticsearch/lib/api/types'
 
 const client = getESClient()
 
@@ -150,7 +151,7 @@ async function handler(
         const tokens = (search as string).split(/\s+/).filter(Boolean)
 
         // Prepare for sorting
-        let sortQuery: Record<string, number> = {}
+        let sortQuery: Record<string, 1 | -1> = {}
         if (sortField) {
           if (sortField !== 'relevance') {
             if (sortField === 'alphabetical') {
@@ -236,24 +237,24 @@ async function handler(
           }).catch((error) => {
             console.error("Error during ElasticSearch query", error)
             return res.status(400).json({ success: false, message: error.message })
-          }) as any
+          }) as SearchResponse<{ _id: string, highlight: { [key: string]: string[] } }>
 
-          const classIds = searchResults.hits.hits.map((hit: any) => new mongoose.Types.ObjectId(hit._id))
+          const classIds = searchResults.hits.hits.map((hit) => new mongoose.Types.ObjectId(hit._id))
           query._id = { $in: classIds }
 
-          highlights = searchResults.hits.hits.reduce((acc: any, hit: any) => {
+          highlights = searchResults.hits.hits.reduce((acc, hit) => {
             acc[hit._id] = hit.highlight
             return acc
           }, {})
 
-          scores = searchResults.hits.hits.reduce((acc: any, hit: any) => {
+          scores = searchResults.hits.hits.reduce((acc, hit) => {
             acc[hit._id] = hit._score
             return acc
           }, {})
         }
 
 
-        const aggregationPipeline: any[] = [
+        const aggregationPipeline: Record<string, any>[] = [
           { $match: query },
           {
             $lookup: {
@@ -307,7 +308,7 @@ async function handler(
         // If `all` is set to true, return all classes without pagination
         if (all === 'true') {
 
-          let classes = await Class.find(query).sort(sortQuery as any).lean()
+          let classes = await Class.find(query).sort(sortQuery as Record<string, 1 | -1>).lean()
 
           // Get the review count for each class
           const reviewCounts = await ClassReview.aggregate([
@@ -412,7 +413,7 @@ async function handler(
         res.setHeader('X-Accel-Buffering', 'no')
         res.statusCode = 200
 
-        const sendMessage = (data: any) => {
+        const sendMessage = (data: Record<string, any>) => {
           res.write(JSON.stringify(data) + '\n')
           if (typeof (res as any).flush === 'function') {
             (res as any).flush()
