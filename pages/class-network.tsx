@@ -1,4 +1,4 @@
- // @ts-nocheck
+// @ts-nocheck
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession } from 'next-auth'
@@ -31,7 +31,7 @@ import { useRouter } from 'next/router'
 import Class from '@/models/Class'
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
-import { getDepartmentColor, departmentColors } from '@/utils/departmentColors'
+import { compareDepartmentCodes, formatDepartmentOptionLabel, getDepartmentColor, departmentColors } from '@/utils/departments'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 
 
@@ -362,7 +362,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                             value={department}
                             onChange={setDepartment}
                             clearable
-                            data={departments.map(d => ({ value: d, label: `Course ${d}` }))}
+                            data={departments.map(d => ({ value: d, label: formatDepartmentOptionLabel(d) }))}
                         />
                     </Grid.Col>
                     <Grid.Col span={{ base: 12, sm: 2 }}>
@@ -432,10 +432,10 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                 </Group>
                 <Group gap="xs">
                     <ThemeIcon size="sm" color="#BE4BDB" radius="xl">
-                            <IconCircle size={10} />
-                        </ThemeIcon>
+                        <IconCircle size={10} />
+                    </ThemeIcon>
                     <Text size="xs">Corequisite edges</Text>
-                    </Group>
+                </Group>
                 <Text size="xs" c="dimmed">
                     Arrow direction shows dependency direction.
                 </Text>
@@ -687,7 +687,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     // Get unique departments
     const depts = await Class.distinct('department', { offered: true })
-    const departments = depts.filter(Boolean).sort()
+    const departments = depts.filter(Boolean).sort(compareDepartmentCodes)
 
     return {
         props: {

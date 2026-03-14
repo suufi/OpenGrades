@@ -18,6 +18,7 @@ import LockdownModule from '@/components/LockdownModule'
 import NotLoggedIn from '@/components/NotLoggedIn'
 import { UserContext, UserContextProvider } from '@/components/UserContextProvider'
 import { NavigationLinks, UserSection } from '@/components/Navbar'
+import { formatCourseOptionCode } from '@/utils/courseOptions'
 
 import PlausibleProvider from 'next-plausible'
 
@@ -27,9 +28,6 @@ import '@mantine/dropzone/styles.css'
 import '@mantine/notifications/styles.css'
 import '@mantine/spotlight/styles.css'
 
-
-import 'primeicons/primeicons.css'
-import 'primereact/resources/primereact.min.css' // core css
 
 import mainClasses from '@/styles/Main.module.css'
 
@@ -246,7 +244,7 @@ function useEditProfileModal() {
             <Group gap="xs">
               {userProfile.courseAffiliation.map((course: any, idx: number) => (
                 <Badge key={idx} color="blue" variant="light" size="md">
-                  {course.departmentCode}-{course.courseOption} ({course.courseLevel})
+                  {formatCourseOptionCode(course)} ({course.courseLevel})
                 </Badge>
               ))}
             </Group>

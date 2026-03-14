@@ -4,6 +4,7 @@ import Class from "@/models/Class"
 import ClassReview from "@/models/ClassReview"
 import CourseOption from "@/models/CourseOption"
 import User from "@/models/User"
+import { buildGroupedCourseOptionSelectData } from "@/utils/courseOptions"
 import mongoConnection from "@/utils/mongoConnection"
 import { hasRecentGradeReport } from "@/utils/hasRecentGradeReport"
 import { Center, Container, Select, Space, Table, Tabs, Text, Title, UnstyledButton } from "@mantine/core"
@@ -16,55 +17,6 @@ import { useRouter } from "next/router"
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from "react"
 ChartJS.register(...registerables)
-
-const departmentsSorted = [
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "11",
-    "12",
-    "14",
-    "15",
-    "16",
-    "17",
-    "18",
-    "20",
-    "21A",
-    "21E",
-    "21G",
-    "21H",
-    "21L",
-    "21M",
-    "21S",
-    "21T",
-    "21W",
-    "22",
-    "24",
-    "CSB",
-    "STS",
-    "WGS",
-    "EC",
-    "ES",
-    "CC",
-    "SP",
-    "CMS",
-    "CSE",
-    "EM",
-    "HST",
-    "IDS",
-    "MAS",
-    "OR",
-    "RED",
-    "SCM",
-    "UND",
-]
 
 const yearsOrdered = [
     "First Year",
@@ -86,21 +38,20 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
 
     const [selectedCourseOption, setSelectedCourseOption] = useState<string | null>(courseOptionsData?.[0]?.courseOption?.id || null)
 
-    const courseOptions = courseOptionsData
-        .sort((a: any, b: any) => {
-            const aDept = a.courseOption.departmentCode
-            const bDept = b.courseOption.departmentCode
-
-            const aDeptIndex = departmentsSorted.indexOf(aDept)
-            const bDeptIndex = departmentsSorted.indexOf(bDept)
-
-            return aDeptIndex - bDeptIndex
-        }).map((courseOption: any) => {
-            return {
-                value: courseOption.courseOption.id,
-                label: `${courseOption.courseOption.departmentCode}${courseOption.courseOption.courseOption ? `-${courseOption.courseOption.courseOption}` : ''}: ${courseOption.courseOption.courseName}`
-            }
-        })
+    const allCoursesOption = courseOptionsData.find((courseOptionData: any) => courseOptionData.courseOption.id === "All")
+    const groupedCourseOptions = buildGroupedCourseOptionSelectData(
+        courseOptionsData
+            .filter((courseOptionData: any) => courseOptionData.courseOption.id !== "All")
+            .map((courseOptionData: any) => ({
+                _id: courseOptionData.courseOption.id,
+                departmentCode: courseOptionData.courseOption.departmentCode,
+                courseOption: courseOptionData.courseOption.courseOption,
+                courseName: courseOptionData.courseOption.courseName,
+            }))
+    )
+    const courseOptions = allCoursesOption
+        ? [{ value: allCoursesOption.courseOption.id, label: allCoursesOption.courseOption.courseName }, ...groupedCourseOptions]
+        : groupedCourseOptions
     if (!access || !courseOptionsData || courseOptionsData.length === 0) {
         const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
         const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => {
@@ -169,7 +120,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
 
             <Space h="lg" />
 
-            <Select data={courseOptions} placeholder="Select a course" searchable defaultValue={courseOptions[0]?.value} onChange={(value) => {
+            <Select data={courseOptions} placeholder="Select a course" searchable value={selectedCourseOption} onChange={(value) => {
                 setSelectedCourseOption(value)
             }} />
 

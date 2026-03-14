@@ -17,6 +17,8 @@ import ContentSubmission from '@/models/ContentSubmission'
 import User from '@/models/User'
 import styles from '@/styles/ClassPage.module.css'
 import aggregateStyles from '@/styles/Aggregate.module.css'
+import { buildExactCourseNumberRegex } from '@/utils/courseNumbers'
+import { compareTermsLatest, compareTermsSequential } from '@/utils/formatTerm'
 import { BarChart, DonutChart } from '@mantine/charts'
 import { showNotification } from '@mantine/notifications'
 import moment from 'moment-timezone'
@@ -57,31 +59,6 @@ const HOURS_MIDPOINTS: Record<string, number> = {
 const hoursToMidpoint = (hoursPerWeek: string | undefined) => {
     if (!hoursPerWeek) return null
     return HOURS_MIDPOINTS[hoursPerWeek] ?? null
-}
-
-const termRank = (term: string) => {
-    const suffix = term?.slice(-2).toUpperCase()
-    switch (suffix) {
-        case 'FA': return 0
-        case 'JA': return 1
-        case 'SP': return 2
-        case 'SU': return 3
-        default: return 4
-    }
-}
-
-const compareTermsSequential = (aTerm: string, bTerm: string) => {
-    const aYear = parseInt(aTerm?.slice(0, 4), 10) || 0
-    const bYear = parseInt(bTerm?.slice(0, 4), 10) || 0
-    if (aYear !== bYear) return aYear - bYear
-    return termRank(aTerm) - termRank(bTerm)
-}
-
-const compareTermsLatest = (aTerm: string, bTerm: string) => {
-    const aYear = parseInt(aTerm?.slice(0, 4), 10) || 0
-    const bYear = parseInt(bTerm?.slice(0, 4), 10) || 0
-    if (aYear !== bYear) return bYear - aYear
-    return termRank(bTerm) - termRank(aTerm)
 }
 
 interface AggregateProps {
@@ -813,10 +790,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }).populate('class').select('contentTitle type contentURL bucketPath class createdAt').select('-author -approved').lean()
 
     // Sort classes to find the latest one for prerequisites
-    const sortedClasses = [...classes].sort((a: any, b: any) => {
-        if (b.academicYear !== a.academicYear) return b.academicYear - a.academicYear
-        return compareTermsLatest(a.term, b.term)
-    })
+    const sortedClasses = [...classes].sort((a: any, b: any) => compareTermsLatest(a.term, b.term))
     const latestClass = sortedClasses[0] || {}
 
     // Fetch related classes data
@@ -837,8 +811,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         Class.find({
             offered: true,
             $or: [
-                { prerequisites: { $regex: new RegExp(`\\b${subjectNumber}\\b`, 'i') } },
-                { corequisites: { $regex: new RegExp(`\\b${subjectNumber}\\b`, 'i') } }
+                { prerequisites: { $regex: buildExactCourseNumberRegex(subjectNumber) } },
+                { corequisites: { $regex: buildExactCourseNumberRegex(subjectNumber) } }
             ]
         }).select('subjectNumber subjectTitle department').lean()
     ])

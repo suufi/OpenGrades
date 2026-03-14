@@ -4,6 +4,11 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
 import mongoConnection from '../../../utils/mongoConnection'
 import { getUserFromRequest } from '@/utils/authMiddleware'
+import {
+    createGradeReportTermHeaderRegex,
+    getAcademicYearFromGradeReportHeader,
+    getTermSuffixFromGradeReportHeader,
+} from '@/utils/formatTerm'
 
 const parseGradeReport = (gradeReport) => {
     // Normalize all input formatting issues
@@ -14,11 +19,9 @@ const parseGradeReport = (gradeReport) => {
         .replace(/[ \t]{2,}/g, '\t') // multiple spaces/tabs to tab
         .replace(/\n[ \t]+/g, '\n') // remove leading whitespace on lines
 
-    const termRegex = /(Fall Term|Spring Term|January Term|Summer Term) \d{4}-\d{4}/g
-
     const parsedClasses = []
 
-    let termMatches = [...gradeReport.matchAll(termRegex)]
+    let termMatches = [...gradeReport.matchAll(createGradeReportTermHeaderRegex())]
 
     for (let i = 0; i < termMatches.length; i++) {
         const termHeader = termMatches[i][0]
@@ -28,16 +31,10 @@ const parseGradeReport = (gradeReport) => {
         const section = gradeReport.slice(startIndex, endIndex).trim()
         const lines = section.split('\n')
 
-        // Skip summer terms
-        if (termHeader.includes('Summer Term')) continue
+        const currentYear = getAcademicYearFromGradeReportHeader(termHeader)
+        const currentTermSuffix = getTermSuffixFromGradeReportHeader(termHeader)
 
-        // Get academic year and term name
-        const academicYearMatch = termHeader.match(/(\d{4})-(\d{4})/)
-        const currentYear = academicYearMatch ? parseInt(academicYearMatch[1]) + 1 : null
-        const currentTerm = termHeader.includes('Fall') ? 'Fall'
-            : termHeader.includes('Spring') ? 'Spring'
-                : termHeader.includes('January') ? 'January'
-                    : 'Unknown'
+        if (currentTermSuffix === 'SU' || !currentYear || !currentTermSuffix) continue
 
         // Check if it's freshman year
         const isYear1 = section.includes('Year: 1 R')
@@ -58,8 +55,7 @@ const parseGradeReport = (gradeReport) => {
                     if (
                         subjectNumber &&
                         !subjectNumber.startsWith('HA') &&
-                        !['P&', 'S', 'URN'].includes(grade) &&
-                        currentTerm
+                        !['P&', 'S', 'URN'].includes(grade)
                     ) {
                         parsedClasses.push({
                             subjectNumber: subjectNumber.trim(),
@@ -68,7 +64,7 @@ const parseGradeReport = (gradeReport) => {
                             level: level?.trim(),
                             grade: grade?.trim().replace("OX/", "").replace("I/", ""),
                             academicYear: currentYear,
-                            term: currentTerm,
+                            term: `${currentYear}${currentTermSuffix}`,
                             freshman: isYear1,
                         })
                     }
@@ -78,20 +74,6 @@ const parseGradeReport = (gradeReport) => {
     }
 
     return parsedClasses
-}
-
-
-const parseTerm = (term) => {
-    switch (term) {
-        case 'Fall':
-            return 'FA'
-        case 'Spring':
-            return 'SP'
-        case 'January':
-            return 'JA'
-        default:
-            return 'UNKNOWN'
-    }
 }
 
 type Data = {
@@ -133,7 +115,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
                         { aliases: cls.subjectNumber },
                     ],
                     academicYear: cls.academicYear,
-                    term: cls.academicYear.toString() + parseTerm(cls.term),
+                    term: cls.term,
                     reviewable: true
                 })
 

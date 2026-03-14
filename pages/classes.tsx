@@ -32,7 +32,7 @@ const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTit
 
   if (highlight) {
 
-    function replaceHighlight (fullText: string, snippet: string) {
+    function replaceHighlight(fullText: string, snippet: string) {
       const snippetSansMark = snippet.replace(/<\/?mark>/g, '')
       const i = fullText.toLowerCase().indexOf(snippetSansMark.toLowerCase())
       if (i < 0) return fullText

@@ -75,6 +75,8 @@ async function handler(
           academicYears = '',
           terms = '',
           term = '',
+          subjectNumber = '',
+          subjectTitle = '',
           reviewsOnly = 'false',
           sortField = '',
           sortOrder = 'asc', // Default to ascending order
@@ -120,6 +122,14 @@ async function handler(
           }
         } else if (term) {
           query.term = term
+        }
+
+        if (subjectNumber && String(subjectNumber).trim()) {
+          query.subjectNumber = { $regex: String(subjectNumber).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
+        }
+
+        if (subjectTitle && String(subjectTitle).trim()) {
+          query.subjectTitle = { $regex: String(subjectTitle).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
         }
 
         if (communicationRequirements) {

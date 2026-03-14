@@ -14,6 +14,8 @@ import Link from 'next/link'
 import { IClass, ICourseOption, IdentityFlags } from '../types'
 import ClassSearch from './ClassSearch'
 import DegreeTermsModal from './DegreeTermsModal'
+import { buildUndergradProgramSelectData } from '@/utils/courseOptions'
+import { buildTermCode, formatAcademicYear, formatTermDisplay, formatTermSeasonYear } from '@/utils/formatTerm'
 
 type State = {
   data: string
@@ -261,7 +263,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
           if (matchedClasses && Array.isArray(matchedClasses) && matchedClasses.length > 0) {
             // Extract academic years
             const newAcademicYearsTaken = [
-              ...new Set((matchedClasses as IClass[]).map((c: IClass) => `${c.academicYear - 1} -${c.academicYear} `)),
+              ...new Set((matchedClasses as IClass[]).map((c: IClass) => formatAcademicYear(c.academicYear))),
             ]
             setAcademicYearsTaken(newAcademicYearsTaken)
 
@@ -465,51 +467,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                           label="Undergraduate Programs"
                           description="Select all undergraduate degree programs you completed at MIT"
                           placeholder={loadingPrograms ? "Loading programs..." : "Search and select your programs"}
-                          data={(() => {
-                            const filtered = (undergradPrograms || []).filter(prog => {
-                              const hasNIE = prog.courseOption?.includes('NIE')
-                              const hasNIV = prog.courseOption?.includes('NIV')
-                              const hasZZZ = prog.courseOption?.includes('ZZZ')
-                              const isNONE = prog.departmentCode === 'NONE' || prog.departmentCode === 'UND'
-                              const hasSpecial = prog.courseName?.includes('Special')
-                              const isCourseCoop = ['6', '7'].includes(prog.departmentCode) && prog.courseOption?.slice(-1) === 'A'
-                              const isMSRP = prog.courseOption?.includes('MSRP')
-                              return !hasNIE && !hasNIV && !isNONE && !hasSpecial && !hasZZZ && !isCourseCoop && !isMSRP
-                            })
-
-                            // Group by department code
-                            const grouped = filtered.reduce((acc, prog) => {
-                              const groupKey = `Course ${prog.departmentCode} `
-                              if (!acc[groupKey]) {
-                                acc[groupKey] = []
-                              }
-                              acc[groupKey].push({
-                                value: prog._id || '',
-                                label: `Course ${prog.departmentCode}${prog.courseOption ? `-${prog.courseOption}` : ''}: ${prog.courseName} `
-                              })
-                              return acc
-                            }, {} as Record<string, Array<{ value: string; label: string }>>)
-
-                            // Sort groups: numeric first, then non-numeric
-                            return Object.entries(grouped)
-                              .sort(([a], [b]) => {
-                                const aNum = a.replace('Course ', '')
-                                const bNum = b.replace('Course ', '')
-                                const aIsNumeric = !isNaN(Number(aNum))
-                                const bIsNumeric = !isNaN(Number(bNum))
-
-                                if (aIsNumeric && bIsNumeric) {
-                                  return Number(aNum) - Number(bNum)
-                                }
-                                if (aIsNumeric) return -1
-                                if (bIsNumeric) return 1
-                                return aNum.localeCompare(bNum)
-                              })
-                              .map(([group, items]) => ({
-                                group,
-                                items
-                              }))
-                          })()}
+                          data={buildUndergradProgramSelectData(undergradPrograms)}
                           value={selectedUndergradPrograms}
                           onChange={setSelectedUndergradPrograms}
                           searchable
@@ -543,15 +501,18 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                       academicYearsTaken.length > 0
                         ? academicYearsTaken.sort().map((yearRange) => {
                           const year = Number(yearRange.substring(0, 4))
+                          const fallTerm = buildTermCode(year + 1, 'FA')
+                          const iapTerm = buildTermCode(year + 1, 'JA')
+                          const springTerm = buildTermCode(year + 1, 'SP')
                           return (
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
-                              <Title order={3}> 🍁 Fall {year} </Title>
-                              <ClassSearch term={`${year + 1}FA`} display={`Fall ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
-                              <Title order={3}> ❄️ IAP {year + 1} </Title>
-                              <ClassSearch term={`${year + 1}JA`} display={`IAP ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
-                              <Title order={3}> 🌹 Spring {year + 1} </Title>
-                              <ClassSearch term={`${year + 1}SP`} display={`Spring ${Number(year)} -${year + 1} `} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <Title order={3}>{formatTermSeasonYear(fallTerm, { withEmoji: true })}</Title>
+                              <ClassSearch term={fallTerm} display={formatTermDisplay(fallTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <Title order={3}>{formatTermSeasonYear(iapTerm, { withEmoji: true })}</Title>
+                              <ClassSearch term={iapTerm} display={formatTermDisplay(iapTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <Title order={3}>{formatTermSeasonYear(springTerm, { withEmoji: true })}</Title>
+                              <ClassSearch term={springTerm} display={formatTermDisplay(springTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
                             </React.Fragment>
                           )
                         })

@@ -40,11 +40,12 @@ import moment from 'moment-timezone'
 import mongoose from 'mongoose'
 import { Session, getServerSession } from 'next-auth'
 import Link from 'next/link'
-import authOptions from "pages/api/auth/[...nextauth]"
+import authOptions from "@/pages/api/auth/[...nextauth]"
 import { Eye, EyeOff, Flag2, Pencil, Plus } from 'tabler-icons-react'
 import styles from '../../styles/ClassPage.module.css'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 import { usePlausibleTracker } from '@/utils/plausible'
+import { buildExactCourseNumberRegex, createMitCourseNumberRegex, normalizeCourseNumber } from '@/utils/courseNumbers'
 import { extractCourseNumbers } from '@/utils/prerequisiteGraph'
 
 const RecommendationLevels: Record<number, string> = {
@@ -62,8 +63,6 @@ const letterGradeColors = {
   D: '#BE4BDB',
   F: '#FA5252'
 }
-
-const COURSE_NUMBER_PATTERN = /\b([A-Z]{1,4}\d*\.\d{1,4}[A-Z]?|\d{1,2}[A-Z]?\.\d{1,4}[A-Z]?)\b/g
 
 interface ClassReviewCommentProps {
   classReview: IClassReview,
@@ -128,7 +127,7 @@ function HideContent({ classId, classReview, contentSubmission, callback, hidden
       </ActionIcon>
       <Modal title={`${goal} this post ? `} size='lg' centered opened={opened} onClose={() => setOpened(false)}>
         <Stack>
-          <Text size='sm'> Are you sure you want to {goal.toLowerCase()} this post? </Text>
+          <Text size='sm' c='light'> Are you sure you want to {goal.toLowerCase()} this post? </Text>
           <Group justify='flex-end'>
             <Button variant='default' onClick={() => setOpened(false)}> Cancel </Button>
             <Button variant='filled' size='sm' onClick={() => { toggleHide() }}> {goal} </Button>
@@ -1055,14 +1054,14 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
     if (!text) return null
     const nodes: Array<string | JSX.Element> = []
     let lastIndex = 0
-    const regex = new RegExp(COURSE_NUMBER_PATTERN)
+    const regex = createMitCourseNumberRegex('g')
 
     let match
     while ((match = regex.exec(text)) !== null) {
       const matchText = match[0]
       const start = match.index
       const end = start + matchText.length
-      const normalized = matchText.toUpperCase()
+      const normalized = normalizeCourseNumber(matchText)
 
       if (start > lastIndex) {
         nodes.push(text.slice(lastIndex, start))
@@ -1551,8 +1550,8 @@ export const getServerSideProps = (async (context) => {
           offered: true,
           academicYear: classData.academicYear,
           $or: [
-            { prerequisites: { $regex: new RegExp(`\\b${classData.subjectNumber}\\b`, 'i') } },
-            { corequisites: { $regex: new RegExp(`\\b${classData.subjectNumber}\\b`, 'i') } }
+            { prerequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } },
+            { corequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } }
           ]
         }).select('subjectNumber subjectTitle department academicYear').lean()
       ])

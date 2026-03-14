@@ -16,6 +16,7 @@ import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
 import classes from '@/styles/Index.module.css'
 import { IClass, IClassReview, IUser } from '@/types'
+import { buildTermCode, compareTermsSequential, formatAcademicYear, formatTermDisplay, getTermEmoji, TERM_SELECT_OPTIONS } from '@/utils/formatTerm'
 import mongoConnection from '@/utils/mongoConnection'
 import { Accordion, ActionIcon, Alert, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title, Transition } from '@mantine/core'
 import { useForm } from '@mantine/form'
@@ -37,20 +38,6 @@ const scaleY = {
   transitionProperty: 'transform, opacity',
 }
 
-function getEmojiForTerm(term: string) {
-  term = term.substring(4)
-  switch (term) {
-    case 'FA':
-      return '🍁'
-    case 'SP':
-      return '🌸'
-    case 'JA':
-      return '❄️'
-    default:
-      return ''
-  }
-}
-
 interface FormValues {
   classes: {
     [key: string]: string[]
@@ -61,11 +48,12 @@ interface FormValues {
 const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp, referralsProp }) => {
 
   const academicYears = [...new Set(userProp.classesTaken.map((classTaken: IClass) => classTaken.academicYear))]
-  const allAcademicYears = academicYearsProp.map((academicYear: number) => ({ value: academicYear.toString(), label: `${academicYear - 1} - ${academicYear}` }))
+  const allAcademicYears = academicYearsProp.map((academicYear: number) => ({ value: academicYear.toString(), label: formatAcademicYear(academicYear) }))
   const router = useRouter()
+  const currentMonth = new Date().getMonth()
 
-  const [academicYearTaken, setAcademicYearTaken] = useState<string | null>(allAcademicYears[0].value)
-  const [selectedTerm, setSelectedTerm] = useState<string | null>('FA')
+  const [academicYearTaken, setAcademicYearTaken] = useState<string | null>(allAcademicYears[allAcademicYears.length - 1].value)
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(currentMonth < 9 ? 'SP' : 'FA')
   const [contentLoading, setContentLoading] = useState<boolean>(false)
   const [flagExplanation, setFlagExplanation] = useState<boolean>(false)
   const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
@@ -274,7 +262,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           <IconCircleX size="1rem" />
         </ActionIcon>
         <Modal opened={opened} onClose={close} title="Class Deletion">
-          <Text> Are you sure you want to delete <b>{classTaken.subjectTitle}</b> (<i>{`${classTaken.academicYear - 1}-${classTaken.term}`}</i>) from your class history? This will remove the class from classes you've taken. This will not delete your review (if any) for the class, however. Please contact <Anchor href="mailto:opengrades@mit.edu">opengrades@mit.edu</Anchor> to delete your review.</Text>
+          <Text> Are you sure you want to delete <b>{classTaken.subjectTitle}</b> (<i>{formatTermDisplay(classTaken.term)}</i>) from your class history? This will remove the class from classes you've taken. This will not delete your review (if any) for the class, however. Please contact <Anchor href="mailto:opengrades@mit.edu">opengrades@mit.edu</Anchor> to delete your review.</Text>
           <Space h='lg' />
           <Group justify={'center'}>
             <Button onClick={close}> Cancel </Button>
@@ -435,7 +423,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
                   return (
                     <Accordion.Item value={academicYear.toString()} key={academicYear}>
-                      <Accordion.Control> {academicYear - 1} - {academicYear} </Accordion.Control>
+                      <Accordion.Control> {formatAcademicYear(academicYear)} </Accordion.Control>
                       <Accordion.Panel>
                         <List
                           icon={
@@ -446,11 +434,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                           spacing="xs"
                         >
                           {
-                            classesTakenInAcademicYear.sort((a: IClass, b: IClass) => {
-                              if (a.term < b.term) { return -1 }
-                              if (a.term > b.term) { return 1 }
-                              return 0
-                            }).map((classTaken: IClass) => {
+                            classesTakenInAcademicYear.sort((a: IClass, b: IClass) => compareTermsSequential(a.term, b.term)).map((classTaken: IClass) => {
                               const reviewForClass = reviewsProp.find((review: IClassReview) => (review.class._id === classTaken._id))
 
                               const icon = reviewForClass ? reviewForClass?.partial ?
@@ -470,7 +454,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                                 >
                                   <Flex align={'center'}>
                                     <Text className={classes.linkedText} onClick={() => router.push(`/classes/${classTaken._id}`)}>
-                                      {getEmojiForTerm(classTaken.term)} {classTaken.subjectNumber}: {classTaken.subjectTitle}
+                                      {getTermEmoji(classTaken.term)} {classTaken.subjectNumber}: {classTaken.subjectTitle}
                                     </Text>
 
                                     {/* Delete class button */}
@@ -501,11 +485,11 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                     <Select allowDeselect={false} placeholder="Academic year" label="Academic Year" data={allAcademicYears} value={academicYearTaken} onChange={setAcademicYearTaken} />
                   </Grid.Col>
                   <Grid.Col span={6}>
-                    <Select allowDeselect={false} placeholder="Term" label="Term" data={[{ value: 'FA', label: '🍁 Fall' }, { value: 'SP', label: '🌸 Spring' }, { value: 'JA', label: '❄️ IAP' }]} value={selectedTerm} onChange={setSelectedTerm} />
+                    <Select allowDeselect={false} placeholder="Term" label="Term" data={TERM_SELECT_OPTIONS} value={selectedTerm} onChange={setSelectedTerm} />
                   </Grid.Col>
                 </Grid>
                 <Divider variant='dotted' label={"Select your classes"} />
-                <ClassSearch term={academicYearTaken && selectedTerm ? academicYearTaken + selectedTerm : ""} display={`${Number(academicYearTaken) - 1}-${academicYearTaken} ${selectedTerm}`} form={form as any} />
+                <ClassSearch term={academicYearTaken && selectedTerm ? buildTermCode(academicYearTaken, selectedTerm) : ""} display={academicYearTaken && selectedTerm ? formatTermDisplay(buildTermCode(academicYearTaken, selectedTerm)) : ""} form={form as any} />
                 <Button type="submit" disabled={
                   form.getTransformedValues().flatClasses?.length === 0
                 }> Submit </Button>

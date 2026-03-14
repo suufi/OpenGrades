@@ -1,6 +1,7 @@
 import Class from '../models/Class'
 import { IClass } from '../types'
 import { parseUnitsField } from './courseParser'
+import { buildExactCourseNumberRegex, extractMitCourseNumbers } from './courseNumbers'
 
 function mapGIRRequirementToCode(reqString: string): string | null {
     const reqLower = reqString.toLowerCase()
@@ -114,8 +115,6 @@ const GIR_LABELS: Record<string, string> = {
     BIOL: 'Biology (GIR)',
 }
 
-const COURSE_NUMBER_PATTERN = /\b([A-Z]{1,4}\d*\.\d{1,4}[A-Z]?|\d{1,2}[A-Z]?\.\d{1,4}[A-Z]?)\b/gi
-
 /**
  * Build map of subject number (and aliases) -> GIR code for all offered GIR-equivalent courses.
  */
@@ -145,9 +144,7 @@ async function buildSubjectNumberToGIRCodeFromDB(): Promise<Map<string, string>>
 function extractPrerequisites(reqString: string): { courseNumbers: string[]; girCodes: string[] } {
     if (!reqString) return { courseNumbers: [], girCodes: [] }
 
-    COURSE_NUMBER_PATTERN.lastIndex = 0
-    const explicitMatches = reqString.match(COURSE_NUMBER_PATTERN) || []
-    const courseNumbers = [...new Set(explicitMatches.map(s => s.toUpperCase()))]
+    const courseNumbers = extractMitCourseNumbers(reqString)
 
     // Extract GIR requirements
     const girCodes = extractGIRRequirements(reqString)
@@ -163,9 +160,7 @@ function extractPrerequisites(reqString: string): { courseNumbers: string[]; gir
 async function extractCourseNumbersWithGIR(reqString: string): Promise<string[]> {
     if (!reqString) return []
 
-    COURSE_NUMBER_PATTERN.lastIndex = 0
-    const explicitMatches = reqString.match(COURSE_NUMBER_PATTERN) || []
-    const explicitNumbers = [...new Set(explicitMatches.map(s => s.toUpperCase()))]
+    const explicitNumbers = extractMitCourseNumbers(reqString)
 
     // Then, extract GIR requirements and find matching classes
     const girCodes = extractGIRRequirements(reqString)
@@ -186,11 +181,7 @@ async function extractCourseNumbersWithGIR(reqString: string): Promise<string[]>
  * Use extractCourseNumbersWithGIR for GIR support
  */
 function extractCourseNumbers(reqString: string): string[] {
-    if (!reqString) return []
-    COURSE_NUMBER_PATTERN.lastIndex = 0
-    const matches = reqString.match(COURSE_NUMBER_PATTERN) || []
-
-    return [...new Set(matches.map(s => s.toUpperCase()))]
+    return extractMitCourseNumbers(reqString)
 }
 
 export { extractCourseNumbers, extractCourseNumbersWithGIR, extractGIRRequirements, extractPrerequisites }
@@ -226,8 +217,8 @@ export async function getPrerequisiteGraph(
     const requiredBy = await Class.find({
         offered: true,
         $or: [
-            { prerequisites: { $regex: new RegExp(`\\b${sourceClass.subjectNumber}\\b`, 'i') } },
-            { corequisites: { $regex: new RegExp(`\\b${sourceClass.subjectNumber}\\b`, 'i') } }
+            { prerequisites: { $regex: buildExactCourseNumberRegex(sourceClass.subjectNumber) } },
+            { corequisites: { $regex: buildExactCourseNumberRegex(sourceClass.subjectNumber) } }
         ]
     }).lean() as IClass[]
 
@@ -522,8 +513,8 @@ export async function buildGraphData(
     const requiredByClasses = await Class.find({
         offered: true,
         $or: [
-            { prerequisites: { $regex: new RegExp(`\\b${rootId}\\b`, 'i') } },
-            { corequisites: { $regex: new RegExp(`\\b${rootId}\\b`, 'i') } }
+            { prerequisites: { $regex: buildExactCourseNumberRegex(rootId) } },
+            { corequisites: { $regex: buildExactCourseNumberRegex(rootId) } }
         ]
     }).lean() as IClass[]
 

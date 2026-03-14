@@ -409,7 +409,7 @@ const PrereqGraphPage: NextPage<PrereqGraphPageProps> = ({ initialSubject }) => 
                     <Grid.Col span={{ base: 12, md: 6 }}>
                         <Stack gap="xs" pb="md">
                             <Group justify="space-between">
-                            <Text size="sm" fw={500}>Depth: {depth} levels</Text>
+                                <Text size="sm" fw={500}>Depth: {depth} levels</Text>
                                 <Group gap="xs">
                                     <Tooltip label="Reset to home view">
                                         <ActionIcon

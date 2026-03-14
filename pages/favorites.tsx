@@ -5,7 +5,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType, NextPage } from '
 import Link from 'next/link'
 import { useState } from 'react'
 import { getServerSession, Session } from 'next-auth'
-import authOptions from 'pages/api/auth/[...nextauth]'
+import authOptions from '@/pages/api/auth/[...nextauth]'
 
 import mongoConnection from '@/utils/mongoConnection'
 import User from '@/models/User'
@@ -64,7 +64,7 @@ const FavoritesPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePr
                                 <Group justify="space-between" align="flex-start">
                                     <Stack gap={4}>
                                         <Group gap="xs">
-                                            <Text fw={600}>
+                                            <Text fw={600} color='light'>
                                                 {cls.subjectNumber}: {cls.subjectTitle}
                                             </Text>
                                             {cls.offered === false && (
@@ -72,7 +72,7 @@ const FavoritesPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePr
                                             )}
                                         </Group>
                                         {cls.description && (
-                                            <Text size="sm" lineClamp={3}>
+                                            <Text size="sm" lineClamp={3} color='light'>
                                                 {cls.description}
                                             </Text>
                                         )}

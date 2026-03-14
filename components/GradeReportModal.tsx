@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { IClass } from '@/types'
 import Link from 'next/link'
+import { compareTermsSequential, formatAcademicYear, getTermEmoji } from '@/utils/formatTerm'
 import { usePlausibleTracker } from '@/utils/plausible'
 
 const GradeReportModal = ({ opened, onClose, onAddClasses }: {
@@ -81,20 +82,6 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
         onClose()
     }
 
-    function getEmojiForTerm(term: string) {
-        term = term.substring(4)
-        switch (term) {
-            case 'FA':
-                return '🍁'
-            case 'SP':
-                return '🌸'
-            case 'JA':
-                return '❄️'
-            default:
-                return ''
-        }
-    }
-
     return (
         <Modal opened={opened} onClose={onClose} title="Upload Grade Report" size="lg">
             <LoadingOverlay visible={loading} />
@@ -120,19 +107,19 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
                                 .map(([academicYear, classes]) => (
                                     <Accordion.Item value={academicYear} key={academicYear}>
                                         <Accordion.Control>
-                                            {Number(academicYear) - 1} - {academicYear}
+                                            {formatAcademicYear(academicYear)}
                                         </Accordion.Control>
                                         <Accordion.Panel>
                                             <List spacing="xs">
                                                 {classes
-                                                    .sort((a, b) => a.term.localeCompare(b.term)) // Sort classes by term
+                                                    .sort((a, b) => compareTermsSequential(a.term, b.term))
                                                     .map((classTaken: IClass & { partialReviewGrade?: string; isDroppedClass?: boolean }) => (
                                                         <List.Item
                                                             key={classTaken._id}
                                                         >
                                                             <Flex align="center">
                                                                 <Text>
-                                                                    {getEmojiForTerm(classTaken.term)} {classTaken.subjectNumber}: {classTaken.subjectTitle} {classTaken && classTaken.partialReviewGrade && <Badge color='violet'>{classTaken.partialReviewGrade} </Badge>}
+                                                                    {getTermEmoji(classTaken.term)} {classTaken.subjectNumber}: {classTaken.subjectTitle} {classTaken && classTaken.partialReviewGrade && <Badge color='violet'>{classTaken.partialReviewGrade} </Badge>}
                                                                 </Text>
                                                             </Flex>
                                                         </List.Item>

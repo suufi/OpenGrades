@@ -1,102 +1,71 @@
 // @ts-nocheck
 
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import InferNextPropsType from 'infer-next-props-type'
 import Head from 'next/head'
 
-import { Badge, Button, Center, Checkbox, Container, Grid, Group, List, MultiSelect, Select, Stack, Switch, Table, Text, TextInput, Title, useMantineColorScheme } from '@mantine/core'
+import { ActionIcon, Badge, Button, Center, Checkbox, Container, Grid, Group, List, Modal, MultiSelect, Stack, Switch, Text, Textarea, TextInput, Title } from '@mantine/core'
 import { notifications, showNotification } from '@mantine/notifications'
+import { DataTable } from 'mantine-datatable'
+import 'mantine-datatable/styles.css'
 
 import mongoConnection from '@/utils/mongoConnection'
 
 import User from '@/models/User'
 import { IClass, IUser } from '../types'
 
-import { FilterMatchMode, FilterOperator, PrimeReactContext, PrimeReactProvider } from 'primereact/api'
-import { Column } from 'primereact/column'
-import { DataTable } from 'primereact/datatable'
-
 import { DonutChart } from '@mantine/charts'
-import { Calendar } from '@mantine/dates'
 import { openConfirmModal } from '@mantine/modals'
 import { getServerSession } from 'next-auth'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
-import { EyeOff, Search } from 'tabler-icons-react'
+import { EyeOff, Pencil, Search } from 'tabler-icons-react'
 // import { ClassManagementTable } from '../components/ClassManagementTable'
 import { EmbeddingManagement } from '@/components/EmbeddingManagement'
 import { DepartmentProgressTable } from '@/components/DepartmentProgressTable'
 import authOptions from '@/pages/api/auth/[...nextauth]'
+import { MIT_DEPARTMENT_OPTIONS as departments } from '@/utils/departments'
 
+function EditClassForm({
+  classEntry,
+  saving,
+  onSave,
+  onCancel
+}: {
+  classEntry: IClass
+  saving: boolean
+  onSave: (payload: { subjectTitle?: string; instructors?: string[]; aliases?: string[]; description?: string; display?: boolean }) => Promise<void>
+  onCancel: () => void
+}) {
+  const [subjectTitle, setSubjectTitle] = useState(classEntry.subjectTitle ?? '')
+  const [instructorsText, setInstructorsText] = useState((classEntry.instructors ?? []).join('\n'))
+  const [aliasesText, setAliasesText] = useState((classEntry.aliases ?? []).join('\n'))
+  const [description, setDescription] = useState(classEntry.description ?? '')
+  const [display, setDisplay] = useState(classEntry.display !== false)
 
-const courseCatalog = `1 - Civil and Environmental Engineering
-2 - Mechanical Engineering
-3 - Materials Science and Engineering
-4 - Architecture
-5 - Chemistry
-6 - Electrical Engineering and Computer Science
-7 - Biology
-8 - Physics
-9 - Brain and Cognitive Sciences
-10 - Chemical Engineering
-11 - Urban Studies and Planning
-12 - Earth, Atmospheric, and Planetary Sciences
-14 - Economics
-15 - Management
-16 - Aeronautics and Astronautics
-17 - Political Science
-18 - Mathematics
-20 - Biological Engineering
-21 - Humanities
-21A - Anthropology
-CMS - Comparative Media Studies
-21W - Writing
-21G - Global Languages
-21H - History
-21L - Literature
-21M - Music and Theater Arts
-21T - Theater Arts
-WGS - Women's and Gender Studies
-22 - Nuclear Science and Engineering
-24 - Linguistics and Philosophy
-CC - Concourse Program
-CSB - Computational and Systems Biology
-CSE - Center for Computational Science and Engineering
-EC - Edgerton Center
-EM - Engineering Management
-ES - Experimental Study Group
-HST - Health Sciences and Technology
-IDS - Institute for Data, Systems and Society
-MAS - Media Arts and Sciences
-SCM - Supply Chain Management
-AS - Aerospace Studies
-MS - Military Science
-NS - Naval Science
-STS - Science, Technology, and Society
-SWE - Engineering School-Wide Electives
-SP - Special Programs
-`
-
-const departments = courseCatalog.split('\n').map(line => {
-  const regex = /(.+?) - (.+)/g
-  const matches = [...line.matchAll(regex)][0]
-
-  if (matches && matches.index === 0) {
-    return {
-      value: matches[1],
-      label: `${matches[2]} (${matches[1]})`
-    }
+  const handleSubmit = () => {
+    const instructors = instructorsText.split('\n').map(s => s.trim()).filter(Boolean)
+    const aliases = aliasesText.split('\n').map(s => s.trim()).filter(Boolean)
+    onSave({ subjectTitle: subjectTitle.trim() || undefined, instructors, aliases, description: description.trim() || undefined, display })
   }
 
-  return null
-}).filter((department) => department !== null)
-
+  return (
+    <Stack gap="md">
+      <TextInput label="Title" value={subjectTitle} onChange={e => setSubjectTitle(e.target.value)} placeholder="Subject title" />
+      <Textarea label="Instructors (one per line)" value={instructorsText} onChange={e => setInstructorsText(e.target.value)} placeholder="One name per line" minRows={2} />
+      <Textarea label="Aliases (one per line)" value={aliasesText} onChange={e => setAliasesText(e.target.value)} placeholder="e.g. 6.006, 18.410" minRows={2} />
+      <Textarea label="Description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Course description" minRows={4} />
+      <Switch label="Display (visible on site)" checked={display} onChange={e => setDisplay(e.target.checked)} />
+      <Group justify="flex-end" gap="xs">
+        <Button variant="default" onClick={onCancel} disabled={saving}>Cancel</Button>
+        <Button onClick={handleSubmit} loading={saving}>Save</Button>
+      </Group>
+    </Stack>
+  )
+}
 
 const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
-  const { colorScheme } = useMantineColorScheme()
-  const { changeTheme } = useContext(PrimeReactContext)
-
   const router = useRouter()
   const { data: session } = useSession()
 
@@ -106,18 +75,6 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
         You're not supposed to be here!
       </Title>
     </Container>
-  }
-
-  // change theme when page is loaded
-  useEffect(() => {
-    // console.log("theme was changed to " + colorScheme)
-    if (changeTheme) {
-      changeTheme(`lara-${colorScheme == "dark" ? "light" : "dark"}-blue`, `lara-${colorScheme}-blue`, 'theme-link')
-    }
-  }, [colorScheme])
-
-  const refreshData = () => {
-    router.replace(router.asPath)
   }
 
   const [loading, setLoading] = useState(false)
@@ -159,8 +116,8 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
       const result = await response.json()
 
       if (result.success) {
-        setTotalRecords(result.meta.totalClasses)
-        setClasses(result.data)
+        setTotalRecords(result.meta?.totalClasses ?? 0)
+        setClasses(Array.isArray(result.data) ? result.data : [])
       } else {
         console.error('Failed to fetch data:', result.message)
       }
@@ -171,29 +128,19 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
     }
   }
 
-  const onPage = (event) => {
-    setLazyState(prevState => ({
-      ...prevState,
-      first: event.first,
-      page: event.page + 1, // PrimeReact starts at 0, so add 1
-      rows: event.rows
-    }))
+  const onPageChange = (page: number) => {
+    setLazyState(prev => ({ ...prev, page, first: (page - 1) * prev.rows }))
   }
-  const onSort = (event) => {
-    setLazyState(prevState => ({
-      ...prevState,
-      sortField: event.sortField,
-      sortOrder: event.sortOrder
-    }))
+  const onRecordsPerPageChange = (recordsPerPage: number) => {
+    setLazyState(prev => ({ ...prev, rows: recordsPerPage, page: 1, first: 0 }))
   }
-
-  const onFilter = (event) => {
-    setLazyState(prevState => ({
-      ...prevState,
-      filters: event.filters,
-      first: 0,
+  const onSortStatusChange = (sortStatus: { columnAccessor: string; direction: 'asc' | 'desc' }) => {
+    setLazyState(prev => ({
+      ...prev,
+      sortField: sortStatus.columnAccessor,
+      sortOrder: sortStatus.direction,
       page: 1,
-
+      first: 0
     }))
   }
 
@@ -205,25 +152,17 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
   const [loadingButton, setLoadingButton] = useState(false)
   const [globalFilterValue, setGlobalFilterValue] = useState('')
   const [selectedClasses, setSelectedClasses] = useState([])
+  const [editingClass, setEditingClass] = useState<IClass | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
   const [shownColumns, setShownColumns] = useState([
     'display',
     'term',
     'subjectNumber',
     'aliases',
     'subjectTitle',
-    'instructors'
+    'instructors',
+    'actions'
   ])
-
-  const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    hidden: { value: null, matchMode: FilterMatchMode.EQUALS },
-    subjectNumber: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-    aliases: { value: null, matchMode: FilterMatchMode.IN },
-    title: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-    instructors: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-    createdAt: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] },
-    updatedAt: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] }
-  })
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -237,22 +176,56 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
     }))
   }
 
-  const dateFilterTemplate = (options: any) => {
-    return <Calendar date={options.value} onChange={(date) => options.filterCallback(date, options.index)} />
+  const resetFilters = () => {
+    setGlobalFilterValue('')
+    setLazyState(prev => ({
+      ...prev,
+      globalFilter: '',
+      filters: { subjectNumber: { value: '', matchMode: 'contains' }, subjectTitle: { value: '', matchMode: 'contains' }, term: { value: '', matchMode: 'contains' } },
+      page: 1,
+      first: 0
+    }))
   }
 
-  const resetFilters = () => {
-    setFilters({
-      global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-      hidden: { value: null, matchMode: FilterMatchMode.EQUALS },
-      subjectNumber: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-      aliases: { value: null, matchMode: FilterMatchMode.IN },
-      title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-      instructors: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      createdAt: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] },
-      updatedAt: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] }
-    })
-    setGlobalFilterValue('')
+  const onFilterChange = (key: 'term' | 'subjectNumber' | 'subjectTitle') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLazyState(prev => ({
+      ...prev,
+      filters: { ...prev.filters, [key]: { ...prev.filters[key], value } },
+      page: 1,
+      first: 0
+    }))
+  }
+
+  const hasActiveFilters = Boolean(
+    lazyState.globalFilter?.trim() ||
+    lazyState.filters.term?.value?.trim() ||
+    lazyState.filters.subjectNumber?.value?.trim() ||
+    lazyState.filters.subjectTitle?.value?.trim()
+  )
+
+  const saveEditedClass = async (payload: { subjectTitle?: string; instructors?: string[]; aliases?: string[]; description?: string; display?: boolean }) => {
+    if (!editingClass?._id) return
+    setEditSaving(true)
+    try {
+      const res = await fetch(`/api/classes/${editingClass._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showNotification({ title: 'Error', message: data.message || 'Failed to update', color: 'red' })
+        return
+      }
+      setClasses(prev => Array.isArray(prev) ? prev.map(c => (c._id === editingClass._id ? { ...c, ...data.data } : c)) : [])
+      showNotification({ title: 'Saved', message: 'Class updated.', color: 'green' })
+      setEditingClass(null)
+    } catch (e) {
+      showNotification({ title: 'Error', message: e instanceof Error ? e.message : 'Failed to update', color: 'red' })
+    } finally {
+      setEditSaving(false)
+    }
   }
 
   const fetchClasses = async () => {
@@ -434,7 +407,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
           title: 'Success!',
           message: `Deleted ${body.data.deletedCount} classes`
         })
-        setClasses(body.data.classes)
+        setClasses(Array.isArray(body.data.classes) ? body.data.classes : [])
         setSelectedClasses([])
         resetFilters()
       } else {
@@ -483,9 +456,9 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
       if (res.ok) {
         showNotification({
           title: 'Success!',
-          message: `Toggled ${body.data.deletedCount} class visibilities`
+          message: `Toggled ${body.data.updatedCount ?? body.data.deletedCount ?? 0} class visibilities`
         })
-        setClasses(body.data.classes)
+        setClasses(Array.isArray(body.data.classes) ? body.data.classes : [])
         setSelectedClasses([])
       } else {
         showNotification({
@@ -498,25 +471,9 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
     setLoadingButton(false)
   }
 
-  const columns = [
-
-    { field: 'display', headerStyle: { width: '3em' }, body: (rowData: IClass) => (!rowData.display ? <EyeOff color='red' /> : '') },
-    { field: 'term', header: 'Term' },
-    { field: 'subjectNumber', header: 'Subject', sortable: true },
-    { field: 'aliases', header: 'Aliases', sortable: true, body: (rowData: IClass) => rowData.aliases?.map(alias => <Badge key={alias}> {alias} </Badge>) },
-    { field: 'subjectTitle', header: 'Title' },
-    { field: 'instructors', header: 'Instructors', body: (rowData: IClass) => rowData.instructors?.map(instructor => <Badge key={instructor}> {instructor} </Badge>) },
-    { field: 'createdAt', excludeGlobalFilter: true, header: 'Created', sortable: true, filterElement: dateFilterTemplate },
-    { field: 'updatedAt', excludeGlobalFilter: true, header: 'Updated', sortable: true, filterElement: dateFilterTemplate }
-  ].filter((column) => shownColumns.includes(column.field))
-
-  const dynamicColumns = columns.map((col, i) => {
-    return <Column key={col.field} {...col} />
-    // return <Column bodyClassName={StyleClasses.columnBody} key={col.field} {...col} />
-  })
-
-  const formatDate = (value: Date) => {
-    return value.toLocaleDateString('en-US', {
+  const formatDate = (value: string | Date) => {
+    if (!value) return ''
+    return new Date(value).toLocaleDateString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -524,9 +481,27 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
     })
   }
 
-  const dateBodyTemplate = (rowData: any) => {
-    return formatDate(rowData.date)
-  }
+  const allColumns = [
+    { accessor: 'display', title: '', width: 48, render: (r: IClass) => (!r.display ? <EyeOff size={16} color="var(--mantine-color-red-6)" /> : null) },
+    { accessor: 'term', title: 'Term' },
+    { accessor: 'subjectNumber', title: 'Subject', sortable: true },
+    { accessor: 'aliases', title: 'Aliases', sortable: true, render: (r: IClass) => r.aliases?.map(alias => <Badge key={alias} size="sm" variant="light"> {alias} </Badge>) },
+    { accessor: 'subjectTitle', title: 'Title' },
+    { accessor: 'instructors', title: 'Instructors', render: (r: IClass) => r.instructors?.map(inst => <Badge key={inst} size="sm" variant="light"> {inst} </Badge>) },
+    { accessor: 'createdAt', title: 'Created', sortable: true, render: (r: IClass) => formatDate(r.createdAt) },
+    { accessor: 'updatedAt', title: 'Updated', sortable: true, render: (r: IClass) => formatDate(r.updatedAt) },
+    {
+      accessor: 'actions', title: '', width: 56, render: (r: IClass) => (
+        <ActionIcon size="sm" variant="subtle" onClick={(e) => { e.stopPropagation(); setEditingClass(r); }} aria-label="Edit class">
+          <Pencil size={16} />
+        </ActionIcon>
+      )
+    }
+  ]
+  const columns = React.useMemo(() => {
+    const list = Array.isArray(shownColumns) ? shownColumns : []
+    return allColumns.filter((col) => list.includes(col.accessor as string))
+  }, [shownColumns])
 
   const footer = () => {
     return (
@@ -587,19 +562,49 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
   const header = () => {
     return (
       <>
-        <Stack>
+        <Stack gap="sm">
           <Title order={3}> Class Management </Title>
-          <TextInput value={globalFilterValue} leftSection={<Search size={20} />} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-          <Checkbox.Group value={shownColumns} onChange={setShownColumns}>
-            <Group mt="sm">
+          <TextInput value={globalFilterValue} leftSection={<Search size={20} />} onChange={onGlobalFilterChange} placeholder="Keyword search (all fields)" />
+          <Grid>
+            <Grid.Col span={{ base: 12, xs: 4 }}>
+              <TextInput
+                label="Term"
+                placeholder="e.g. 2024FA"
+                value={lazyState.filters?.term?.value ?? ''}
+                onChange={onFilterChange('term')}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, xs: 4 }}>
+              <TextInput
+                label="Subject number"
+                placeholder="e.g. 6.006"
+                value={lazyState.filters?.subjectNumber?.value ?? ''}
+                onChange={onFilterChange('subjectNumber')}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, xs: 4 }}>
+              <TextInput
+                label="Title contains"
+                placeholder="Filter by title"
+                value={lazyState.filters?.subjectTitle?.value ?? ''}
+                onChange={onFilterChange('subjectTitle')}
+              />
+            </Grid.Col>
+          </Grid>
+          {hasActiveFilters && (
+            <Button variant="light" size="xs" onClick={resetFilters}>Clear all filters</Button>
+          )}
+          <Checkbox.Group value={shownColumns} onChange={(val) => setShownColumns(Array.isArray(val) ? val : [])}>
+            <Group mt="xs">
               <Checkbox value="display" label="Display" />
               <Checkbox value="term" label="Term" />
-              <Checkbox value="subjectNumber" label="Subject Number" />
+              <Checkbox value="subjectNumber" label="Subject" />
               <Checkbox value="aliases" label="Aliases" />
               <Checkbox value="subjectTitle" label="Title" />
               <Checkbox value="instructors" label="Instructors" />
-              <Checkbox value="createdAt" label="Created At" />
-              <Checkbox value="updatedAt" label="Updated At" />
+              <Checkbox value="createdAt" label="Created" />
+              <Checkbox value="updatedAt" label="Updated" />
+              <Checkbox value="actions" label="Actions" />
             </Group>
           </Checkbox.Group>
         </Stack>
@@ -665,71 +670,47 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
           }
         </Center>
 
-        <DataTable
-          // className={StyleClasses.table}
-          header={header}
-          footer={footer}
-          value={classes}
-          filterDisplay='menu'
-          globalFilterFields={['subjectNumber', 'aliases', 'title', 'instructors', 'createdAt', 'updatedAt']}
-          scrollable
-          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          rowsPerPageOptions={[10, 25, 50]}
-          showGridlines
-          paginator
-          reorderableColumns
-          removableSort
-          lazy
+        <Stack gap="md">
+          {header()}
+          <DataTable
+            storeColumnsKey="settings-classes-table"
+            idAccessor="_id"
+            records={Array.isArray(classes) ? classes : []}
+            columns={Array.isArray(columns) ? columns : []}
+            fetching={loading}
+            selectedRecords={Array.isArray(selectedClasses) ? selectedClasses : []}
+            onSelectedRecordsChange={(v) => setSelectedClasses(Array.isArray(v) ? v : [])}
+            sortStatus={{ columnAccessor: lazyState.sortField || 'subjectNumber', direction: lazyState.sortOrder === 'asc' ? 'asc' : 'desc' }}
+            onSortStatusChange={onSortStatusChange}
+            page={lazyState.page}
+            onPageChange={onPageChange}
+            totalRecords={totalRecords}
+            recordsPerPage={lazyState.rows}
+            onRecordsPerPageChange={onRecordsPerPageChange}
+            recordsPerPageOptions={[10, 25, 50]}
+            paginationWithEdges
+            paginationWithControls
+            minHeight={300}
+            noRecordsText="No classes"
+          />
+          {footer()}
+        </Stack>
 
-          dataKey="id"
-          first={lazyState.first}
-          rows={lazyState.rows}
-          totalRecords={totalRecords}
-          onPage={onPage}
-          onSort={onSort}
-          onFilter={onFilter}
-          sortField={lazyState.sortField}
-          sortOrder={lazyState.sortOrder}
-          filters={lazyState.filters}
-          loading={loading}
-          selectionMode="multiple"
-          selection={selectedClasses}
-          onSelectionChange={(e) => setSelectedClasses(e.value)}
-
-
+        <Modal
+          title={editingClass ? `Edit ${editingClass.subjectNumber} (${editingClass.term})` : ''}
+          opened={Boolean(editingClass)}
+          onClose={() => !editSaving && setEditingClass(null)}
+          size="lg"
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3em' }} />
-          {dynamicColumns}
-          {/* <Column field="name" header="Name" /> */}
-          {/* <Column field="value" header="Value" /> */}
-
-        </DataTable>
-
-        {/* <ClassManagementTable /> */}
-        {/* <DataTable
-          className={StyleClasses.table}
-          tableClassName={StyleClasses.table}
-          header={header}
-          footer={footer}
-          value={classes}
-          filters={filters}
-          filterDisplay='menu'
-          globalFilterFields={['subjectNumber', 'aliases', 'title', 'instructors', 'createdAt', 'updatedAt']}
-          rows={10}
-          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          rowsPerPageOptions={[10, 25, 50]}
-          responsiveLayout="scroll"
-          showGridlines
-          reorderableColumns
-          selection={selectedClasses}
-          onSelectionChange={e => setSelectedClasses(e.value)}
-          removableSort
-          paginator
-          style={{ backgroundColor: 'red' }}
-        >
-          <Column selectionMode='multiple' bodyClassName={StyleClasses.columnBody} headerStyle={{ width: '3em' }} />
-          {dynamicColumns}
-        </DataTable> */}
+          {editingClass && (
+            <EditClassForm
+              classEntry={editingClass}
+              saving={editSaving}
+              onSave={saveEditedClass}
+              onCancel={() => setEditingClass(null)}
+            />
+          )}
+        </Modal>
 
         <DepartmentProgressTable />
 
@@ -795,12 +776,4 @@ export async function getServerSideProps(context) {
   }
 }
 
-const SettingsWrapper = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers }: InferNextPropsType<typeof getServerSideProps>) => {
-  return (
-    <PrimeReactProvider>
-      <Settings totalUsers={totalUsers} summaryByClassYear={summaryByClassYear} summaryByLevel={summaryByLevel} activeUsers={activeUsers} />
-    </PrimeReactProvider>
-  )
-}
-
-export default SettingsWrapper
+export default Settings

@@ -3,6 +3,7 @@ import GradeReportModal from "@/components/GradeReportModal"
 import ClassReview from "@/models/ClassReview"
 import User from "@/models/User"
 import { IUser } from "@/types"
+import { compareDepartmentCodes } from "@/utils/departments"
 import mongoConnection from "@/utils/mongoConnection"
 import { hasRecentGradeReport } from "@/utils/hasRecentGradeReport"
 import { Container, Group, SegmentedControl, Space, Text, Title, UnstyledButton } from "@mantine/core"
@@ -16,56 +17,6 @@ import { useState } from "react"
 import { Bar, Line } from "react-chartjs-2"
 
 ChartJS.register(...registerables)
-
-const departmentsSorted = [
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "11",
-    "12",
-    "14",
-    "15",
-    "16",
-    "17",
-    "18",
-    "20",
-    "21",
-    "21A",
-    "21E",
-    "21G",
-    "21H",
-    "21L",
-    "21M",
-    "21S",
-    "21T",
-    "21W",
-    "22",
-    "24",
-    "CSB",
-    "STS",
-    "WGS",
-    "EC",
-    "ES",
-    "CC",
-    "SP",
-    "CMS",
-    "CSE",
-    "EM",
-    "HST",
-    "IDS",
-    "MAS",
-    "OR",
-    "RED",
-    "SCM",
-    "UND",
-]
 
 const sortedGrades = [
     "A",
@@ -161,7 +112,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
                 person.courseAffiliation.map(aff => aff.departmentCode)
             )
         )
-    ).sort((a, b) => departmentsSorted.indexOf(a) - departmentsSorted.indexOf(b))
+    ).sort(compareDepartmentCodes)
 
     const filteredPeople = people.filter((person: IUser) => displayLevel === 'all' || (displayLevel === "G" ? person.year === "G" : ['1', '2', '3', '4'].includes(person.year)))
 
@@ -295,7 +246,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
     // Get unique departments from reviews
     const uniqueDepartments = Array.from(
         new Set(classReviews.flatMap(extractDepartments))
-    ).filter(Boolean).sort((a, b) => departmentsSorted.indexOf(a) - departmentsSorted.indexOf(b))
+    ).filter(Boolean).sort(compareDepartmentCodes)
 
     const validReviews = classReviews.filter(r => r.overallRating && r.recommendationLevel)
 
