@@ -1,3 +1,4 @@
+
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -14,7 +15,8 @@ import { IconFile, IconGridPattern, IconList, IconSearch, IconUserCircle } from 
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
-const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount = 0, withDescription = false, searchTerm = '', highlight }: IClass & { classReviewCount: number, contentSubmissionCount: number, userCount?: number, withDescription?: boolean, searchTerm?: string, highlight?: object }) => {
+type ClassAPIEntry = IClass & { classReviewCount: number, contentSubmissionCount: number, userCount?: number, withDescription?: boolean, searchTerm?: string, highlight?: object }
+const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: ClassAPIEntry) => {
   const router = useRouter()
 
   let formattedDescription = (
@@ -122,13 +124,6 @@ const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTit
 interface ClassesProps {
   classesProp: IClass[]
   classReviewCountsProp: { _id: string, count: number }[]
-}
-
-type ClassAPIEntry = IClass & {
-  classReviewCount?: number
-  contentSubmissionCount?: number
-  userCount?: number
-  highlight?: object
 }
 
 const Classes: NextPage = () => {
@@ -530,12 +525,12 @@ const Classes: NextPage = () => {
           <Text c='gray'> Found {totalClasses.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} result{totalClasses === 1 ? '' : 's'}. ({Math.round(timeForResults)} ms) </Text>
 
           <Group>
-            <Select placeholder="Sort by" data={[
+            <Select size='sm' placeholder="Sort by" data={[
               { label: 'Relevance', value: 'relevance' },
               { label: 'Alphabetical', value: 'alphabetical' },
               { label: 'Reviews', value: 'reviews' },
               { label: 'Users', value: 'users' },
-            ]} size='sm' defaultValue={sort} onChange={(value) => setSort(value)} clearable={false} allowDeselect={false} />
+            ]} defaultValue={sort} onChange={(value) => setSort(value)} clearable={false} allowDeselect={false} />
             <Switch
               size='lg'
               color='purple'
@@ -556,16 +551,16 @@ const Classes: NextPage = () => {
             <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 1500: 2, 1200: 3 }}>
               <Masonry gutter={'0.5rem'}>
                 {
-                  classes.map((classEntry: ClassAPIEntry) => (
-                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} {...classEntry} />
+                  classes.map((classEntry: IClass) => (
+                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0} contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0} {...classEntry} />
                   ))
                 }
               </Masonry>
             </ResponsiveMasonry>) : (
             <Stack gap="md">
               {
-                classes.map((classEntry: ClassAPIEntry) => (
-                  <ClassButton key={classEntry._id} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} withDescription searchTerm={searchTerm} highlight={classEntry.highlight} {...classEntry} />
+                classes.map((classEntry: IClass) => (
+                  <ClassButton key={classEntry._id} classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0} contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0} withDescription searchTerm={searchTerm} highlight={(classEntry as ClassAPIEntry).highlight} {...classEntry} />
                 ))
               }
             </Stack>
@@ -604,7 +599,7 @@ const Classes: NextPage = () => {
 // export async function getServerSideProps (context) {
 //   await mongoConnection()
 
-//   const classesProp: IClass[] = await Class.find({display: true }).lean() as any as IClass[]
+//   const classesProp: IClass[] = await Class.find({display: true }).lean() as IClass[]
 //   const classReviewCounts = await ClassReview.aggregate().sortByCount('class')
 //   // const session: Session | null = await getServerSession(context.req, context.res, authOptions)
 //   return {

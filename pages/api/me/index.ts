@@ -6,7 +6,7 @@ import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
 import User from '../../../models/User'
-import { IdentityFlags, IClassReview } from '../../../types'
+import { IClassReview, IdentityFlags } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {

@@ -192,7 +192,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         }
       }
 
-      const reports = await Report.find({}).populate('reporter contentSubmission classReview').lean() as any
+      const reports = await Report.find({}).populate('reporter contentSubmission classReview').lean()
 
       return {
         props: {

@@ -1,3 +1,4 @@
+import { IClass } from "@/types"
 import GradeReportModal from "@/components/GradeReportModal"
 import Class from "@/models/Class"
 import ClassReview from "@/models/ClassReview"
@@ -15,7 +16,6 @@ import Head from "next/head"
 import { useRouter } from "next/router"
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from "react"
-import { IClass } from "@/types"
 ChartJS.register(...registerables)
 
 const yearsOrdered = [
@@ -373,13 +373,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             mengProgramMap.set(baseOption, meng)
         })
 
-        type CourseClassEntry = { subjectNumber: string, subjectTitle: string, count: number | string, realCount?: number }
-        type CourseOptionEntry = {
-            courseOption: { id: any, courseName: string, courseOption: any, departmentCode: string }
-            classes: Record<string, CourseClassEntry[]>
-            mengClasses?: Record<string, CourseClassEntry[]>
-        }
-        const courseOptionsData: CourseOptionEntry[] = []
+        const courseOptionsData = []
 
         for (const courseOption of allCourseOptions) {
             const mengProgram = mengProgramMap.get(courseOption.courseOption || '')
@@ -410,9 +404,9 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 author: { $in: Array.from(userMap.keys()) }
             }).populate('class')
 
-            const yearTermMap: Record<string, Map<string, { subjectTitle: string, realCount: number }>> = {}
-            const mengTermMap: Record<string, Map<string, { subjectTitle: string, realCount: number }>> = {}
-
+            type TermEntry = { subjectTitle: string, count: number, realCount: number }
+            const yearTermMap: Record<string, Map<string, TermEntry>> = {}
+            const mengTermMap: Record<string, Map<string, TermEntry>> = {}
             for (const review of reviews) {
                 const classDoc = review.class as any
                 const authorId = review.author.toString()
@@ -446,7 +440,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                         if (existing) {
                             existing.realCount += 1
                         } else {
-                            mengTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, realCount: 1 })
+                            mengTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, count: 1, realCount: 1 })
                         }
                         continue
                     } else if (!belongsToCurrentProgram) {
@@ -471,12 +465,12 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 if (existing) {
                     existing.realCount += 1
                 } else {
-                    yearTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, realCount: 1 })
+                    yearTermMap[yearTermKey].set(canonicalSubjectNumber, { subjectTitle: canonicalSubjectTitle, count: 1, realCount: 1 })
                 }
             }
 
             // Sort + take top 10 for each year, term
-            const classesByTerm: Record<string, { subjectNumber: string, subjectTitle: string, count: number | string, realCount?: number }[]> = {}
+            const classesByTerm: Record<string, { subjectNumber: string, subjectTitle: string, count: number | string, realCount: number }[]> = {}
 
             Object.entries(yearTermMap).forEach(([yearTerm, classMap]) => {
                 const sorted = Array.from(classMap.entries())
@@ -523,7 +517,8 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             })
         }
 
-        const allData: CourseOptionEntry = {
+        type ClassEntry = { subjectNumber: string; subjectTitle: string; count: number | string; realCount?: number }
+        const allData: { courseOption: any; classes: Record<string, ClassEntry[]>; mengClasses: Record<string, any[]> } = {
             courseOption: {
                 id: "All",
                 courseName: "All Courses",
@@ -540,7 +535,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                     allData.classes[yearTerm] = []
                 }
 
-                allData.classes[yearTerm].push(...classList)
+                allData.classes[yearTerm].push(...(classList as ClassEntry[]))
             })
 
         })
@@ -548,20 +543,20 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         const finalAllClasses: typeof allData.classes = {}
 
         Object.entries(allData.classes).forEach(([yearTerm, classList]) => {
-            const accMap = new Map<string, { subjectNumber: string, subjectTitle: string, count: number | string, realCount?: number }>()
+            const accMap = new Map<string, { subjectNumber: string, subjectTitle: string, count: number, realCount: number }>()
 
             classList.forEach(({ subjectNumber, subjectTitle, count, realCount }) => {
                 const canonical = subjectToCanonical.get(subjectNumber) || subjectNumber
                 const canonicalTitle = subjectTitleMap.get(canonical) || subjectTitle
 
                 if (accMap.has(canonical)) {
-                    accMap.get(canonical)!.realCount += realCount
+                    accMap.get(canonical)!.realCount += (realCount || 0)
                 } else {
                     accMap.set(canonical, {
                         subjectNumber: canonical,
                         subjectTitle: canonicalTitle,
-                        count,
-                        realCount,
+                        count: Number(count) || 0,
+                        realCount: realCount || 0,
                     })
                 }
             })
@@ -569,10 +564,11 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             finalAllClasses[yearTerm] = Array.from(accMap.values())
                 .sort((a, b) => b.realCount - a.realCount)
                 .slice(0, 10)
-                .map(({ subjectNumber, subjectTitle, count, realCount }) => ({
+                .map(({ subjectNumber, subjectTitle, realCount }) => ({
                     subjectNumber,
                     subjectTitle,
-                    count: realCount >= 3 ? realCount : '<3'
+                    count: realCount >= 3 ? realCount : '<3' as string | number,
+                    realCount,
                 }))
         })
 
@@ -583,7 +579,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         // strip realCount from courseOptionsData
         courseOptionsData.forEach((courseOptionData) => {
             Object.entries(courseOptionData.classes).forEach(([yearTerm, classList]) => {
-                classList.forEach((classItem) => {
+                (classList as any[]).forEach((classItem) => {
                     delete classItem.realCount
                 })
             })
@@ -591,7 +587,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
             // Also strip realCount from mengClasses
             if (courseOptionData.mengClasses) {
                 Object.entries(courseOptionData.mengClasses).forEach(([yearTerm, classList]) => {
-                    classList.forEach((classItem) => {
+                    (classList as any[]).forEach((classItem) => {
                         delete classItem.realCount
                     })
                 })
