@@ -85,7 +85,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
     kerb: z.string(),
     name: z.string(),
     classOf: z.number().min(2000).max(new Date().getFullYear() + 7),
-    flags: z.nativeEnum(IdentityFlags).array(),
+    flags: z.enum(['First Gen', 'Low Income', 'BIL', 'International']).array(),
     affiliation: z.string(),
     classes: z.record(z.string(), z.array(z.string())),
     referredBy: z.string().optional()

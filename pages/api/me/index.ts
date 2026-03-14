@@ -6,7 +6,7 @@ import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
 import User from '../../../models/User'
-import { IClassReview, IdentityFlags, IUser } from '../../../types'
+import { IClassReview } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {
@@ -64,7 +64,7 @@ async function handler(
             name: z.string().optional(),
             classOf: z.number().optional(),
             affiliation: z.string().optional(),
-            identityFlags: z.array(z.nativeEnum(IdentityFlags)).optional(),
+            flags: z.array(z.enum(['First Gen', 'Low Income', 'BIL', 'International'])).optional(),
             flatClasses: z.array(z.string()).optional(),
             referredBy: z.string().optional(),
             undergradProgramIds: z.array(z.string()).optional(),
@@ -76,7 +76,7 @@ async function handler(
               firstYear: z.boolean()
             })).optional()
           }).partial({
-            identityFlags: true,
+            flags: true,
             flatClasses: true,
             referredBy: true,
             undergradProgramIds: true,
@@ -89,7 +89,7 @@ async function handler(
           const updateData: any = {}
 
           if (data.classOf) updateData.classOf = data.classOf
-          const flagsToSet = data.flags ?? data.identityFlags
+          const flagsToSet = data.flags
           if (flagsToSet) updateData.flags = flagsToSet
           if (data.flatClasses && data.flatClasses.length > 0) {
             updateData.classesTaken = data.flatClasses.map((id: string) => new mongoose.Types.ObjectId(id))

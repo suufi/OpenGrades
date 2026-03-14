@@ -35,7 +35,7 @@ declare global {
 }
 
 export type LetterGrade = 'A' | 'B' | 'C' | 'D' | 'F' | 'DR' | 'P'
-export type IdentityFlags = 'First Generation' | 'Low Income' | 'BIL' | 'International'
+export type IdentityFlags = 'First Gen' | 'Low Income' | 'BIL' | 'International'
 
 export enum TimeRange {
     '0-2 hours' = '0-2 hours',
