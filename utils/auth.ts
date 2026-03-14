@@ -10,9 +10,13 @@ import { getServerSession, Profile } from "next-auth"
 import AuditLog from '@/models/AuditLog'
 import type { NextAuthOptions } from "next-auth"
 
-const LATEST_GRAD_YEAR = 2028
-// You'll need to import and pass this
-// to `NextAuth` in `app/api/auth/[...nextauth]/route.ts`
+function getLatestGradYear(): number {
+    const d = new Date()
+    const year = d.getFullYear()
+    const month = d.getMonth() // 0–11
+    return month >= 7 ? year + 4 : year + 3 // August (7) or later means new academic year
+}
+
 export const config = {
     providers: [
         {
@@ -145,7 +149,7 @@ export const config = {
 
                         // Safely compute classOf, handling the absence of classYear
                         const classOf = (classYearAffiliation && classYearAffiliation.classYear !== 'G' && classYearAffiliation.classYear !== 'U')
-                            ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliation.classYear)
+                            ? (getLatestGradYear() + 1) - Number(classYearAffiliation.classYear)
                             : existingUser?.classOf || null
 
                         const courseAffiliation = shouldPreserveAffiliation
