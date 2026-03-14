@@ -24,7 +24,7 @@ import {
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 import { IconSearch, IconRefresh, IconArrowRight, IconCircle, IconHome, IconZoomIn } from '@tabler/icons'
-import authOptions from '@/pages/api/auth/[...nextauth]'
+import { config as authOptions } from '@/utils/auth'
 import { useRouter } from 'next/router'
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'

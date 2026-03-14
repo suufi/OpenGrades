@@ -1,3 +1,4 @@
+
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
 import ClassReview from '../../../models/ClassReview'
@@ -47,7 +48,9 @@ async function handler (
       try {
         const author = await User.findOne({ email: requestUser?.email })
 
-        if (!author || author.trustLevel < 1) {
+        const author = await User.findOne({ email: requestUser?.email })
+
+        if (author.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
@@ -111,7 +114,7 @@ async function handler (
         await Karma.create({
           actor: author._id,
           amount: 50,
-          description: `Posting a review for a class - ${await Class.findOne({ id: data.class }).lean().then((c: any) => c?.name) || 'Unknown'}`
+          description: `Posting a review for a class - ${await Class.findOne({ id: data.class }).lean().then((c) => c?.subjectTitle) || 'Unknown'}`
         })
 
         return res.status(200).json({

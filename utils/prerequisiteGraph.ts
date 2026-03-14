@@ -33,6 +33,8 @@ function mapGIRRequirementToCode(reqString: string): string | null {
 
 function extractGIRRequirements(reqString: string): string[] {
     if (!reqString) return []
+    COURSE_NUMBER_PATTERN.lastIndex = 0
+    const matches = reqString.match(COURSE_NUMBER_PATTERN) || []
 
     const girPatterns = [
         /calculus\s+ii\s*\(gir\)/gi,

@@ -142,7 +142,7 @@ async function handler(
           return res.status(409).json({ success: false, message: 'Class review already exists.' })
         }
 
-        if (!author.classesTaken.includes(req.query.classId as string)) {
+        if (!(author.classesTaken as any[]).includes(req.query.classId as string)) {
           await User.findByIdAndUpdate(author._id, {
             $push: {
               classesTaken: new mongoose.Types.ObjectId(req.query.classId as string)

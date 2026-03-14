@@ -107,7 +107,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const hiddenGemClasses = hiddenGemClassIds.length > 0
       ? await Class.find({ _id: { $in: hiddenGemClassIds }, offered: true })
         .select('subjectNumber subjectTitle department academicYear term units instructors _id')
-        .lean() as any
+        .lean()
       : []
 
     const hiddenGems = hiddenGemClasses
@@ -122,7 +122,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const trendingClasses = trendingClassIds.length > 0
       ? await Class.find({ _id: { $in: trendingClassIds }, offered: true })
         .select('subjectNumber subjectTitle department academicYear term units instructors')
-        .lean() as any
+        .lean()
       : []
 
     const trending = trendingClasses

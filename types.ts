@@ -205,6 +205,7 @@ export interface IContentSubmission {
     type: string
     createdAt: Date
     updatedAt: Date
+    signedURL?: string | null
 }
 
 export interface APIClass {

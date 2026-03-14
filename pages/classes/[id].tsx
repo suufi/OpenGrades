@@ -478,8 +478,8 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
   const schema = z.object({
     overallRating: z.number().min(1).max(7),
     conditions: z.array(z.enum(['firstYear', 'droppedClass', 'retaking'])),
-    hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'], { message: 'Please select a number of hours for this class.' }),
-    recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { message: 'Please select a recommendation level.' }),
+    hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'], { invalid_type_error: 'Please select a number of hours for this class.' }),
+    recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { invalid_type_error: 'Please select a recommendation level.' }),
     classComments: z.string().min(5, 'Please type some more words.'),
     backgroundComments: z.string(),
     numericGrade: z.number().min(0).max(100).nullable(),
@@ -595,7 +595,7 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
           {error.length > 0 && <Alert icon={<IconAlertCircle size={16} />} title="Oops, look like there are some problems!" color="red" style={{ width: '100%' }}>
             {error}
           </Alert>}
-          <form onSubmit={form.onSubmit((values) => postReview(values as any as ClassReviewForm))} style={{ width: '100%' }} >
+          <form onSubmit={form.onSubmit((values) => postReview(values))} style={{ width: '100%' }} >
             <Stepper active={active} onStepClick={setActive} orientation={isMobile ? 'vertical' : 'horizontal'}>
               <Stepper.Step label="Grade Information" description="Upload grades">
                 <Stack>
@@ -615,7 +615,7 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
               <Stepper.Step label="Class Review" description="Tell us more about the class!">
                 <Stack>
                   <Text fw={500} fz={14}>
-                    Overall Rating ({(form.values.overallRating as unknown as number)}/7) <Space h="xs" /> <Rating count={7} {...form.getInputProps('overallRating')} />
+                    Overall Rating ({form.values.overallRating}/7) <Space h="xs" /> <Rating count={7} {...form.getInputProps('overallRating')} />
                     {form.errors?.overallRating && <Text c={'red'} fs='italic'> Please select a rating. </Text>}
                   </Text>
                   <Checkbox.Group
@@ -684,7 +684,7 @@ function AddContent({ classData, refreshData }: AddContentProps) {
   })
 
   useEffect(() => {
-    if (form.values.type && ['Syllabus', 'Grade Calculation Spreadsheet', 'Course Schedule', 'Textbook Reading Assignments'].includes(form.values.type as unknown as string)) {
+    if (form.values.type && ['Syllabus', 'Grade Calculation Spreadsheet', 'Course Schedule', 'Textbook Reading Assignments'].includes(form.values.type)) {
       form.setFieldValue('contentTitle', form.values.type)
     }
   }, [form.values.type])
@@ -795,7 +795,7 @@ function AddContent({ classData, refreshData }: AddContentProps) {
                 ]}
                 multiple={false}
               >
-                <Group justify="center" gap="xl" mih={200} style={{ pointerEvents: 'none' }}>
+                <Group justify="center" gap="xl" mih={200} sx={{ pointerEvents: 'none' }}>
                   <Dropzone.Accept>
                     <IconUpload size={50} color="blue" stroke={1.5} />
                   </Dropzone.Accept>

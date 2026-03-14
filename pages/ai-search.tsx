@@ -19,7 +19,7 @@ import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import Head from 'next/head'
 import Link from 'next/link'
-import authOptions from './api/auth/[...nextauth]'
+import { config as authOptions } from '@/utils/auth'
 
 interface EligibilityStatus {
     eligible: boolean

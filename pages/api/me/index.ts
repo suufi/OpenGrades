@@ -6,7 +6,7 @@ import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
 import User from '../../../models/User'
-import { IdentityFlags } from '../../../types'
+import { IdentityFlags, IClassReview } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {
@@ -120,10 +120,10 @@ async function handler(
             const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
             for (const review of data.partialReviews) {
-              const existingReview = existingReviewsByClass.get(review.class) as any
+              const existingReview = existingReviewsByClass.get(review.class)
 
               // If existing review has 'D' but new grade report shows 'DR', update it
-              if (existingReview && existingReview.letterGrade === 'D' && (review as any).letterGrade === 'DR') {
+              if (existingReview && existingReview.letterGrade === 'D' && review.letterGrade === 'DR') {
                 await ClassReview.updateOne(
                   { _id: existingReview._id },
                   { letterGrade: 'DR', droppedClass: true }

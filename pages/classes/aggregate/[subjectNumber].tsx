@@ -1,4 +1,4 @@
-import authOptions from '@/auth'
+import { config as authOptions } from '@/utils/auth'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { IClass, IClassReview, TimeRange } from '@/types'
@@ -718,7 +718,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const classes = await Class.find({
         $or: [{ subjectNumber }, { aliases: { $in: [subjectNumber] } }],
         display: true
-    }).lean() as any
+    }).lean()
     const classIds = classes.map(c => c._id)
 
     function shuffleArray(array: unknown[]) {
@@ -732,7 +732,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // const reviews = await ClassReview.find({
     //     class: { $in: classIds },
     //     partial: false
-    // }).populate('class').lean() as any
+    // }).populate('class').lean()
 
     // aggregate reviews with # of upvotes and downvotes
     const reviews = await ClassReview.aggregate([
@@ -786,26 +786,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const submissions = await ContentSubmission.find({
         class: { $in: classIds },
         approved: true
-    }).populate('class').select('contentTitle type contentURL bucketPath class createdAt').select('-author -approved').lean() as any
+    }).populate('class').select('contentTitle type contentURL bucketPath class createdAt').select('-author -approved').lean()
 
     // Sort classes to find the latest one for prerequisites
     const sortedClasses = [...classes].sort((a: any, b: any) => compareTermsLatest(a.term, b.term))
     const latestClass = sortedClasses[0] || {}
 
     // Fetch related classes data
-    const prereqNumbers = extractCourseNumbers(latestClass.prerequisites || '')
-    const coreqNumbers = extractCourseNumbers(latestClass.corequisites || '')
+    const prereqNumbers = extractCourseNumbers((latestClass as any).prerequisites || '')
+    const coreqNumbers = extractCourseNumbers((latestClass as any).corequisites || '')
 
     const [prerequisiteClasses, corequisiteClasses, requiredByClasses] = await Promise.all([
         Class.find({
             subjectNumber: { $in: prereqNumbers },
             offered: true
-        }).select('subjectNumber subjectTitle department').lean() as any,
+        }).select('subjectNumber subjectTitle department').lean(),
 
         Class.find({
             subjectNumber: { $in: coreqNumbers },
             offered: true
-        }).select('subjectNumber subjectTitle department').lean() as any,
+        }).select('subjectNumber subjectTitle department').lean(),
 
         Class.find({
             offered: true,
@@ -813,7 +813,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 { prerequisites: { $regex: buildExactCourseNumberRegex(subjectNumber) } },
                 { corequisites: { $regex: buildExactCourseNumberRegex(subjectNumber) } }
             ]
-        }).select('subjectNumber subjectTitle department').lean() as any
+        }).select('subjectNumber subjectTitle department').lean()
     ])
 
     const relatedClasses = {

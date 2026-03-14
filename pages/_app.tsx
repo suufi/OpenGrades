@@ -550,7 +550,6 @@ export default function AppWrapper({ Component, pageProps, router }: AppProps) {
 
     <ErrorBoundary>
       <PlausibleProvider domain="opengrades.mit.edu" customDomain="https://analytics.mit.edu" trackOutboundLinks selfHosted taggedEvents>
-        {/* @ts-expect-error - React 18/19 type compatibility issue with next-auth */}
         <SessionProvider session={pageProps.session}>
           <UserContextProvider>
             <MantineProvider

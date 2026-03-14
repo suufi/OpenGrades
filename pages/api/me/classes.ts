@@ -58,14 +58,14 @@ async function handler(
 
                     if (body.partialReviews) {
                         const reviewsToMake = []
-                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean() as any
+                        const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean()
                         const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
                         for (const review of body.partialReviews) {
-                            const existingReview = existingReviewsByClass.get(review.class) as any
+                            const existingReview = existingReviewsByClass.get(review.class)
 
                             // If existing review has 'D' but new grade report shows 'DR', update it
-                            if (existingReview && existingReview.letterGrade === 'D' && (review as any).letterGrade === 'DR') {
+                            if (existingReview && existingReview.letterGrade === 'D' && review.letterGrade === 'DR') {
                                 await ClassReview.updateOne(
                                     { _id: existingReview._id },
                                     { letterGrade: 'DR', droppedClass: true }

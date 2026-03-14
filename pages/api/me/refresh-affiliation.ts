@@ -76,7 +76,7 @@ async function handler (
 
         const user = await User.findOne({ email })
             .populate('courseAffiliation')
-            .lean() as any
+            .lean()
 
         const newCourseAffiliationIds = new Set(validCourseOptionObjects.map(co => co._id.toString()))
         const preservedHistoricalPrograms: any[] = []

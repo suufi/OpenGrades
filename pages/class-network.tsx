@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
-import { getServerSession, Session } from 'next-auth'
+import { getServerSession } from 'next-auth'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import {
@@ -25,7 +25,7 @@ import {
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 import { IconCircle, IconArrowRight, IconHome, IconRefresh } from '@tabler/icons'
-import authOptions from '@/pages/api/auth/[...nextauth]'
+import { config as authOptions } from '@/utils/auth'
 import { useRouter } from 'next/router'
 import Class from '@/models/Class'
 import User from '@/models/User'
@@ -58,6 +58,8 @@ interface GraphNode {
         subjectTitle: string
         department: string
         type: string
+        isGIR?: boolean
+        isGIRRequirement?: boolean
     }
 }
 
@@ -431,10 +433,10 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                 </Group>
                 <Group gap="xs">
                     <ThemeIcon size="sm" color="#BE4BDB" radius="xl">
-                        <IconCircle size={10} />
-                    </ThemeIcon>
+                            <IconCircle size={10} />
+                        </ThemeIcon>
                     <Text size="xs">Corequisite edges</Text>
-                </Group>
+                    </Group>
                 <Text size="xs" c="dimmed">
                     Arrow direction shows dependency direction.
                 </Text>
@@ -646,7 +648,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const session = await getServerSession(context.req, context.res, authOptions) as Session | null
+    const session = await getServerSession(context.req, context.res, authOptions)
 
     if (!session) {
         return {
@@ -660,7 +662,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     await mongoConnection()
 
     // Check if user has submitted a grade report
-    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean() as any
+    const user = await User.findOne({ email: session.user?.email?.toLowerCase() }).lean()
     if (!user) {
         return {
             redirect: {

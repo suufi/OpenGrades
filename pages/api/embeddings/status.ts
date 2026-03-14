@@ -105,7 +105,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error.message
         })
     }
 }
