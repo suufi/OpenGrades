@@ -26,6 +26,7 @@ export const MIT_DEPARTMENT_CATALOG: Array<{ code: string; name: string }> = [
     { code: '21H', name: 'History' },
     { code: '21L', name: 'Literature' },
     { code: '21M', name: 'Music' },
+    { code: '21S', name: 'Humanities and Science' },
     { code: '21T', name: 'Theater Arts' },
     { code: 'WGS', name: "Women's and Gender Studies" },
     { code: '22', name: 'Nuclear Science and Engineering' },
@@ -93,6 +94,7 @@ export const departmentColors: Record<string, string> = {
     '21H': '#e91e63', // History
     '21L': '#e91e63', // Literature
     '21M': '#e91e63', // Music
+    '21S': '#e91e63', // Humanities and Science
     '21T': '#e91e63', // Theater Arts
     '22': '#ff5722',  // Nuclear Science and Engineering - Orange Red
     '24': '#795548',  // Linguistics and Philosophy - Brown
