@@ -170,3 +170,4 @@ dist
 .svelte-kit
 
 .vscode/*
+scripts/
