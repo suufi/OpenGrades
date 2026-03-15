@@ -5,6 +5,8 @@ import mongoConnection from '../../../../../utils/mongoConnection'
 
 import AuditLog from '@/models/AuditLog'
 import { withApiLogger } from '@/utils/apiLogger'
+import { addKarma } from '@/utils/karma'
+import { KARMA_CONTENT_UPLOAD } from '@/utils/karmaConstants'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import formidable from 'formidable'
 import * as Minio from 'minio'
@@ -114,6 +116,8 @@ async function handler(
           actor: user._id,
           description: `User ${user.kerb} (${user._id}) submitted ${type[0]} for class ${classDoc.subjectNumber} (${classDoc._id})`,
         })
+
+        await addKarma(user._id, KARMA_CONTENT_UPLOAD, 'Uploaded syllabus/content')
 
         return res.status(200).json({
           success: true,

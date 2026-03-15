@@ -377,6 +377,38 @@ function useEditProfileModal() {
               }}
             />
           </div>
+
+          <div>
+            <Switch
+              label="Show my kerb on karma leaderboard"
+              description={`If off, you will appear as Student (${userProfile?.classOf}) on the karma leaderboard`}
+              checked={userProfile?.karmaDisplayKerb === true}
+              onChange={(event) => {
+                const checked = event.currentTarget.checked
+                setUserProfile({ ...userProfile, karmaDisplayKerb: checked } as IUser)
+                fetch('/api/me', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ karmaDisplayKerb: checked })
+                }).then(res => res.json()).then(data => {
+                  if (data.success) {
+                    notifications.show({
+                      title: 'Success',
+                      message: 'Karma leaderboard display updated',
+                      color: 'green'
+                    })
+                  } else {
+                    setUserProfile({ ...userProfile, karmaDisplayKerb: !checked } as IUser)
+                    notifications.show({
+                      title: 'Error',
+                      message: data.message || 'Failed to update',
+                      color: 'red'
+                    })
+                  }
+                })
+              }}
+            />
+          </div>
         </Stack>
       </Stack>
 

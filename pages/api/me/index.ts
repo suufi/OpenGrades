@@ -2,6 +2,8 @@ import '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
+import { addKarma, getKarmaBalance } from '@/utils/karma'
+import { KARMA_GRADE_REPORT } from '@/utils/karmaConstants'
 import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
@@ -43,8 +45,9 @@ async function handler(
         if (user?.email) {
           const userDoc = await User.findOne({ email: user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
           const reviewCount = await ClassReview.countDocuments({ author: userDoc?._id })
+          const karmaBalance = userDoc?._id ? await getKarmaBalance((userDoc as any)._id) : 0
 
-          return res.status(200).json({ success: true, data: { user: { ...userDoc, reviewCount } } })
+          return res.status(200).json({ success: true, data: { user: { ...userDoc, reviewCount, karmaBalance } } })
         } else {
           throw new Error("User doesn't have email.")
         }
@@ -69,6 +72,7 @@ async function handler(
             referredBy: z.string().optional(),
             undergradProgramIds: z.array(z.string()).optional(),
             emailOptIn: z.boolean().optional(),
+            karmaDisplayKerb: z.boolean().optional(),
             partialReviews: z.array(z.object({
               class: z.string(),
               letterGrade: z.string(),
@@ -76,7 +80,7 @@ async function handler(
               firstYear: z.boolean()
             })).optional()
           }).partial({
-            flags: true,
+            identityFlags: true,
             flatClasses: true,
             referredBy: true,
             undergradProgramIds: true,
@@ -97,7 +101,8 @@ async function handler(
           }
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
           if (typeof data.emailOptIn === 'boolean') updateData.emailOptIn = data.emailOptIn
-          const currentTrustLevel = userDoc?.trustLevel ?? 0
+          if (typeof data.karmaDisplayKerb === 'boolean') updateData.karmaDisplayKerb = data.karmaDisplayKerb
+          const currentTrustLevel = (userDoc as any).trustLevel ?? 0
           if (currentTrustLevel < 1) updateData.trustLevel = 1
 
           if (data.undergradProgramIds && data.undergradProgramIds.length > 0) {
@@ -150,6 +155,7 @@ async function handler(
 
             if (reviewsToMake.length > 0) {
               await User.updateOne({ email }, { lastGradeReportUpload: new Date() })
+              await addKarma(authorId, KARMA_GRADE_REPORT, 'Uploaded grade report')
             }
           }
 

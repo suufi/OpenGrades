@@ -10,8 +10,9 @@ import { withApiLogger } from '@/utils/apiLogger'
 import AuditLog from '@/models/AuditLog'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
-import Karma from '@/models/Karma'
 import User from '@/models/User'
+import { addKarma } from '@/utils/karma'
+import { KARMA_REVIEW_FULL } from '@/utils/karmaConstants'
 
 import mongoose, { Types } from 'mongoose'
 import { IClass, IClassReview } from '@/types'
@@ -180,11 +181,7 @@ async function handler(
           description: `Posting a review for ${classIdParam}`
         })
 
-        await Karma.create({
-          actor: author._id,
-          amount: 50,
-          description: `Posting a review for a class - ${(await Class.findById(classIdObj).lean().then((c) => c && !Array.isArray(c) ? c.subjectTitle : 'Unknown'))}`
-        })
+        await addKarma(author._id, KARMA_REVIEW_FULL, 'Posted review (full)')
 
         return res.status(200).json({
           success: true
