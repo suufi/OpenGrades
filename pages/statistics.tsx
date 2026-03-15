@@ -1,7 +1,7 @@
 import GradeReportModal from "@/components/GradeReportModal"
 import ClassReview from "@/models/ClassReview"
 import User from "@/models/User"
-import { IClass, IUser } from "@/types"
+import { IUser } from "@/types"
 import { compareDepartmentCodes } from "@/utils/departments"
 import mongoConnection from "@/utils/mongoConnection"
 import { hasRecentGradeReport } from "@/utils/hasRecentGradeReport"

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react'
 import {
   Box,
@@ -178,7 +177,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
         const newQ = { ...data.data, isAuthor: true, answers: [], blasted: false }
         setQuestions((prev) => [newQ, ...prev])
         closeAskModal()
-        showNotification({ title: 'Question posted', color: 'green' })
+        showNotification({ title: 'Success', message: 'Your question has been posted.', color: 'green' })
         if (blastEnabled) {
           const blastResult = await doBlast(data.data._id)
           const spent = blastResult?.data?.karmaSpent
@@ -261,24 +260,24 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
                 ...q,
                 answers: [
                   ...(q.answers || []),
-{
-                      _id: data.data._id,
-                      body: data.data.body,
-                      termTaken: data.data.termTaken,
-                      createdAt: data.data.createdAt,
-                      upvotes: 0,
-                      downvotes: 0,
-                      userVote: 0,
-                      authorAnonymousId: data.data.authorAnonymousId,
-                      isAuthor: true,
-                    },
+                  {
+                    _id: data.data._id,
+                    body: data.data.body,
+                    termTaken: data.data.termTaken,
+                    createdAt: data.data.createdAt,
+                    upvotes: 0,
+                    downvotes: 0,
+                    userVote: 0,
+                    authorAnonymousId: data.data.authorAnonymousId,
+                    isAuthor: true,
+                  },
                 ],
               }
               : q
           )
         )
         setReplyOpen((prev) => ({ ...prev, [questionId]: false }))
-        showNotification({ title: 'Answer posted', color: 'green' })
+        showNotification({ title: 'Success', message: 'Your answer has been posted.', color: 'green' })
       } else {
         showNotification({ title: 'Error', message: data.message, color: 'red' })
       }
@@ -330,7 +329,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
         setQuestions((prev) =>
           prev.map((q) => (q._id === questionId ? { ...q, solvedAt: solved ? new Date().toISOString() : null } : q))
         )
-        showNotification({ title: solved ? 'Marked as solved' : 'Unmarked', color: 'green' })
+        showNotification({ title: solved ? 'Success' : 'Success', message: solved ? 'Question marked as solved.' : 'Question unmarked.', color: 'green' })
       }
     } catch {
       showNotification({ title: 'Error', message: 'Failed to update', color: 'red' })

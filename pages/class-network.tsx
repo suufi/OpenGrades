@@ -32,7 +32,6 @@ import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
 import { compareDepartmentCodes, formatDepartmentOptionLabel, getDepartmentColor, departmentColors } from '@/utils/departments'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
-import { AnyARecord } from 'dns'
 
 
 const ForceGraph2D = dynamic(

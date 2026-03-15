@@ -24,7 +24,7 @@ type State = {
 
 type FormValues = {
   classes: { [key: string]: string[] },
-  flatClasses: string[]
+  flatClasses?: string[]
 }
 
 type UserProfile = {
@@ -255,7 +255,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
         const body = await res.json()
         if (res.ok && body.data) {
           const { matchedClasses = [], partialReviews = [] } = body.data
-          
+
           if (partialReviews && Array.isArray(partialReviews)) {
             setPartialReviewsData(partialReviews)
           }

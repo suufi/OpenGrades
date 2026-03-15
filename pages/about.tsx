@@ -36,7 +36,7 @@ const AboutPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
 }) => {
 
 
-    const faqItems = faqs ? faqs.map((item) => (
+    const faqItems = faqs ? faqs.map((item: any) => (
         <Accordion.Item key={item._id} value={item._id}>
             <Accordion.Control>{item.question}</Accordion.Control>
             <Accordion.Panel>
