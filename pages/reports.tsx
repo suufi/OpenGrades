@@ -15,7 +15,8 @@ import { useRouter } from 'next/router'
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from 'react'
 import Report from '../models/Report'
-import { IReport } from '../types'
+import { IClassReview, IContentSubmission, IReport, IUser } from '../types'
+import { auth } from '@/utils/auth'
 
 const ResolveModal = ({ reportId, callback }: { reportId?: string, callback: Function }) => {
   const [opened, { toggle, close }] = useDisclosure()
@@ -102,7 +103,7 @@ const ReportCard = ({ report }: { report: IReport }) => {
       </Text>
     </Group>
     <Text c="dimmed">
-      <b>Reporter:</b> {report.reporter.name} ({report.reporter.email})
+      <b>Reporter:</b> {(report.reporter as IUser).name} ({(report.reporter as IUser).email})
     </Text>
     <Text c="dimmed">
       <b>Reason:</b> {report.reason}
@@ -111,9 +112,9 @@ const ReportCard = ({ report }: { report: IReport }) => {
       <Text span c="dimmed" inherit fw="bold">Created at:</Text> {new Date(report.createdAt).toLocaleString()}
     </Text>
     <Space h="lg" />
-    <Tooltip label={report.contentSubmission ? report.contentSubmission._id : report.classReview._id} position="bottom">
+    <Tooltip label={String(report.contentSubmission ? report.contentSubmission._id : report.classReview._id)} position="bottom">
       <Text c="dimmed">
-        <Text span c="dimmed" inherit fw="bold">Reported:</Text> <Text c="blue" span inherit onClick={() => router.push('/classes/' + (report.contentSubmission ? report.contentSubmission.class : report.classReview.class))}>{report.contentSubmission ? report.contentSubmission.contentTitle : report.classReview.classComments}</Text>
+        <Text span c="dimmed" inherit fw="bold">Reported:</Text> <Text c="blue" span inherit onClick={() => router.push('/classes/' + (report.contentSubmission ? (report.contentSubmission as IContentSubmission).class : (report.classReview as IClassReview).class))}>{report.contentSubmission ? (report.contentSubmission as IContentSubmission).contentTitle : (report.classReview as IClassReview).classComments}</Text>
       </Text>
     </Tooltip>
     {resolved && (
@@ -178,7 +179,7 @@ interface ServerSideProps {
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
   await mongoConnection()
 
-  const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+  const session = await auth(context.req, context.res)
 
   if (session) {
     if (session.user && session.user?.email) {
@@ -192,7 +193,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         }
       }
 
-      const reports = await Report.find({}).populate('reporter contentSubmission classReview').lean()
+      const reports = await Report.find({}).populate<{ reporter: IUser, contentSubmission: IContentSubmission, classReview: IClassReview }>('reporter contentSubmission classReview').lean()
 
       return {
         props: {

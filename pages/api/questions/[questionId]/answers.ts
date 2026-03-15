@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .populate('author', 'kerb classOf karmaDisplayKerb')
       .lean()
 
-    const list = (answers[]).map((a) => ({
+    const list = answers.map((a) => ({
       _id: a._id,
       body: a.body,
       termTaken: a.termTaken,

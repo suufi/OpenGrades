@@ -48,24 +48,9 @@ async function handler (
       try {
         const author = await User.findOne({ email: requestUser?.email })
 
-        const author = await User.findOne({ email: requestUser?.email })
-
         if (author.trustLevel < 1) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
-
-        // Validate body here
-
-        //     class: Class;
-        //     author: User;
-        //     approved: boolean;
-        //     overallRating: number;
-        //     firstYear: boolean;
-        //     retaking: boolean;
-        //     droppedClass: boolean;
-        //     hoursPerWeek: string;
-        //     recommendationLevel: number;
-        //     classComments: string;
 
         const schema = z.object({
           class: z.string(),
