@@ -93,6 +93,12 @@ export interface IClass {
     updatedAt?: Date
 }
 
+/** Form values for the "Add Classes" form on the home page (used by index.tsx and ClassSearch). */
+export interface AddClassesFormValues {
+    classes: { [key: string]: string[] }
+    flatClasses: string[]
+}
+
 export interface IUser {
     _id: string
     sub: string
@@ -120,6 +126,7 @@ export interface IUser {
     aiEmbeddingOptOut?: boolean,
     qaEmailOptOut?: boolean,
     favoriteClasses?: string[],
+    karmaDisplayKerb?: boolean,
     createdAt: Date,
     updatedAt: Date,
 }
@@ -279,6 +286,7 @@ export interface IReviewVote {
     classReview: IClassReview,
     classReviewAuthor: IUser,
     vote: number,
+    karmaGranted?: boolean,
     createdAt: Date,
     updatedAt: Date
 }
