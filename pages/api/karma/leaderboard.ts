@@ -6,6 +6,7 @@ import CourseOption from '@/models/CourseOption'
 import { getKarmaDisplayName } from '@/utils/karmaDisplayName'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { sortDepartmentCodes } from '@/utils/departments'
+import { IUser } from '@/types'
 
 const LIMIT = 100
 
@@ -127,7 +128,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select('_id classOf karmaDisplayKerb kerb')
         .lean()
       if (userDoc) {
-        const userId = (userDoc as any)._id
+        const userId = (userDoc as IUser)._id
         const myTotalResult = await Karma.aggregate([
           { $match: { actor: userId } },
           { $group: { _id: null, total: mode === 'alltime' ? { $sum: { $cond: [{ $gt: ['$amount', 0] }, '$amount', 0] } } : { $sum: '$amount' } } },

@@ -9,18 +9,9 @@ type State = {
     status: 'initial' | 'loading' | 'error' | 'success'
 }
 
-type ClassesFormValues = {
-    classes: { [key: string]: string[] }
-    flatClasses?: string[]
-}
+type FormWithClasses = { classes: Record<string, string[]> }
 
-type ClassSearchProps<T extends ClassesFormValues> = {
-    form: UseFormReturnType<T>
-    display: string
-    term: string
-}
-
-export default function ClassSearch<T extends ClassesFormValues> ({ form, display, term }: ClassSearchProps<T>) {
+export default function ClassSearch<T extends FormWithClasses>({ form, display, term }: { form: UseFormReturnType<T>; display: string; term: string }) {
     const [{ status, data }, setState] = useState<State>({
         data: [],
         status: 'initial'
@@ -70,7 +61,7 @@ export default function ClassSearch<T extends ClassesFormValues> ({ form, displa
                 ...prevValues.classes,
                 [term]: prevValues.classes[term] || [],
             },
-        }))
+        }) as Partial<T>)
     }, [term])
 
 

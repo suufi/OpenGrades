@@ -12,7 +12,7 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
 import classes from '@/styles/Index.module.css'
-import { IClass, IClassReview, IUser } from '@/types'
+import { AddClassesFormValues, IClass, IClassReview, IUser } from '@/types'
 import { buildTermCode, compareTermsSequential, formatAcademicYear, formatTermDisplay, getTermEmoji, TERM_SELECT_OPTIONS } from '@/utils/formatTerm'
 import mongoConnection from '@/utils/mongoConnection'
 import { Accordion, ActionIcon, Alert, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title, Transition } from '@mantine/core'
@@ -36,12 +36,6 @@ const scaleY = {
   transitionProperty: 'transform, opacity',
 }
 
-interface FormValues {
-  classes: {
-    [key: string]: string[]
-  },
-  flatClasses: string[]
-}
 
 const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp, referralsProp }) => {
 
@@ -103,7 +97,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   }, [referredBy])
 
 
-  const form = useForm<FormValues>({
+  const form = useForm<AddClassesFormValues>({
     initialValues: {
       classes: {},
       flatClasses: []
@@ -122,7 +116,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     })
   }, [academicYearTaken, selectedTerm])
 
-  async function addClasses(values: FormValues) {
+  async function addClasses(values: AddClassesFormValues) {
     console.log(values)
     setContentLoading(true)
     const classesTaken = values.flatClasses.map((classId: string) => ({ _id: classId }))
