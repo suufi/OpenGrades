@@ -2,19 +2,16 @@ import { ActionIcon, Loader, MultiSelect } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
 import { IconRefresh } from '@tabler/icons'
 import { useCallback, useEffect, useState } from 'react'
-import { IClass } from '../types'
+import { IClass } from '@/types'
 
 type State = {
     data: { value: string; label: string }[]
     status: 'initial' | 'loading' | 'error' | 'success'
 }
 
-type FormValues = {
-    classes: { [key: string]: string[] },
-    flatClasses: string[]
-}
+type FormWithClasses = { classes: Record<string, string[]> }
 
-export default function ClassSearch ({ form, display, term }: { form: UseFormReturnType<FormValues>, display: string, term: string }) {
+export default function ClassSearch<T extends FormWithClasses>({ form, display, term }: { form: UseFormReturnType<T>; display: string; term: string }) {
     const [{ status, data }, setState] = useState<State>({
         data: [],
         status: 'initial'
@@ -64,7 +61,7 @@ export default function ClassSearch ({ form, display, term }: { form: UseFormRet
                 ...prevValues.classes,
                 [term]: prevValues.classes[term] || [],
             },
-        }))
+        }) as Partial<T>)
     }, [term])
 
 

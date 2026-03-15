@@ -5,6 +5,8 @@ import mongoConnection from '../../../../../utils/mongoConnection'
 
 import AuditLog from '@/models/AuditLog'
 import { withApiLogger } from '@/utils/apiLogger'
+import { addKarma } from '@/utils/karma'
+import { KARMA_CONTENT_UPLOAD } from '@/utils/karmaConstants'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import formidable from 'formidable'
 import * as Minio from 'minio'
@@ -58,14 +60,14 @@ async function handler(
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
-        const classDoc = await Class.findById(req.query.classId).lean() as { _id: any; subjectNumber: string; term: string } | null
+        const classDoc = await Class.findById(req.query.classId).lean()
         if (!classDoc) {
           return res.status(404).json({ success: false, message: 'Class does not exist.' })
         }
 
         const form = formidable({ multiples: false })
 
-        const parsed = await new Promise<{ fields: any; files: any }>((resolve, reject) => {
+        const parsed = await new Promise<{ fields: Record<string, any>; files: Record<string, any> }>((resolve, reject) => {
           form.parse(req, (err, fields, files) => {
             if (err) reject(err)
             else resolve({ fields, files })
@@ -115,6 +117,8 @@ async function handler(
           description: `User ${user.kerb} (${user._id}) submitted ${type[0]} for class ${classDoc.subjectNumber} (${classDoc._id})`,
         })
 
+        await addKarma(user._id, KARMA_CONTENT_UPLOAD, 'Uploaded syllabus/content')
+
         return res.status(200).json({
           success: true,
           data: {
@@ -125,7 +129,7 @@ async function handler(
       } catch (error: unknown) {
         console.error('Upload error:', error)
         if (error instanceof Error) {
-          const s3Error = error as any
+          const s3Error = error as Minio.S3Error
           if (s3Error.code) {
             return res.status(400).json({
               success: false,

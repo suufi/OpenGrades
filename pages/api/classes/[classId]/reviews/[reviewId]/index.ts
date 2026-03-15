@@ -1,14 +1,15 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
+import ReviewVote from '@/models/ReviewVote'
 
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 
 import z from 'zod'
+import { IClassReview } from '@/types'
 
 type Data = {
     success: boolean,
@@ -36,12 +37,12 @@ async function handler (
                     return res.status(404).json({ success: false, message: 'Class does not exist.' })
                 }
 
-                const content = await ClassReview.findById(req.query.reviewId).populate(['class', 'author']).lean()
+                const review = await ClassReview.findById(req.query.reviewId).populate(['class', 'author']).lean()
 
-                const upvotes = await ReviewVote.countDocuments({ classReview: content._id, vote: 1 })
-                const downvotes = await ReviewVote.countDocuments({ classReview: content._id, vote: -1 })
+                const upvotes = await ReviewVote.countDocuments({ classReview: review._id, vote: 1 })
+                const downvotes = await ReviewVote.countDocuments({ classReview: review._id, vote: -1 })
 
-                return res.status(200).json({ success: true, data: { ...content, upvotes, downvotes } })
+                return res.status(200).json({ success: true, data: { ...review, upvotes, downvotes } })
 
             } catch (error: unknown) {
                 if (error instanceof Error) {
@@ -66,7 +67,7 @@ async function handler (
 
                 await ClassReview.updateOne({ _id: req.query.reviewId }, { $set: data })
 
-                return res.status(200).json({ success: true, message: 'Content updated.' })
+                return res.status(200).json({ success: true, message: 'Review updated.' })
 
             } catch (error: unknown) {
                 if (error instanceof Error) {

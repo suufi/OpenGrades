@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -8,6 +7,7 @@ import ClassReview from '@/models/ClassReview'
 import ContentSubmission from '@/models/ContentSubmission'
 import CourseEmbedding from '@/models/CourseEmbedding'
 import { Ollama } from 'ollama'
+import { IClass, IClassReview, IUser } from '@/types'
 
 const EMBEDDING_MODEL = 'qwen3-embedding:4b'
 const EMBEDDING_DIMENSIONS = 2560
@@ -91,7 +91,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
             const bulkOps: any[] = []
 
-            for (const course of courses as any[]) {
+            for (const course of courses as IClass[]) {
                 try {
                     const parts: string[] = []
                     parts.push(`${course.subjectNumber}: ${course.subjectTitle}`)
@@ -199,7 +199,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
             const bulkOps: any[] = []
 
-            for (const cls of classes as any[]) {
+            for (const cls of classes as IClass[]) {
                 try {
                     const reviews = await ClassReview.find({
                         class: cls._id,
@@ -209,8 +209,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
                     if (reviews.length === 0) continue
 
-                    const allowedReviews = reviews.filter((r: any) => {
-                        const author = r.author as any
+                    const allowedReviews = reviews.filter((r: IClassReview) => {
+                        const author = r.author as IUser
                         return !author || !author.aiEmbeddingOptOut
                     })
 
@@ -219,7 +219,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                         continue
                     }
 
-                    const reviewText = allowedReviews.map((r: any) => {
+                    const reviewText = allowedReviews.map((r: IClassReview) => {
                         const tags = []
                         if (r.firstYear) tags.push('[First Year]')
                         if (r.retaking) tags.push('[Retaking]')
@@ -288,7 +288,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 }
             }
 
-            const contentSubmissions = await ContentSubmission.aggregate([
+            type AggregatedContentSubmission = {
+                _id: string
+                class?: any
+                display?: boolean
+                contentSummary?: string
+                extractedText?: string
+                classData?: { _id?: any }
+            }
+
+            const contentSubmissions: AggregatedContentSubmission[] = await ContentSubmission.aggregate([
                 {
                     $match: {
                         display: true,
@@ -330,7 +339,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
             const bulkOps: any[] = []
 
-            for (const content of contentSubmissions as any[]) {
+            for (const content of contentSubmissions) {
                 try {
                     const classId = content.classData?._id || content.class
                     if (!classId) continue

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import Head from 'next/head'
 
@@ -6,12 +5,12 @@ import Head from 'next/head'
 import { Container, Table, Title } from '@mantine/core'
 import AuditLog from '../models/AuditLog'
 import User from '../models/User'
-import { IAuditLog } from '../types'
+import { IAuditLog, IUser } from '../types'
 import mongoConnection from '../utils/mongoConnection'
 // eslint-disable-next-line camelcase
 import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth/next'
-import authOptions from "@/pages/api/auth/[...nextauth]"
+import { config as authOptions } from '@/utils/auth'
 
 const AuditLogs: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ auditLogsProp }) => {
   return (
@@ -40,7 +39,7 @@ const AuditLogs: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>
           {auditLogsProp.map((auditLog: IAuditLog) => (
             <Table.Tr key={auditLog._id} style={{ width: '100%' }}>
               <Table.Td>{auditLog.createdAt.toString()}</Table.Td>
-              <Table.Td>{auditLog.actor.name}</Table.Td>
+              <Table.Td>{(auditLog.actor as IUser).name}</Table.Td>
               <Table.Td>{auditLog.type}</Table.Td>
               <Table.Td>{auditLog.description}</Table.Td>
             </Table.Tr>
@@ -72,7 +71,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
         }
       }
 
-      const auditLogs = await AuditLog.find({}).populate('actor').sort({ createdAt: -1 }).lean() as IAuditLog[]
+      const auditLogs = await AuditLog.find({}).populate<{ actor: IUser }>('actor').sort({ createdAt: -1 }).lean()
 
       return {
         props: {

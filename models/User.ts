@@ -103,7 +103,11 @@ const UserSchema = new mongoose.Schema<IUser>({
   },
   favoriteClasses: [{
     type: String
-  }]
+  }],
+  karmaDisplayKerb: {
+    type: Boolean,
+    default: false
+  }
 }, { timestamps: true })
 
 export default (mongoose.models.User as Model<IUser> || mongoose.model<IUser>('User', UserSchema))

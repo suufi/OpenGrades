@@ -1,13 +1,14 @@
-// @ts-nocheck
 import '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
+import { addKarma, getKarmaBalance } from '@/utils/karma'
+import { KARMA_GRADE_REPORT } from '@/utils/karmaConstants'
 import mongoose from 'mongoose'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
 import User from '../../../models/User'
-import { IdentityFlags } from '../../../types'
+import { IClassReview } from '../../../types'
 import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {
@@ -44,8 +45,9 @@ async function handler(
         if (user?.email) {
           const userDoc = await User.findOne({ email: user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
           const reviewCount = await ClassReview.countDocuments({ author: userDoc?._id })
+          const karmaBalance = userDoc?._id ? await getKarmaBalance((userDoc as any)._id) : 0
 
-          return res.status(200).json({ success: true, data: { user: { ...userDoc, reviewCount } } })
+          return res.status(200).json({ success: true, data: { user: { ...userDoc, reviewCount, karmaBalance } } })
         } else {
           throw new Error("User doesn't have email.")
         }
@@ -65,11 +67,12 @@ async function handler(
             name: z.string().optional(),
             classOf: z.number().optional(),
             affiliation: z.string().optional(),
-            identityFlags: z.array(z.nativeEnum(IdentityFlags)).optional(),
+            flags: z.array(z.enum(['First Gen', 'Low Income', 'BIL', 'International'])).optional(),
             flatClasses: z.array(z.string()).optional(),
             referredBy: z.string().optional(),
             undergradProgramIds: z.array(z.string()).optional(),
             emailOptIn: z.boolean().optional(),
+            karmaDisplayKerb: z.boolean().optional(),
             partialReviews: z.array(z.object({
               class: z.string(),
               letterGrade: z.string(),
@@ -90,7 +93,7 @@ async function handler(
           const updateData: any = {}
 
           if (data.classOf) updateData.classOf = data.classOf
-          const flagsToSet = data.flags ?? data.identityFlags
+          const flagsToSet = data.flags
           if (flagsToSet) updateData.flags = flagsToSet
           if (data.flatClasses && data.flatClasses.length > 0) {
             updateData.classesTaken = data.flatClasses.map((id: string) => new mongoose.Types.ObjectId(id))
@@ -98,11 +101,12 @@ async function handler(
           }
           if (data.referredBy) updateData.referredBy = referredByUser ? new mongoose.Types.ObjectId(referredByUser._id) : undefined
           if (typeof data.emailOptIn === 'boolean') updateData.emailOptIn = data.emailOptIn
+          if (typeof data.karmaDisplayKerb === 'boolean') updateData.karmaDisplayKerb = data.karmaDisplayKerb
           const currentTrustLevel = (userDoc as any).trustLevel ?? 0
           if (currentTrustLevel < 1) updateData.trustLevel = 1
 
           if (data.undergradProgramIds && data.undergradProgramIds.length > 0) {
-            const existingAffiliations = (userDoc as any).courseAffiliation || []
+            const existingAffiliations = userDoc?.courseAffiliation || []
             const newAffiliations = data.undergradProgramIds.map(id => new mongoose.Types.ObjectId(id))
             const allAffiliations = [...existingAffiliations, ...newAffiliations]
             const uniqueAffiliations = Array.from(new Set(allAffiliations.map(a => a.toString()))).map(id => new mongoose.Types.ObjectId(id))
@@ -116,7 +120,7 @@ async function handler(
 
           if (data.partialReviews) {
             const reviewsToMake = []
-            const authorId = (userDoc as any)._id
+            const authorId = userDoc?._id
             const existingReviews = await ClassReview.find({ author: authorId }).lean()
             const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
@@ -151,6 +155,7 @@ async function handler(
 
             if (reviewsToMake.length > 0) {
               await User.updateOne({ email }, { lastGradeReportUpload: new Date() })
+              await addKarma(authorId, KARMA_GRADE_REPORT, 'Uploaded grade report')
             }
           }
 

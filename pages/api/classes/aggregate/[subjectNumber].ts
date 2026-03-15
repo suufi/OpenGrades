@@ -1,10 +1,10 @@
-// @ts-nocheck
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import mongoConnection from '@/utils/mongoConnection'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { IClass, IClassReview } from '@/types'
 
 type Data = {
     success: boolean,

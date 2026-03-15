@@ -2,7 +2,7 @@ import Class from '@/models/Class'
 import User from '../models/User'
 import ClassReview from '../models/ClassReview'
 import CourseEmbedding, { ICourseEmbedding } from '@/models/CourseEmbedding'
-import { IClass, IUser } from '../types'
+import { IClass, ICourseOption, IUser } from '../types'
 import { vectorSearchES, hybridSearchES } from './vectorSearchES'
 import { Types } from 'mongoose'
 import { extractCourseNumbers } from './prerequisiteGraph'
@@ -126,14 +126,14 @@ export async function collaborativeFiltering(
     userId: string,
     limit: number = 10
 ): Promise<Array<{ class: IClass; score: number; reason: string }>> {
-    const user = await User.findById(userId).populate('classesTaken').lean() as any
+    const user = await User.findById(userId).populate('classesTaken').lean()
     if (!user || !user.classesTaken || user.classesTaken.length === 0) {
         return []
     }
 
     // Build set of subject numbers AND aliases user has taken
     const userSubjectNumbers = new Set<string>()
-    user.classesTaken.forEach((cls: any) => {
+    user.classesTaken.forEach((cls: IClass) => {
         if (cls.subjectNumber) userSubjectNumbers.add(cls.subjectNumber)
         if (cls.aliases && Array.isArray(cls.aliases)) {
             cls.aliases.forEach((alias: string) => userSubjectNumbers.add(alias))
@@ -144,7 +144,7 @@ export async function collaborativeFiltering(
         {
             $match: {
                 _id: { $ne: new Types.ObjectId(userId) },
-                classesTaken: { $in: user.classesTaken.map((c: any) => c._id) }
+                classesTaken: { $in: user.classesTaken.map((c) => c._id) }
             }
         },
         {
@@ -154,7 +154,7 @@ export async function collaborativeFiltering(
                     $size: {
                         $setIntersection: [
                             '$classesTaken',
-                            user.classesTaken.map((c: any) => c._id)
+                            user.classesTaken.map((c) => c._id)
                         ]
                     }
                 }
@@ -178,8 +178,8 @@ export async function collaborativeFiltering(
     }
 
     const allClassIds = new Set<string>()
-    similarUsers.forEach(u => {
-        u.classesTaken.forEach((c: any) => allClassIds.add(c.toString()))
+    similarUsers.forEach((u: { classesTaken: Types.ObjectId[] }) => {
+        u.classesTaken.forEach((c: Types.ObjectId) => allClassIds.add(c.toString()))
     })
 
     const allClasses = await Class.find({
@@ -191,7 +191,7 @@ export async function collaborativeFiltering(
     const subjectRecommendations = new Map<string, { count: number; maxOverlap: number }>()
 
     similarUsers.forEach(similarUser => {
-        similarUser.classesTaken.forEach((classId: any) => {
+        similarUser.classesTaken.forEach((classId: Types.ObjectId) => {
             const subjectNumber = classIdToSubject.get(classId.toString())
             if (!subjectNumber) return
 
@@ -293,16 +293,16 @@ export async function departmentAffinityRecommendations(
     const user = await User.findById(userId)
         .populate('courseAffiliation')
         .populate('classesTaken')
-        .lean() as any
+        .lean()
 
     if (!user || !user.courseAffiliation || user.courseAffiliation.length === 0) {
         return []
     }
 
-    const departments = user.courseAffiliation.map((aff: any) => aff.departmentCode)
+    const departments = user.courseAffiliation.map((aff: ICourseOption) => aff.departmentCode)
 
     const userSubjectNumbers = new Set<string>()
-        ; (user.classesTaken || []).forEach((cls: any) => {
+        ; (user.classesTaken || []).forEach((cls: IClass) => {
             if (cls.subjectNumber) userSubjectNumbers.add(cls.subjectNumber)
             if (cls.aliases && Array.isArray(cls.aliases)) {
                 cls.aliases.forEach((alias: string) => userSubjectNumbers.add(alias))
@@ -404,7 +404,7 @@ export async function contentBasedRecommendations(
     userId: string,
     limit: number = 10
 ): Promise<Array<{ class: IClass; score: number; reason: string }>> {
-    const user = await User.findById(userId).populate('classesTaken').lean() as any
+    const user = await User.findById(userId).populate('classesTaken').lean()
     if (!user || !user.classesTaken || user.classesTaken.length === 0) {
         return []
     }
@@ -519,7 +519,7 @@ export async function hybridRecommendations(
     userTakenClasses?: IClass[]
 ): Promise<Array<{ class: IClass; score: number; reason: string }>> {
     try {
-        const sourceClass = await Class.findById(classId).lean() as IClass | null
+        const sourceClass = await Class.findById(classId).lean()
         if (!sourceClass) {
             return []
         }
@@ -550,7 +550,7 @@ export async function hybridRecommendations(
         const embedding = await CourseEmbedding.findOne({
             class: { $in: classIdsWithSameSubject },
             embeddingType: 'description'
-        }).lean() as ICourseEmbedding | null
+        }).lean()
 
         if (!embedding) {
             console.warn(`⚠️  No embedding found for class ${sourceClass.subjectNumber} (${classId})`)

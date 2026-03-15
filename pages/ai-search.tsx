@@ -1,4 +1,3 @@
-// @ts-nocheck
 import AISearchBox from '@/components/AISearchBox'
 import mongoConnection from '@/utils/mongoConnection'
 import User from '@/models/User'
@@ -20,7 +19,8 @@ import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import Head from 'next/head'
 import Link from 'next/link'
-import authOptions from './api/auth/[...nextauth]'
+import { config as authOptions } from '@/utils/auth'
+import { IUser } from '@/types'
 
 interface EligibilityStatus {
     eligible: boolean

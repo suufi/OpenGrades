@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession } from 'next-auth'
@@ -26,7 +25,7 @@ import {
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 import { IconCircle, IconArrowRight, IconHome, IconRefresh } from '@tabler/icons'
-import authOptions from '@/pages/api/auth/[...nextauth]'
+import { config as authOptions } from '@/utils/auth'
 import { useRouter } from 'next/router'
 import Class from '@/models/Class'
 import User from '@/models/User'
@@ -52,6 +51,12 @@ const ForceGraph3D = dynamic(
 )
 
 interface GraphNode {
+    fx?: number
+    fy?: number
+    fz?: number
+    x?: number
+    y?: number
+    z?: number
     id: string
     label: string
     data?: {
@@ -59,6 +64,8 @@ interface GraphNode {
         subjectTitle: string
         department: string
         type: string
+        isGIR?: boolean
+        isGIRRequirement?: boolean
     }
 }
 
@@ -71,6 +78,13 @@ interface GraphEdge {
     }
 }
 
+interface GraphLink {
+    id?: string
+    source?: string | GraphNode
+    target?: string | GraphNode
+    color?: string
+    curvature?: number
+}
 interface ClassNetworkPageProps {
     availableYears: number[]
     departments: string[]
@@ -139,7 +153,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
         }
     }, [academicYear, department, includeIsolated])
 
-    const handleNodeClick = (node: any) => {
+    const handleNodeClick = (node: GraphNode) => {
         setSelectedNode(node)
         if (viewMode === '2d' && fgRef.current) {
             node.fx = node.x
@@ -152,11 +166,11 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
         }
     }
 
-    const handleNodeDoubleClick = (node: any) => {
+    const handleNodeDoubleClick = (node: GraphNode) => {
         router.push(`/classes/aggregate/${node.id}`)
     }
 
-    const handleNodeRightClick = (node: any) => {
+    const handleNodeRightClick = (node: GraphNode) => {
         const ref = viewMode === '2d' ? fgRef.current : fg3dRef.current
         if (explodedNode === node.id) {
             setExplodedNode(null)
@@ -176,7 +190,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
 
         if (graphData.nodes.length === 0) return
 
-        graphData.nodes.forEach((node: any) => {
+        graphData.nodes.forEach((node: GraphNode) => {
             node.fx = undefined
             node.fy = undefined
             node.fz = undefined
@@ -190,7 +204,7 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                 if (fgRef.current && graphData.nodes.length > 0) {
                     let minX = Infinity, maxX = -Infinity
                     let minY = Infinity, maxY = -Infinity
-                    graphData.nodes.forEach((node: any) => {
+                    graphData.nodes.forEach((node: GraphNode) => {
                         if (node.x !== undefined && node.y !== undefined) {
                             minX = Math.min(minX, node.x)
                             maxX = Math.max(maxX, node.x)
@@ -233,6 +247,43 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
             }, 500)
         }
     }
+
+    // Configure d3 forces (charge, link distance) on the underlying simulation
+    useEffect(() => {
+        const ref = viewMode === '2d' ? fgRef.current : fg3dRef.current
+        if (!ref || !graphData?.nodes?.length) return
+
+        const fg = ref as any
+        if (typeof fg.d3Force !== 'function') return
+
+        // Stronger repulsion for GIR hubs so they sit further out
+        const chargeForce = fg.d3Force('charge')
+        if (chargeForce && typeof chargeForce.strength === 'function') {
+            chargeForce.strength((node: GraphNode) => (node.data?.isGIR ? -2000 : -600))
+        }
+
+        // Custom link distances based on GIR and exploded node
+        const linkForce = fg.d3Force('link')
+        if (linkForce && typeof linkForce.distance === 'function') {
+            linkForce.distance((link: GraphLink) => {
+                const sourceId = typeof link.source === 'string' ? link.source : link.source?.id
+                const targetId = typeof link.target === 'string' ? link.target : link.target?.id
+                const sourceNode = graphData.nodes.find((n: GraphNode) => n.id === sourceId)
+                const targetNode = graphData.nodes.find((n: GraphNode) => n.id === targetId)
+                const sourceIsGIR = sourceNode?.data?.isGIR
+                const targetIsGIR = targetNode?.data?.isGIR
+
+                if (explodedNode && (sourceId === explodedNode || targetId === explodedNode)) return 1000
+                if (sourceIsGIR && targetIsGIR) return 600
+                return (sourceIsGIR || targetIsGIR) ? 450 : 350
+            })
+        }
+
+        // Nudge layout to apply new force config
+        if (typeof fg.d3ReheatSimulation === 'function') {
+            fg.d3ReheatSimulation()
+        }
+    }, [viewMode, nodes, edges, explodedNode])
 
     const handleHome = () => {
         // Reload the current network and reset the view
@@ -432,10 +483,10 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                 </Group>
                 <Group gap="xs">
                     <ThemeIcon size="sm" color="#BE4BDB" radius="xl">
-                        <IconCircle size={10} />
-                    </ThemeIcon>
+                            <IconCircle size={10} />
+                        </ThemeIcon>
                     <Text size="xs">Corequisite edges</Text>
-                </Group>
+                    </Group>
                 <Text size="xs" c="dimmed">
                     Arrow direction shows dependency direction.
                 </Text>
@@ -484,49 +535,36 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                                 graphData={graphData}
                                 width={undefined}
                                 height={650}
-                                nodeLabel={(node: any) => {
+                                nodeLabel={(node: GraphNode) => {
                                     const title = node.data?.subjectTitle || ''
                                     if (node.data?.isGIRRequirement) {
                                         return node.data.subjectTitle || node.id
                                     }
                                     const girInfo = node.data?.isGIR ? ' (GIR)' : ''
-                                    return `${node.name || node.id}${girInfo}${title ? `: ${title}` : ''}`
+                                    return `${node.id}${girInfo}${title ? `: ${title}` : ''}`
                                 }}
-                                nodeColor={(node: any) => {
+                                nodeColor={(node: GraphNode) => {
                                     if (node.data?.isGIRRequirement || node.data?.isGIR) return '#FFD700'
                                     return getDepartmentColor(node.id)
                                 }}
-                                nodeVal={(node: any) => (node.data?.isGIRRequirement || node.data?.isGIR) ? 10 : 8}
+                                nodeVal={(node: GraphNode) => (node.data?.isGIRRequirement || node.data?.isGIR) ? 10 : 8}
                                 nodeRelSize={4}
-                                linkColor={(link: any) => link.color || '#999'}
+                                linkColor={(link: GraphLink) => link.color || '#999'}
                                 linkWidth={2}
                                 linkDirectionalArrowLength={6}
                                 linkDirectionalArrowRelPos={1}
                                 linkDirectionalParticles={2}
                                 linkDirectionalParticleSpeed={0.01}
-                                linkCurvature={(link: any) => link.curvature || 0}
+                                linkCurvature={(link: GraphLink) => link.curvature || 0}
                                 onNodeClick={handleNodeClick}
                                 onNodeRightClick={handleNodeRightClick}
-                                onNodeDrag={(node: any) => {
+                                onNodeDrag={(node: GraphNode) => {
                                     node.fx = node.x
                                     node.fy = node.y
                                 }}
-                                onNodeDragEnd={(node: any) => {
+                                onNodeDragEnd={(node: GraphNode) => {
                                     node.fx = node.x
                                     node.fy = node.y
-                                }}
-                                d3Force="charge"
-                                d3ForceStrength={(node: any) => (node.data?.isGIR ? -2000 : -600)}
-                                d3ForceLinkDistance={(link: any) => {
-                                    const sourceId = typeof link.source === 'string' ? link.source : link.source.id
-                                    const targetId = typeof link.target === 'string' ? link.target : link.target.id
-                                    const sourceNode = graphData.nodes.find((n: any) => n.id === sourceId)
-                                    const targetNode = graphData.nodes.find((n: any) => n.id === targetId)
-                                    const sourceIsGIR = sourceNode?.data?.isGIR
-                                    const targetIsGIR = targetNode?.data?.isGIR
-                                    if (explodedNode && (sourceId === explodedNode || targetId === explodedNode)) return 1000
-                                    if (sourceIsGIR && targetIsGIR) return 600
-                                    return (sourceIsGIR || targetIsGIR) ? 450 : 350
                                 }}
                                 cooldownTicks={200}
                             />
@@ -536,19 +574,19 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                                 graphData={graphData}
                                 width={undefined}
                                 height={650}
-                                nodeLabel={(node: any) => {
+                                nodeLabel={(node: GraphNode) => {
                                     const title = node.data?.subjectTitle || ''
                                     if (node.data?.isGIRRequirement) return node.data.subjectTitle || node.id
                                     const girInfo = node.data?.isGIR ? ' (GIR)' : ''
-                                    return `${node.name || node.id}${girInfo}${title ? `: ${title}` : ''}`
+                                    return `${node.id}${girInfo}${title ? `: ${title}` : ''}`
                                 }}
-                                nodeColor={(node: any) => {
+                                nodeColor={(node: GraphNode) => {
                                     if (node.data?.isGIRRequirement || node.data?.isGIR) return '#FFD700'
                                     return getDepartmentColor(node.id)
                                 }}
-                                nodeVal={(node: any) => (node.data?.isGIRRequirement || node.data?.isGIR) ? 10 : 8}
+                                nodeVal={(node: GraphNode) => (node.data?.isGIRRequirement || node.data?.isGIR) ? 10 : 8}
                                 nodeRelSize={4}
-                                linkColor={(link: any) => link.color || '#999'}
+                                linkColor={(link: GraphLink) => link.color || '#999'}
                                 linkWidth={3}
                                 linkDirectionalArrowLength={6}
                                 linkDirectionalArrowRelPos={1}
@@ -556,28 +594,15 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                                 linkDirectionalParticleSpeed={0.01}
                                 onNodeClick={handleNodeClick}
                                 onNodeRightClick={handleNodeRightClick}
-                                onNodeDrag={(node: any) => {
+                                onNodeDrag={(node: GraphNode) => {
                                     node.fx = node.x
                                     node.fy = node.y
                                     node.fz = node.z
                                 }}
-                                onNodeDragEnd={(node: any) => {
+                                onNodeDragEnd={(node: GraphNode) => {
                                     node.fx = node.x
                                     node.fy = node.y
                                     node.fz = node.z
-                                }}
-                                d3Force="charge"
-                                d3ForceStrength={(node: any) => (node.data?.isGIR ? -2000 : -600)}
-                                d3ForceLinkDistance={(link: any) => {
-                                    const sourceId = typeof link.source === 'string' ? link.source : link.source.id
-                                    const targetId = typeof link.target === 'string' ? link.target : link.target.id
-                                    const sourceNode = graphData.nodes.find((n: any) => n.id === sourceId)
-                                    const targetNode = graphData.nodes.find((n: any) => n.id === targetId)
-                                    const sourceIsGIR = sourceNode?.data?.isGIR
-                                    const targetIsGIR = targetNode?.data?.isGIR
-                                    if (explodedNode && (sourceId === explodedNode || targetId === explodedNode)) return 1000
-                                    if (sourceIsGIR && targetIsGIR) return 600
-                                    return (sourceIsGIR || targetIsGIR) ? 450 : 350
                                 }}
                                 cooldownTicks={200}
                             />

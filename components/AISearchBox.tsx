@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { IClass } from '@/types'
 import {
     Card,
@@ -19,7 +18,7 @@ import {
     Code,
     ScrollArea
 } from '@mantine/core'
-import { IconSend, IconStars, IconRobot, IconBrain, IconSparkles, IconBug, IconChevronDown, IconChevronUp } from '@tabler/icons'
+import { IconSend, IconStars, IconRobot, IconBrain, IconBug, IconChevronDown, IconChevronUp } from '@tabler/icons'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import ReactMarkdown from 'react-markdown'

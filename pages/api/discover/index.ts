@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoose from 'mongoose'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
@@ -7,6 +6,7 @@ import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { getClassesPageStats } from '@/utils/plausible'
+import { IClass } from '@/types'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -139,7 +139,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       .filter(cls => !cls.subjectNumber?.endsWith('.UR') && !cls.subjectNumber?.endsWith('.URG'))
       .slice(0, 10)
 
-    const ratingsBySubject = new Map<string, Array<{ year: number, rating: number, classData: any }>>()
+    const ratingsBySubject = new Map<string, Array<{ year: number, rating: number, classData: Record<string, any> }>>()
     for (const item of classRatings) {
       const subjectNumber = item._id.subjectNumber
       if (!ratingsBySubject.has(subjectNumber)) {
@@ -152,7 +152,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    const improvementData: any[] = []
+    const improvementData: Record<string, any>[] = []
     for (const [subjectNumber, ratings] of ratingsBySubject) {
       if (ratings.length < 2) continue
       if (subjectNumber?.endsWith('.UR') || subjectNumber?.endsWith('.URG')) continue
@@ -195,9 +195,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         .select('subjectNumber')
         .lean()
       const classIdToSubject = new Map<string, string>()
-      for (const doc of classDocs) {
-        const id = (doc as any)._id?.toString?.()
-        if (id && (doc as any).subjectNumber) classIdToSubject.set(id, (doc as any).subjectNumber)
+      for (const doc of classDocs as IClass[]) {
+        const id = (doc)._id?.toString?.()
+        if (id && (doc).subjectNumber) classIdToSubject.set(id, (doc).subjectNumber)
       }
       for (const s of classIdStats) {
         const subj = s.classId && classIdToSubject.get(s.classId)
@@ -220,8 +220,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             .lean()
         : []
     const oneClassPerSubject = new Map<string, any>()
-    for (const cls of popularClasses) {
-      const subj = (cls as any).subjectNumber
+    for (const cls of popularClasses as IClass[]) {
+      const subj = (cls).subjectNumber
       if (subj && !oneClassPerSubject.has(subj)) oneClassPerSubject.set(subj, cls)
     }
     const popular = subjectNumbers

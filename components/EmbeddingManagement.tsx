@@ -187,7 +187,7 @@ export function EmbeddingManagement() {
         }
     }
 
-    const StatCard = ({ title, icon: Icon, data, type }: { title: string, icon: any, data: any, type: string }) => {
+    const StatCard = ({ title, icon: Icon, data, type }: { title: string, icon: any, data: any, type: 'descriptions' | 'reviews' | 'content' }) => {
         if (!data) return null
         const progress = data.total > 0 ? (data.embedded / data.total) * 100 : 0
 
@@ -213,7 +213,7 @@ export function EmbeddingManagement() {
                     variant="light"
                     fullWidth
                     size="xs"
-                    onClick={() => generateEmbeddings(type as any)}
+                    onClick={() => generateEmbeddings(type)}
                     loading={generating === type || generating === 'all'}
                     disabled={!!generating}
                 >

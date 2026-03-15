@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import React, { useEffect, useState } from 'react'
 
 import InferNextPropsType from 'infer-next-props-type'
@@ -26,6 +24,7 @@ import { EmbeddingManagement } from '@/components/EmbeddingManagement'
 import { DepartmentProgressTable } from '@/components/DepartmentProgressTable'
 import authOptions from '@/pages/api/auth/[...nextauth]'
 import { MIT_DEPARTMENT_OPTIONS as departments } from '@/utils/departments'
+import { auth } from '@/utils/auth'
 
 function EditClassForm({
   classEntry,
@@ -103,15 +102,15 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 
     try {
       const response = await fetch('/api/classes?' + new URLSearchParams({
-        page: lazyState.page,
-        limit: lazyState.rows,
+        page: String(lazyState.page),
+        limit: String(lazyState.rows),
         sortField: lazyState.sortField || '',
-        sortOrder: lazyState.sortOrder || '',
+        sortOrder: String(lazyState.sortOrder || ''),
         search: lazyState.globalFilter || '',
         ...Object.fromEntries(
-          Object.entries(lazyState.filters).map(([key, value]) => [key, value.value])
+          Object.entries(lazyState.filters).map(([key, value]) => [key, String(value.value)])
         )
-      }))
+      } as Record<string, string>))
 
       const result = await response.json()
 
@@ -723,7 +722,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
 export async function getServerSideProps(context) {
   await mongoConnection()
 
-  const users: IUser[] = await User.find({}).lean() as IUser[]
+  const users: IUser[] = await User.find({}).lean()
 
   const totalUsers = await User.countDocuments()
 
@@ -761,13 +760,12 @@ export async function getServerSideProps(context) {
     trustLevel: { $gt: 0 }
   })
 
+
+  const session = await auth(context.req, context.res)
+
   return {
     props: {
-      session: JSON.parse(JSON.stringify(await getServerSession(
-        context.req,
-        context.res,
-        authOptions
-      ))),
+      session: session ? JSON.parse(JSON.stringify(session)) : undefined,
       totalUsers,
       summaryByClassYear,
       summaryByLevel,

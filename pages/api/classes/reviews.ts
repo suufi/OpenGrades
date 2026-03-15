@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Class from '../../../models/Class'
@@ -47,10 +46,7 @@ async function handler (
       return res.status(200).json({ success: true, data: {} })
     case 'POST':
       try {
-        // const classExists = await Class.exists()
-        console.log(body)
-        console.log(typeof body)
-        // console.log(session)
+        const author = await User.findOne({ email: requestUser?.email })
 
         const author = await User.findOne({ email: requestUser?.email })
 
@@ -118,7 +114,7 @@ async function handler (
         await Karma.create({
           actor: author._id,
           amount: 50,
-          description: `Posting a review for a class - ${await Class.findOne({ id: data.class }).lean().then((c) => c?.name) || 'Unknown'}`
+          description: `Posting a review for a class - ${await Class.findOne({ id: data.class }).lean().then((c) => c?.subjectTitle) || 'Unknown'}`
         })
 
         return res.status(200).json({

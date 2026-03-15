@@ -1,5 +1,4 @@
 
-// @ts-nocheck
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -16,7 +15,8 @@ import { IconFile, IconGridPattern, IconList, IconSearch, IconUserCircle } from 
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
-const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: IClass & { classReviewCount: number, contentSubmissionCount: number, userCount: number, withDescription: boolean, searchTerm: string, highlight: object }) => {
+type ClassAPIEntry = IClass & { classReviewCount: number, contentSubmissionCount: number, userCount?: number, withDescription?: boolean, searchTerm?: string, highlight?: object }
+const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: ClassAPIEntry) => {
   const router = useRouter()
 
   let formattedDescription = (
@@ -28,33 +28,30 @@ const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTit
   )
 
   const regex = /("[^"]+"|[^,| ]+)/g
+  const replaceHighlight = (fullText: string, snippet: string) => {
+    const snippetSansMark = snippet.replace(/<\/?mark>/g, '')
+    const i = fullText.toLowerCase().indexOf(snippetSansMark.toLowerCase())
+    if (i < 0) return fullText
 
+    const before = fullText.slice(0, i)
+    const after = fullText.slice(i + snippetSansMark.length)
+    const markedParts = snippet.split(/(<mark>.*?<\/mark>)/g).map((part, idx) => {
+      if (part.startsWith('<mark>') && part.endsWith('</mark>')) {
+        return <Mark key={idx}>{part.replace(/^<mark>|<\/mark>$/g, '')}</Mark>
+      }
+      return part
+    })
+
+    return (
+      <>
+        {before}
+        {markedParts}
+        {after}
+      </>
+    )
+  }
 
   if (highlight) {
-
-    function replaceHighlight(fullText: string, snippet: string) {
-      const snippetSansMark = snippet.replace(/<\/?mark>/g, '')
-      const i = fullText.toLowerCase().indexOf(snippetSansMark.toLowerCase())
-      if (i < 0) return fullText
-
-      const before = fullText.slice(0, i)
-      const after = fullText.slice(i + snippetSansMark.length)
-      const markedParts = snippet.split(/(<mark>.*?<\/mark>)/g).map((part, idx) => {
-        if (part.startsWith('<mark>') && part.endsWith('</mark>')) {
-          return <Mark key={idx}>{part.replace(/^<mark>|<\/mark>$/g, '')}</Mark>
-        }
-        return part
-      })
-
-      return (
-        <>
-          {before}
-          {markedParts}
-          {after}
-        </>
-      )
-    }
-
     Object.entries(highlight).forEach(([field, snippets]) => {
       if (!Array.isArray(snippets)) return
 
@@ -525,12 +522,12 @@ const Classes: NextPage = () => {
           <Text c='gray'> Found {totalClasses.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} result{totalClasses === 1 ? '' : 's'}. ({Math.round(timeForResults)} ms) </Text>
 
           <Group>
-            <Select size='md' placeholder="Sort by" data={[
+            <Select size='sm' placeholder="Sort by" data={[
               { label: 'Relevance', value: 'relevance' },
               { label: 'Alphabetical', value: 'alphabetical' },
               { label: 'Reviews', value: 'reviews' },
               { label: 'Users', value: 'users' },
-            ]} size='sm' defaultValue={sort} onChange={(value) => setSort(value)} clearable={false} allowDeselect={false} />
+            ]} defaultValue={sort} onChange={(value) => setSort(value)} clearable={false} allowDeselect={false} />
             <Switch
               size='lg'
               color='purple'
@@ -552,15 +549,15 @@ const Classes: NextPage = () => {
               <Masonry gutter={'0.5rem'}>
                 {
                   classes.map((classEntry: IClass) => (
-                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} {...classEntry} />
+                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0} contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0} {...classEntry} />
                   ))
                 }
               </Masonry>
             </ResponsiveMasonry>) : (
-            <Stack spacing="md">
+            <Stack gap="md">
               {
                 classes.map((classEntry: IClass) => (
-                  <ClassButton key={classEntry._id} classReviewCount={classEntry.classReviewCount || 0} contentSubmissionCount={classEntry.contentSubmissionCount || 0} withDescription searchTerm={searchTerm} highlight={classEntry.highlight} {...classEntry} />
+                  <ClassButton key={classEntry._id} classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0} contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0} withDescription searchTerm={searchTerm} highlight={(classEntry as ClassAPIEntry).highlight} {...classEntry} />
                 ))
               }
             </Stack>
@@ -595,19 +592,5 @@ const Classes: NextPage = () => {
     </Container>
   )
 }
-
-// export async function getServerSideProps (context) {
-//   await mongoConnection()
-
-//   const classesProp: IClass[] = await Class.find({display: true }).lean() as IClass[]
-//   const classReviewCounts = await ClassReview.aggregate().sortByCount('class')
-//   // const session: Session | null = await getServerSession(context.req, context.res, authOptions)
-//   return {
-//     props: {
-//       classesProp: JSON.parse(JSON.stringify(classesProp)),
-//       classReviewCountsProp: JSON.parse(JSON.stringify(classReviewCounts))
-//     }
-//   }
-// }
 
 export default Classes

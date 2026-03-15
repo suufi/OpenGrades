@@ -19,10 +19,14 @@ const ReviewVoteSchema = new mongoose.Schema({
         required: true
     },
     vote: {
-        type: Number, // 1 for upvote, -1 for downvote
+        type: Number, // 1 for upvote, -1 for downvote, 0 for removed/unvoted (kept to avoid re-granting karma on re-upvote)
         required: true,
         min: -1,
         max: 1
+    },
+    karmaGranted: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true })
 

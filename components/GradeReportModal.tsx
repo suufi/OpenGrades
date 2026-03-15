@@ -2,7 +2,7 @@ import { Accordion, Badge, Button, Flex, Group, List, LoadingOverlay, Modal, Sta
 import { showNotification } from '@mantine/notifications'
 import { useState } from 'react'
 
-import { IClass } from '@/types'
+import { IClass, IClassReview } from '@/types'
 import Link from 'next/link'
 import { compareTermsSequential, formatAcademicYear, getTermEmoji } from '@/utils/formatTerm'
 import { usePlausibleTracker } from '@/utils/plausible'
@@ -37,7 +37,7 @@ const GradeReportModal = ({ opened, onClose, onAddClasses }: {
                 const classesWithReviews = matchedClasses.reduce((acc: Record<string, IClass[]>, cls: IClass & { partialReviewGrade?: string; isDroppedClass?: boolean }) => {
                     const key = `${cls.academicYear}`
 
-                    const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
+                    const matchingPR = partialReviews.find((pr: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }) => pr.class === cls._id)
 
                     if (matchingPR) {
                         cls.partialReviewGrade = matchingPR.letterGrade

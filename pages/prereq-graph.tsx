@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
-import { getServerSession } from 'next-auth'
+import { getServerSession, Session } from 'next-auth'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import {
@@ -25,7 +24,7 @@ import {
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
 import { IconSearch, IconRefresh, IconArrowRight, IconCircle, IconHome, IconZoomIn } from '@tabler/icons'
-import authOptions from '@/pages/api/auth/[...nextauth]'
+import { config as authOptions } from '@/utils/auth'
 import { useRouter } from 'next/router'
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
@@ -35,7 +34,7 @@ import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 const ForceGraph2D = dynamic(
     () => import('react-force-graph-2d'),
     { ssr: false, loading: () => <Center h={500}><Loader size="xl" /></Center> }
-)
+) as any
 
 interface GraphNode {
     id: string
@@ -623,7 +622,7 @@ const PrereqGraphPage: NextPage<PrereqGraphPageProps> = ({ initialSubject }) => 
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const session = await getServerSession(context.req, context.res, authOptions)
+    const session = await getServerSession(context.req, context.res, authOptions) as Session | null
 
     if (!session) {
         return {

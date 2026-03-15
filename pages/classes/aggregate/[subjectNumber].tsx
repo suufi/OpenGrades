@@ -1,5 +1,4 @@
-// @ts-nocheck
-import authOptions from '@/auth'
+import { config as authOptions } from '@/utils/auth'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import { IClass, IClassReview, TimeRange } from '@/types'
@@ -700,7 +699,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const { subjectNumber } = context.query
+    const subjectNumber = context.query.subjectNumber as string
 
     await mongoConnection()
 
@@ -794,8 +793,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const latestClass = sortedClasses[0] || {}
 
     // Fetch related classes data
-    const prereqNumbers = extractCourseNumbers(latestClass.prerequisites || '')
-    const coreqNumbers = extractCourseNumbers(latestClass.corequisites || '')
+    const prereqNumbers = extractCourseNumbers((latestClass as IClass).prerequisites || '')
+    const coreqNumbers = extractCourseNumbers((latestClass as IClass).corequisites || '')
 
     const [prerequisiteClasses, corequisiteClasses, requiredByClasses] = await Promise.all([
         Class.find({
@@ -818,17 +817,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     ])
 
     const relatedClasses = {
-        prerequisites: prerequisiteClasses.map((c: any) => ({
+        prerequisites: prerequisiteClasses.map((c) => ({
             subjectNumber: c.subjectNumber,
             subjectTitle: c.subjectTitle,
             department: c.department
         })),
-        corequisites: corequisiteClasses.map((c: any) => ({
+        corequisites: corequisiteClasses.map((c) => ({
             subjectNumber: c.subjectNumber,
             subjectTitle: c.subjectTitle,
             department: c.department
         })),
-        requiredBy: requiredByClasses.map((c: any) => ({
+        requiredBy: requiredByClasses.map((c) => ({
             subjectNumber: c.subjectNumber,
             subjectTitle: c.subjectTitle,
             department: c.department

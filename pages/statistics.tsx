@@ -1,4 +1,3 @@
-// @ts-nocheck
 import GradeReportModal from "@/components/GradeReportModal"
 import ClassReview from "@/models/ClassReview"
 import User from "@/models/User"
@@ -15,6 +14,7 @@ import { useRouter } from "next/router"
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useState } from "react"
 import { Bar, Line } from "react-chartjs-2"
+import { auth } from "@/utils/auth"
 
 ChartJS.register(...registerables)
 
@@ -108,23 +108,20 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     const labels = Array.from(
         new Set(
-            people.flatMap((person: IUser) =>
+            people.flatMap((person) =>
                 person.courseAffiliation.map(aff => aff.departmentCode)
             )
         )
     ).sort(compareDepartmentCodes)
 
-    const filteredPeople = people.filter((person: IUser) => displayLevel === 'all' || (displayLevel === "G" ? person.year === "G" : ['1', '2', '3', '4'].includes(person.year)))
-
-    // create a chart.js dataset for the number of people in each department under each courseOption
-    // for each courseOption make a distinct dataset with the number of people in that courseOption, ultimately we are grouping by the departmentCode
+    const filteredPeople = people.filter((person) => displayLevel === 'all' || (displayLevel === "G" ? person.year === "G" : ['1', '2', '3', '4'].includes(person.year)))
 
     const departmentData = {
         labels,
         datasets: [
             ...Array.from(
                 new Set(
-                    filteredPeople.flatMap((person: IUser) =>
+                    filteredPeople.flatMap((person) =>
                         person.courseAffiliation.map(aff => aff.courseOption)
                     )
                 )
@@ -132,7 +129,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
                 label: courseOption,
                 data: labels.map(dep =>
                     filteredPeople.reduce(
-                        (total, person: IUser) =>
+                        (total, person) =>
                             total + person.courseAffiliation.filter(a => a.departmentCode === dep && a.courseOption === courseOption).length,
                         0
                     )
@@ -157,7 +154,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     }
 
-    const aggregateByDate = (items: { createdAt: string }[]) => {
+    const aggregateByDate = (items: { createdAt: string | Date }[]) => {
         const map = new Map<string, number>()
         for (const item of items) {
             const date = new Date(item.createdAt).toLocaleDateString()
@@ -208,13 +205,13 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         scales: {
             x: { title: { display: true, text: "Date" } },
             y: {
-                type: 'linear',
+                type: 'linear' as const,
                 title: { display: true, text: "Users" }
             },
             y1: {
-                type: 'linear',
+                type: 'linear' as const,
                 title: { display: true, text: "Reviews" },
-                position: "right",
+                position: "right" as const,
                 grid: { drawOnChartArea: false }
             }
         },
@@ -257,7 +254,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         })
     })
 
-    const generateBarData = (valueExtractor, colorScheme, sortFunction) => {
+    const generateBarData = (valueExtractor, colorScheme, sortFunction?) => {
         if (!sortFunction) {
             sortFunction = (a, b) => Number(b) - Number(a)
         }
@@ -357,7 +354,7 @@ interface ServerSideProps {
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
     await mongoConnection()
 
-    const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+    const session = await auth(context.req, context.res)
 
     if (session) {
         if (session.user && session.user?.email) {

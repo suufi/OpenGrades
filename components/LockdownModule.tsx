@@ -1,5 +1,5 @@
 import { Button, Card, Container, Divider, em, Group, List, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Stepper, Switch, Text, Textarea, TextInput, Title } from '@mantine/core'
-import { useForm, UseFormReturnType } from '@mantine/form'
+import { useForm } from '@mantine/form'
 import { zod4Resolver } from 'mantine-form-zod-resolver'
 import { showNotification } from '@mantine/notifications'
 import { useSession } from 'next-auth/react'
@@ -11,7 +11,7 @@ import { UserContext } from '../components/UserContextProvider'
 import { useDebouncedState, useMediaQuery } from '@mantine/hooks'
 import { IconCheck } from '@tabler/icons'
 import Link from 'next/link'
-import { IClass, ICourseOption, IdentityFlags } from '../types'
+import { IClass, ICourseOption, IdentityFlags, IUser } from '../types'
 import ClassSearch from './ClassSearch'
 import DegreeTermsModal from './DegreeTermsModal'
 import { buildUndergradProgramSelectData } from '@/utils/courseOptions'
@@ -24,7 +24,7 @@ type State = {
 
 type FormValues = {
   classes: { [key: string]: string[] },
-  flatClasses: string[]
+  flatClasses?: string[]
 }
 
 type UserProfile = {
@@ -33,7 +33,7 @@ type UserProfile = {
   classOf?: number,
   affiliation?: string,
   flags?: IdentityFlags[],
-  classes: string[] | { [key: string]: string[] },
+  classes: { [key: string]: string[] },
   flatClasses?: string[],
   referredBy?: string
 }
@@ -85,7 +85,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
     kerb: z.string(),
     name: z.string(),
     classOf: z.number().min(2000).max(new Date().getFullYear() + 7),
-    flags: z.nativeEnum(IdentityFlags).array(),
+    flags: z.enum(['First Gen', 'Low Income', 'BIL', 'International']).array(),
     affiliation: z.string(),
     classes: z.record(z.string(), z.array(z.string())),
     referredBy: z.string().optional()
@@ -142,7 +142,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
 
   async function submitProfile(values: UserProfile) {
 
-    const potentialGrad = (userProfile as any)?.year === 'G'
+    const potentialGrad = userProfile?.year === 'G'
     if (potentialGrad && wasMITUndergrad === null) {
       setIsGradStudent(true)
       setActive(2)
@@ -212,7 +212,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
   }, [status])
 
   useEffect(() => {
-    if ((userProfile as any)?.year === 'G') {
+    if (userProfile?.year === 'G') {
       setIsGradStudent(true)
     } else {
       setIsGradStudent(false)
@@ -255,7 +255,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
         const body = await res.json()
         if (res.ok && body.data) {
           const { matchedClasses = [], partialReviews = [] } = body.data
-          
+
           if (partialReviews && Array.isArray(partialReviews)) {
             setPartialReviewsData(partialReviews)
           }
@@ -269,7 +269,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
 
             // Add partial reviews to classes
             const classesWithPartialReviews = matchedClasses.map((cls: IClass & { partialReviewGrade?: string; isDroppedClass?: boolean }) => {
-              const matchingPR = partialReviews.find((pr: any) => pr.class === cls._id)
+              const matchingPR = partialReviews.find((pr: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }) => pr.class === cls._id)
               if (matchingPR) {
                 cls.partialReviewGrade = matchingPR.letterGrade
                 cls.isDroppedClass = matchingPR.droppedClass
@@ -508,11 +508,11 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
                               <Title order={3}>{formatTermSeasonYear(fallTerm, { withEmoji: true })}</Title>
-                              <ClassSearch term={fallTerm} display={formatTermDisplay(fallTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={fallTerm} display={formatTermDisplay(fallTerm)} form={form} />
                               <Title order={3}>{formatTermSeasonYear(iapTerm, { withEmoji: true })}</Title>
-                              <ClassSearch term={iapTerm} display={formatTermDisplay(iapTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={iapTerm} display={formatTermDisplay(iapTerm)} form={form} />
                               <Title order={3}>{formatTermSeasonYear(springTerm, { withEmoji: true })}</Title>
-                              <ClassSearch term={springTerm} display={formatTermDisplay(springTerm)} form={form as unknown as UseFormReturnType<FormValues>} />
+                              <ClassSearch term={springTerm} display={formatTermDisplay(springTerm)} form={form} />
                             </React.Fragment>
                           )
                         })

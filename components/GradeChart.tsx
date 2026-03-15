@@ -33,7 +33,7 @@ const GradeChart = ({ data }: GradeChartProps) => {
   // const { classes } = useStyles()
 
   function processPoints(points: GradePoint[]) {
-    const reportedGradeCutoffs: Record<LetterGrade, number[]> = {
+    const reportedGradeCutoffs: Record<'A' | 'B' | 'C' | 'D' | 'F' | 'DR', number[]> = {
       A: [-1, -1],
       B: [-1, -1],
       C: [-1, -1],
@@ -44,10 +44,10 @@ const GradeChart = ({ data }: GradeChartProps) => {
 
     points.forEach((point) => {
       if (reportedGradeCutoffs[point.letterGrade][0] === -1 || reportedGradeCutoffs[point.letterGrade][1] === -1) {
-        if (point.letterGrade === LetterGrade.A) {
+        if (point.letterGrade === 'A') {
           reportedGradeCutoffs[point.letterGrade][0] = point.numericGrade
           reportedGradeCutoffs[point.letterGrade][1] = 100
-        } else if (point.letterGrade === LetterGrade.F) {
+        } else if (point.letterGrade === 'F') {
           reportedGradeCutoffs[point.letterGrade][1] = point.numericGrade
           reportedGradeCutoffs[point.letterGrade][0] = 0
         } else {
@@ -56,13 +56,13 @@ const GradeChart = ({ data }: GradeChartProps) => {
         }
       } else {
         if (point.numericGrade < reportedGradeCutoffs[point.letterGrade][0]) {
-          if (point.letterGrade !== LetterGrade.F) {
+          if (point.letterGrade !== 'F') {
             reportedGradeCutoffs[point.letterGrade][0] = point.numericGrade
           } else {
             reportedGradeCutoffs[point.letterGrade][1] = point.numericGrade
           }
         } else if (point.numericGrade > reportedGradeCutoffs[point.letterGrade][1]) {
-          if (point.letterGrade !== LetterGrade.F) {
+          if (point.letterGrade !== 'F') {
             reportedGradeCutoffs[point.letterGrade][1] = point.numericGrade
           } else {
             reportedGradeCutoffs[point.letterGrade][0] = point.numericGrade

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { IClass } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
 import User from '@/models/User'
@@ -29,6 +28,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import authOptions from '@/pages/api/auth/[...nextauth]'
 import { useEffect, useState } from 'react'
+import { auth } from '@/utils/auth'
 
 interface EligibilityStatus {
     eligible: boolean
@@ -49,10 +49,10 @@ interface DiscoverData {
     popular?: Array<IClass & { pageviews: number; subjectNumber: string; linkToAggregate?: boolean }>
 }
 
-const ClassCard = ({ classData, badge, onNavigate }: any) => {
+const ClassCard = ({ classData, badge, onNavigate }: { classData: IClass, badge: React.ReactNode, onNavigate: (classData: { _id: string; subjectNumber?: string; linkToAggregate?: boolean }) => void }) => {
     return (
         <UnstyledButton
-            onClick={() => onNavigate(classData)}
+            onClick={() => onNavigate({ _id: classData._id, subjectNumber: classData.subjectNumber, linkToAggregate: false })}
             style={{ width: '100%' }}
         >
             <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
@@ -367,7 +367,7 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
 export const getServerSideProps: GetServerSideProps = async (context) => {
     await mongoConnection()
 
-    const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+    const session = await auth(context.req, context.res)
 
     if (!session) {
         return {

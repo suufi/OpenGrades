@@ -16,7 +16,8 @@ import {
     Network,
     GitBranch,
     Diamonds,
-    News
+    News,
+    Trophy
 } from 'tabler-icons-react'
 import { IconQuestionCircle } from '@tabler/icons'
 
@@ -45,8 +46,8 @@ export const navConfig: NavItem[] = [
     { label: 'Class Network', icon: Network, href: '/class-network', color: 'indigo', section: 'main' },
     { label: 'Prereq Graph', icon: GitBranch, href: '/prereq-graph', color: 'lime', section: 'main' },
     { label: 'Statistics', icon: Graph, href: '/statistics', color: 'cyan', section: 'main' },
+    { label: 'Leaderboard', icon: Trophy, href: '/leaderboard', color: 'yellow', section: 'main' },
     { label: "Who's Taken What?", icon: IconQuestionCircle, href: '/ofcourse', color: 'teal', section: 'main' },
-    { label: 'About', icon: InfoCircle, href: '/about', color: 'grape', section: 'main' },
 
     // Admin section (trust level > 1)
     { label: 'Reports', icon: Shield, href: '/reports', color: 'green', minTrust: 2, section: 'admin' },
@@ -58,6 +59,7 @@ export const navConfig: NavItem[] = [
     { label: 'DormSoup', icon: Mail, href: 'https://dormsoup.mit.edu/', color: 'green', external: true, section: 'sipb' },
 
     // Other links
+    { label: 'About', icon: InfoCircle, href: '/about', color: 'grape', section: 'other' },
     { label: 'Changelog', icon: News, href: '/changelog', color: 'blue', section: 'other' },
     { label: 'Privacy Policy', icon: Shield, href: '/privacy', color: 'gray', section: 'other' },
     { label: 'Feedback', icon: Star, href: 'https://forms.gle/pyj7zY45AVnjX2Nc8', color: 'yellow', external: true, section: 'other' },

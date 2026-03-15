@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
@@ -13,16 +12,18 @@ import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
 import { getESClient } from '@/utils/esClient'
 import { decode } from 'html-entities'
-import mongoose from 'mongoose'
+import mongoose, { PipelineStage } from 'mongoose'
 import { parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
 import eecsRenumbering from '@/utils/eecs-renumbering.json'
+import { SearchResponse } from '@elastic/elasticsearch/lib/api/types'
 
 const client = getESClient()
 
 type Data = {
   success: boolean,
   data?: object,
-  message?: string
+  message?: string,
+  meta?: object
 }
 
 type ClassQuery = {
@@ -147,10 +148,10 @@ async function handler(
           query.hassAttribute = { $in: hassValues }
         }
 
-        const tokens = search.split(/\s+/).filter(Boolean)
+        const tokens = (search as string).split(/\s+/).filter(Boolean)
 
         // Prepare for sorting
-        let sortQuery = {}
+        let sortQuery: Record<string, 1 | -1> = {}
         if (sortField) {
           if (sortField !== 'relevance') {
             if (sortField === 'alphabetical') {
@@ -160,7 +161,7 @@ async function handler(
             } else if (sortField === 'reviews') {
               sortQuery.classReviewCount = -1
             } else {
-              sortQuery[sortField] = sortOrder === 'asc' ? 1 : -1
+              sortQuery[sortField as string] = sortOrder === 'asc' ? 1 : -1
             }
           } else {
             if (!search) {
@@ -189,7 +190,7 @@ async function handler(
           }))
 
 
-          let esQuery = {
+          let esQuery: any = {
             bool: {
               should: [
                 {
@@ -236,7 +237,7 @@ async function handler(
           }).catch((error) => {
             console.error("Error during ElasticSearch query", error)
             return res.status(400).json({ success: false, message: error.message })
-          })
+          }) as SearchResponse<{ _id: string, highlight: { [key: string]: string[] } }>
 
           const classIds = searchResults.hits.hits.map((hit) => new mongoose.Types.ObjectId(hit._id))
           query._id = { $in: classIds }
@@ -253,7 +254,7 @@ async function handler(
         }
 
 
-        const aggregationPipeline = [
+        const aggregationPipeline: Record<string, any>[] = [
           { $match: query },
           {
             $lookup: {
@@ -302,12 +303,12 @@ async function handler(
           aggregationPipeline.push({ $sort: sortQuery })
         }
 
-        let classes = await Class.aggregate(aggregationPipeline)
+        let classes = await Class.aggregate(aggregationPipeline as PipelineStage[])
 
         // If `all` is set to true, return all classes without pagination
         if (all === 'true') {
 
-          let classes = await Class.find(query).sort(sortQuery).lean()
+          let classes = await Class.find(query).sort(sortQuery as Record<string, 1 | -1>).lean()
 
           // Get the review count for each class
           const reviewCounts = await ClassReview.aggregate([
@@ -396,9 +397,6 @@ async function handler(
 
     case 'POST':
       try {
-        // const classExists = await Class.exists()
-        console.log(body)
-        console.log(typeof body)
 
         if (!user || user?.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
@@ -415,7 +413,7 @@ async function handler(
         res.setHeader('X-Accel-Buffering', 'no')
         res.statusCode = 200
 
-        const sendMessage = (data: any) => {
+        const sendMessage = (data: Record<string, any>) => {
           res.write(JSON.stringify(data) + '\n')
           if (typeof (res as any).flush === 'function') {
             (res as any).flush()
@@ -478,7 +476,7 @@ async function handler(
         requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
         requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
 
-        async function fetchDescription(description) {
+        const fetchDescription = async (description: string): Promise<string> => {
           if (!description.includes("See description under subject")) {
             return description
           }

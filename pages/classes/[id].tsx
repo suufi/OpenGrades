@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ActionIcon, Alert, Anchor, Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Divider, Grid, Group, Input, LoadingOverlay, Modal, NumberInput, Paper, Progress, Rating, RingProgress, Select, Space, Stack, Stepper, Text, TextInput, Textarea, Title, Tooltip, UnstyledButton, em } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { zod4Resolver } from 'mantine-form-zod-resolver'
@@ -47,6 +46,7 @@ import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 import { usePlausibleTracker } from '@/utils/plausible'
 import { buildExactCourseNumberRegex, createMitCourseNumberRegex, normalizeCourseNumber } from '@/utils/courseNumbers'
 import { extractCourseNumbers } from '@/utils/prerequisiteGraph'
+import { auth } from '@/utils/auth'
 
 const RecommendationLevels: Record<number, string> = {
   1: 'Definitely not recommend',
@@ -479,8 +479,8 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
   const schema = z.object({
     overallRating: z.number().min(1).max(7),
     conditions: z.array(z.enum(['firstYear', 'droppedClass', 'retaking'])),
-    hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'], { invalid_type_error: 'Please select a number of hours for this class.' }),
-    recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { invalid_type_error: 'Please select a recommendation level.' }),
+    hoursPerWeek: z.enum(['0-2 hours', '3-5 hours', '6-8 hours', '9-11 hours', '12-14 hours', '15-17 hours', '18-20 hours', '21-23 hours', '24-26 hours', '37-40 hours'], { message: 'Please select a number of hours for this class.' }),
+    recommendationLevel: z.enum(['1', '2', '3', '4', '5'], { message: 'Please select a recommendation level.' }),
     classComments: z.string().min(5, 'Please type some more words.'),
     backgroundComments: z.string(),
     numericGrade: z.number().min(0).max(100).nullable(),
@@ -596,7 +596,7 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
           {error.length > 0 && <Alert icon={<IconAlertCircle size={16} />} title="Oops, look like there are some problems!" color="red" style={{ width: '100%' }}>
             {error}
           </Alert>}
-          <form onSubmit={form.onSubmit((values) => postReview(values))} style={{ width: '100%' }} >
+          <form onSubmit={form.onSubmit((values: ClassReviewForm) => postReview(values))} style={{ width: '100%' }} >
             <Stepper active={active} onStepClick={setActive} orientation={isMobile ? 'vertical' : 'horizontal'}>
               <Stepper.Step label="Grade Information" description="Upload grades">
                 <Stack>
@@ -616,8 +616,8 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
               <Stepper.Step label="Class Review" description="Tell us more about the class!">
                 <Stack>
                   <Text fw={500} fz={14}>
-                    Overall Rating ({form.values.overallRating}/7) <Space h="xs" /> <Rating count={7} {...form.getInputProps('overallRating')} />
-                    {form.errors?.overallRating && <Text c={'red'} fs='italic'> Please select a rating. </Text>}
+                    Overall Rating ({Number(form.values.overallRating)}/7) <Space h="xs" /> <Rating count={7} {...form.getInputProps('overallRating')} />
+                    {!!form.errors?.overallRating && <Text c="red" fs="italic"> Please select a rating. </Text>}
                   </Text>
                   <Checkbox.Group
                     label="Do any of the following apply to you?"
@@ -685,7 +685,7 @@ function AddContent({ classData, refreshData }: AddContentProps) {
   })
 
   useEffect(() => {
-    if (form.values.type && ['Syllabus', 'Grade Calculation Spreadsheet', 'Course Schedule', 'Textbook Reading Assignments'].includes(form.values.type)) {
+    if (form.values.type && ['Syllabus', 'Grade Calculation Spreadsheet', 'Course Schedule', 'Textbook Reading Assignments'].includes(form.values.type as string)) {
       form.setFieldValue('contentTitle', form.values.type)
     }
   }, [form.values.type])
@@ -796,7 +796,7 @@ function AddContent({ classData, refreshData }: AddContentProps) {
                 ]}
                 multiple={false}
               >
-                <Group justify="center" gap="xl" mih={200} sx={{ pointerEvents: 'none' }}>
+                <Group justify="center" gap="xl" mih={200} style={{ pointerEvents: 'none' }}>
                   <Dropzone.Accept>
                     <IconUpload size={50} color="blue" stroke={1.5} />
                   </Dropzone.Accept>
@@ -1052,7 +1052,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
 
   const renderDescriptionWithLinks = (text: string) => {
     if (!text) return null
-    const nodes: Array<string | JSX.Element> = []
+    const nodes: Array<string | React.ReactNode> = []
     let lastIndex = 0
     const regex = createMitCourseNumberRegex('g')
 
@@ -1067,7 +1067,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         nodes.push(text.slice(lastIndex, start))
       }
 
-      const preview = referencedClassMap.get(normalized)
+      const preview = referencedClassMap.get(normalized) as IClass
       if (preview) {
         nodes.push(
           <Tooltip
@@ -1355,7 +1355,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
               <ClassReviewComment
                 key={classReview?._id}
                 classReview={classReview}
-                author={{ name: `Anonymous Student #${index + 1}`, hiddenName: classReview.author ? classReview.author.name : `Anonymous Student #${index + 1}` }}
+                author={{ name: `Anonymous Student #${index + 1}`, hiddenName: classReview.author ? (classReview.author as IUser).name : `Anonymous Student #${index + 1}` }}
                 reported={reportsProp.some((report: IReport) => report.classReview?._id === classReview._id && !report.resolved)}
                 trustLevel={userProp.trustLevel}
                 userVote={classReview.userVote}
@@ -1390,7 +1390,7 @@ export const getServerSideProps = (async (context) => {
   const classData = await Class.findById(id).lean()
   const contentSubmissionData: IContentSubmission[] = await ContentSubmission.find({ class: id }).lean()
 
-  const session: Session | null = await getServerSession(context.req, context.res, authOptions)
+  const session = await auth(context.req, context.res)
   let myReview = null
 
   if (session) {
@@ -1400,25 +1400,6 @@ export const getServerSideProps = (async (context) => {
       const favoriteClasses = user?.favoriteClasses || []
 
       let reviewsData: IClassReview[] = []
-      // if (user.trustLevel < 2) {
-      //   reviewsData = await ClassReview.find({ class: id }).select(user.trustLevel < 2 ? ['-author', '-numericGrade', '-letterGrade'] : []).populate('author').lean()
-      // } else {
-      //   reviewsData = await ClassReview.find({ class: id }).populate('author').lean()
-      // }
-
-      // // Get the user's vote (if any) on each review
-      // const reviewVotes = await ReviewVote.find({ user: user._id }).lean()
-      // const reviewVotesMap = reviewVotes.reduce((map, vote) => {
-      //   map[vote.classReview.toString()] = vote.vote
-      //   return map
-      // }, {})
-
-      // reviewsData = reviewsData.map((review) => ({
-      //   ...review,
-      //   userVote: reviewVotesMap[review._id.toString()] || null, // User's vote: 1, -1, or null
-      //   upvotes: review.upvotes || 0,
-      //   downvotes: review.downvotes || 0,
-      // }))
 
       if (user.trustLevel < 2) {
         // Fetch reviews with limited data based on trust level
@@ -1503,9 +1484,6 @@ export const getServerSideProps = (async (context) => {
         reports = await Report.find({ $or: [{ contentSubmission: { $in: contentSubmissionData.map((contentSubmission: IContentSubmission) => contentSubmission._id) } }, { classReview: { $in: reviewsData.map((review: IClassReview) => review._id) } }] }).populate('reporter contentSubmission classReview').lean()
       }
 
-      console.log('my session', session)
-      // console.log('reviewsData', reviewsData)
-
       // check if last grade report upload was made in last 4 months
       const lastGradeReportUpload = hasRecentGradeReport(user.lastGradeReportUpload, 4)
 
@@ -1557,7 +1535,7 @@ export const getServerSideProps = (async (context) => {
       ])
 
       // Helper to deduplicate by subjectNumber within each related list
-      const dedupeBySubjectNumber = (items: any[]) => {
+      const dedupeBySubjectNumber = (items: IClass[]) => {
         const seen = new Set<string>()
         return items.filter((c) => {
           if (!c?.subjectNumber) return false
@@ -1568,17 +1546,17 @@ export const getServerSideProps = (async (context) => {
       }
 
       const relatedClasses = {
-        prerequisites: dedupeBySubjectNumber(prerequisiteClasses).map((c: any) => ({
+        prerequisites: dedupeBySubjectNumber(prerequisiteClasses).map((c) => ({
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
           department: c.department
         })),
-        corequisites: dedupeBySubjectNumber(corequisiteClasses).map((c: any) => ({
+        corequisites: dedupeBySubjectNumber(corequisiteClasses).map((c) => ({
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
           department: c.department
         })),
-        requiredBy: dedupeBySubjectNumber(requiredByClasses).map((c: any) => ({
+        requiredBy: dedupeBySubjectNumber(requiredByClasses).map((c) => ({
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
           department: c.department

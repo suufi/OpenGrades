@@ -47,13 +47,7 @@ export async function vectorSearch(
 
     const allEmbeddings = await CourseEmbedding.find(filter)
         .select('embedding class embeddingType sourceText')
-        .lean() as Array<{
-            _id: any
-            embedding: number[]
-            class: any
-            embeddingType: string
-            sourceText: string
-        }>
+        .lean()
 
     const scored = allEmbeddings.map(record => ({
         ...record,
@@ -135,7 +129,7 @@ export async function getRelevantContext(
         .populate('class')
         .sort({ createdAt: -1 })
         .limit(10)
-        .lean() as IClassReview[]
+        .lean()
 
     const contentSnippets = contentResults
         .map(r => r.snippet)
@@ -247,7 +241,7 @@ export function buildContextString(context: {
         contextStr += '## Reviews FROM OTHER MIT STUDENTS (NOT the student asking):\n'
         contextStr += '(Use these to understand course quality, NOT to infer what the asking student has taken)\n\n'
         context.reviews.slice(0, 5).forEach((review, idx) => {
-            const cls = review.class as any
+            const cls = review.class as IClass
             contextStr += `${idx + 1}. Review of ${cls.subjectNumber} by another student (Rating: ${review.overallRating}/7)\n`
             contextStr += `   "${review.classComments}"\n\n`
         })

@@ -1,11 +1,10 @@
-// @ts-nocheck
-
 import User from '@/models/User'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
+import { IClass, IUser } from '@/types'
 
 type Data = {
     success: boolean
@@ -61,7 +60,7 @@ async function handler (
 
                 const uniqueTerms = new Set<string>()
                 if (user.classesTaken) {
-                    for (const cls of user.classesTaken) {
+                    for (const cls of user.classesTaken as IClass[]) {
                         if (cls.term) {
                             uniqueTerms.add(cls.term)
                         }
@@ -145,7 +144,7 @@ async function handler (
                     return res.status(400).json({
                         success: false,
                         message: 'Invalid request body',
-                        data: validation.error.errors
+                        data: (validation.error as any).errors
                     })
                 }
 
@@ -164,7 +163,7 @@ async function handler (
                     }
 
                     const allTermsSet = new Set<string>()
-                    for (const cls of (userForAff.classesTaken || [])) {
+                    for (const cls of (userForAff.classesTaken || []) as IClass[]) {
                         if (cls.term) allTermsSet.add(cls.term)
                     }
                     const allTerms = Array.from(allTermsSet)

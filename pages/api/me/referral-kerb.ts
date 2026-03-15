@@ -1,4 +1,3 @@
-// @ts-nocheck
 import User from '@/models/User'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
@@ -7,7 +6,7 @@ import mongoConnection from '../../../utils/mongoConnection'
 
 type Data = {
     success: boolean,
-    data?: object,
+    data?: object | boolean,
     message?: string
 }
 

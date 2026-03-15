@@ -79,7 +79,7 @@ function extractGIRRequirements(reqString: string): string[] {
 function getGIRCodeForClass(cls: { subjectNumber?: string; girAttribute?: string[]; units?: string } | null): string | null {
     if (!cls) return null
 
-    let codes: string[] = cls.girAttribute?.length ? cls.girAttribute : []
+    let codes: string[] = Array.isArray(cls.girAttribute) && cls.girAttribute.length ? cls.girAttribute : []
     if (codes.length === 0 && cls.units) {
         codes = parseUnitsField(cls.units).girAttributes || []
     }
@@ -100,7 +100,7 @@ async function findClassesForGIRCode(girCode: string): Promise<string[]> {
         .select('subjectNumber')
         .lean()
 
-    return classes.map((c: any) => c.subjectNumber).filter(Boolean)
+    return classes.map((c) => c.subjectNumber).filter(Boolean)
 }
 
 const CORE_GIR_CODES = ['BIOL', 'CAL1', 'CAL2', 'CHEM', 'PHY1', 'PHY2'] as const
@@ -126,9 +126,9 @@ async function buildSubjectNumberToGIRCodeFromDB(): Promise<Map<string, string>>
     })
         .select('subjectNumber aliases girAttribute')
         .lean()
-    for (const c of classes as any[]) {
+    for (const c of classes) {
         const code = Array.isArray(c.girAttribute) ? c.girAttribute[0] : c.girAttribute
-        if (!code || !CORE_GIR_CODES.includes(code as any)) continue
+        if (!code || !CORE_GIR_CODES.includes(code as (typeof CORE_GIR_CODES)[number])) continue
         if (c.subjectNumber) map.set(c.subjectNumber, code)
         for (const alias of c.aliases || []) {
             if (alias) map.set(alias, code)
@@ -195,7 +195,7 @@ export async function getPrerequisiteGraph(
     requiredBy: IClass[]
     nextCourses: IClass[]
 }> {
-    const sourceClass = await Class.findById(classId).lean() as IClass | null
+    const sourceClass = await Class.findById(classId).lean()
 
     if (!sourceClass) {
         throw new Error('Class not found')
@@ -207,12 +207,12 @@ export async function getPrerequisiteGraph(
     const prerequisites = await Class.find({
         subjectNumber: { $in: prereqNumbers },
         offered: true
-    }).lean() as IClass[]
+    }).lean()
 
     const corequisites = await Class.find({
         subjectNumber: { $in: coreqNumbers },
         offered: true
-    }).lean() as IClass[]
+    }).lean()
 
     const requiredBy = await Class.find({
         offered: true,
@@ -220,7 +220,7 @@ export async function getPrerequisiteGraph(
             { prerequisites: { $regex: buildExactCourseNumberRegex(sourceClass.subjectNumber) } },
             { corequisites: { $regex: buildExactCourseNumberRegex(sourceClass.subjectNumber) } }
         ]
-    }).lean() as IClass[]
+    }).lean()
 
     return {
         prerequisites,
@@ -244,7 +244,7 @@ export async function getPrerequisiteChain(
 
         if (depth >= maxDepth) continue
 
-        const currentClass = await Class.findById(currentId).lean() as IClass | null
+        const currentClass = await Class.findById(currentId).lean()
         if (!currentClass) continue
 
         // Skip if revisited at same or greater depth (BFS guarantees shortest path first)
@@ -260,7 +260,7 @@ export async function getPrerequisiteChain(
         const prerequisites = await Class.find({
             subjectNumber: { $in: prereqNumbers },
             offered: true
-        }).select('_id subjectNumber').lean() as IClass[]
+        }).select('_id subjectNumber').lean()
 
         for (const prereq of prerequisites) {
             queue.push({
@@ -348,7 +348,7 @@ export async function buildGraphData(
             { aliases: subjectNumber }
         ],
         offered: true
-    }).lean() as IClass | null
+    }).lean()
 
     if (!rootClass) {
         return { nodes: [], edges: [] }
@@ -380,7 +380,7 @@ export async function buildGraphData(
         const currentClass = await Class.findOne({
             subjectNumber: currentSubject,
             offered: true
-        }).lean() as IClass | null
+        }).lean()
 
         if (!currentClass) continue
 
@@ -394,7 +394,7 @@ export async function buildGraphData(
                 offered: true
             })
                 .select('subjectNumber subjectTitle department girAttribute units')
-                .lean() as IClass | null
+                .lean()
 
             const girCode = getGIRCodeForClass(prereqClass)
             const effectiveId = girCode ? `GIR:${girCode}` : prereqNum
@@ -460,7 +460,7 @@ export async function buildGraphData(
                     offered: true
                 })
                     .select('subjectNumber subjectTitle department girAttribute units')
-                    .lean() as IClass | null
+                    .lean()
 
                 const girCode = getGIRCodeForClass(coreqClass)
                 const effectiveId = girCode ? `GIR:${girCode}` : coreqNum
@@ -516,7 +516,7 @@ export async function buildGraphData(
             { prerequisites: { $regex: buildExactCourseNumberRegex(rootId) } },
             { corequisites: { $regex: buildExactCourseNumberRegex(rootId) } }
         ]
-    }).lean() as IClass[]
+    }).lean()
 
     for (const reqClass of requiredByClasses) {
         if (!nodesMap.has(reqClass.subjectNumber)) {
@@ -580,7 +580,7 @@ export async function buildFullNetworkGraph(
 
     const classes = await Class.find(query)
         .select('subjectNumber subjectTitle department prerequisites corequisites girAttribute aliases units')
-        .lean() as IClass[]
+        .lean()
 
     const nodesMap = new Map<string, GraphNode>()
     const edges: GraphEdge[] = []
@@ -737,7 +737,7 @@ export async function buildFullNetworkGraph(
     }
     const seen = new Set<string>()
     const dedupedEdges = edges.filter((e) => {
-        const key = `${e.source}|${e.target}|${(e.data as any)?.type ?? ''}`
+        const key = `${e.source}|${e.target}|${(e.data as GraphEdge['data'])?.type ?? ''}`
         if (seen.has(key)) return false
         seen.add(key)
         return true

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { AppProps } from 'next/app'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -30,6 +29,7 @@ import '@mantine/spotlight/styles.css'
 
 
 import mainClasses from '@/styles/Main.module.css'
+import { ICourseOption, IUser } from '@/types'
 
 const getAvailableAcademicYears = () => {
   const startYear = 2021
@@ -242,7 +242,7 @@ function useEditProfileModal() {
               </Button>
             </Group>
             <Group gap="xs">
-              {userProfile.courseAffiliation.map((course: any, idx: number) => (
+              {userProfile.courseAffiliation.map((course: ICourseOption, idx: number) => (
                 <Badge key={idx} color="blue" variant="light" size="md">
                   {formatCourseOptionCode(course)} ({course.courseLevel})
                 </Badge>
@@ -282,7 +282,7 @@ function useEditProfileModal() {
               description="Your reviews help train our recommendation system running on MIT SIPB servers. All AI processing is local—no external services. Only class comments and review metadata (first year, retaking, dropped status) are used. No identifiable information is shared."
               checked={!userProfile?.aiEmbeddingOptOut}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, aiEmbeddingOptOut: !event.currentTarget.checked })
+                setUserProfile({ ...userProfile, aiEmbeddingOptOut: !event.currentTarget.checked } as IUser)
 
                 fetch('/api/me/privacy', {
                   method: 'PUT',
@@ -302,7 +302,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, aiEmbeddingOptOut: !(!event.currentTarget.checked) })
+                    setUserProfile({ ...userProfile, aiEmbeddingOptOut: !(!event.currentTarget.checked) } as IUser)
                   }
                 })
               }}
@@ -318,7 +318,7 @@ function useEditProfileModal() {
               description="Get notified when someone has questions about classes you've taken. (Feature coming soon)"
               checked={!userProfile?.qaEmailOptOut}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, qaEmailOptOut: !event.currentTarget.checked })
+                setUserProfile({ ...userProfile, qaEmailOptOut: !event.currentTarget.checked } as IUser)
 
                 fetch('/api/me/privacy', {
                   method: 'PUT',
@@ -338,7 +338,7 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, qaEmailOptOut: !(!event.currentTarget.checked) })
+                    setUserProfile({ ...userProfile, qaEmailOptOut: !(!event.currentTarget.checked) } as IUser)
                   }
                 })
               }}
@@ -351,7 +351,7 @@ function useEditProfileModal() {
               description="Get updates, announcements, and general communications from MIT OpenGrades"
               checked={userProfile?.emailOptIn === true}
               onChange={(event) => {
-                setUserProfile({ ...userProfile, emailOptIn: event.currentTarget.checked })
+                setUserProfile({ ...userProfile, emailOptIn: event.currentTarget.checked } as IUser)
 
                 fetch('/api/me', {
                   method: 'PUT',
@@ -371,7 +371,39 @@ function useEditProfileModal() {
                       color: 'red'
                     })
 
-                    setUserProfile({ ...userProfile, emailOptIn: !event.currentTarget.checked })
+                    setUserProfile({ ...userProfile, emailOptIn: !event.currentTarget.checked } as IUser)
+                  }
+                })
+              }}
+            />
+          </div>
+
+          <div>
+            <Switch
+              label="Show my kerb on karma leaderboard"
+              description={`If off, you will appear as Student (${userProfile?.classOf}) on the karma leaderboard`}
+              checked={userProfile?.karmaDisplayKerb === true}
+              onChange={(event) => {
+                const checked = event.currentTarget.checked
+                setUserProfile({ ...userProfile, karmaDisplayKerb: checked } as IUser)
+                fetch('/api/me', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ karmaDisplayKerb: checked })
+                }).then(res => res.json()).then(data => {
+                  if (data.success) {
+                    notifications.show({
+                      title: 'Success',
+                      message: 'Karma leaderboard display updated',
+                      color: 'green'
+                    })
+                  } else {
+                    setUserProfile({ ...userProfile, karmaDisplayKerb: !checked } as IUser)
+                    notifications.show({
+                      title: 'Error',
+                      message: data.message || 'Failed to update',
+                      color: 'red'
+                    })
                   }
                 })
               }}
@@ -430,13 +462,13 @@ function ContentFetcher(props: AppProps) {
 
   const needsDegreeTermAssignment = (() => {
     const isGrad = userProfile?.year === 'G'
-    const hasProgramTerms = Array.isArray((userProfile as any)?.programTerms) && ((userProfile as any).programTerms.length > 0)
-    const hasMultipleAffiliations = Array.isArray((userProfile as any)?.courseAffiliation) && ((userProfile as any).courseAffiliation.length > 1)
+    const hasProgramTerms = Array.isArray(userProfile?.programTerms) && (userProfile?.programTerms?.length > 0)
+    const hasMultipleAffiliations = Array.isArray(userProfile?.courseAffiliation) && (userProfile?.courseAffiliation?.length > 1)
 
     return isGrad && hasMultipleAffiliations && !hasProgramTerms
   })()
 
-  const needsEmailOptIn = (userProfile as any)?.emailOptIn === null || (userProfile as any)?.emailOptIn === undefined
+  const needsEmailOptIn = userProfile?.emailOptIn === null || userProfile?.emailOptIn === undefined
 
   return (
     !userProfile.banned || userProfile.verified === false
@@ -449,7 +481,7 @@ function ContentFetcher(props: AppProps) {
       : <>
         <Container style={{ height: '100%', padding: '5rem' }}>
           <Center style={{ height: '90%' }}>
-            <Text size="xl" weight={700}>
+            <Text size="xl" fw={700}>
               Your account is not authorized to use this platform. Please contact <a href="mailto:sipb-opengrades@mit.edu">sipb-opengrades@mit.edu</a> if you believe this is a mistake.
             </Text>
           </Center>
@@ -458,7 +490,7 @@ function ContentFetcher(props: AppProps) {
   )
 }
 
-function App({ pageProps, Component }: AppProps) {
+function App({ pageProps, Component, router }: AppProps) {
   const [opened, { toggle }] = useDisclosure()
   console.log("App.props", pageProps)
 
@@ -513,17 +545,17 @@ function App({ pageProps, Component }: AppProps) {
           </div>
         </AppShell.Header>
         <AppShell.Main className={mainClasses.mainContainer}>
-          <ContentFetcher {...{ Component, pageProps }} />
+          <ContentFetcher {...{ Component, pageProps, router }} />
         </AppShell.Main>
       </AppShell >
     </>
   )
 }
 
-export default function AppWrapper({ Component, pageProps }: AppProps) {
+export default function AppWrapper({ Component, pageProps, router }: AppProps) {
   useEffect(() => {
-    window.dataLayer = window.dataLayer || []
-    function gtag() { dataLayer.push(arguments) }
+    (window as any).dataLayer = (window as any).dataLayer || []
+    function gtag(...args: any[]) { (window as any).dataLayer.push(args) }
     gtag('js', new Date())
     gtag('config', 'G-2EWKT6ED8T')
   }, [])
@@ -560,7 +592,7 @@ export default function AppWrapper({ Component, pageProps }: AppProps) {
               <ModalsProvider>
                 {/* <App {...pageProps} /> */}
                 <link rel="canonical" href="https://opengrades.mit.edu" />
-                <App pageProps={pageProps} Component={Component} />
+                <App pageProps={pageProps} Component={Component} router={router} />
                 {/* <Script src='https://www.googletagmanager.com/gtag/js?id=G-2EWKT6ED8T' strategy='afterInteractive' /> */}
               </ModalsProvider>
             </MantineProvider>

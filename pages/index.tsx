@@ -1,6 +1,3 @@
-
-// @ts-nocheck
-
 import type { InferGetServerSidePropsType, NextPage } from 'next'
 import Head from 'next/head'
 
@@ -15,7 +12,7 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
 import classes from '@/styles/Index.module.css'
-import { IClass, IClassReview, IUser } from '@/types'
+import { AddClassesFormValues, IClass, IClassReview, IUser } from '@/types'
 import { buildTermCode, compareTermsSequential, formatAcademicYear, formatTermDisplay, getTermEmoji, TERM_SELECT_OPTIONS } from '@/utils/formatTerm'
 import mongoConnection from '@/utils/mongoConnection'
 import { Accordion, ActionIcon, Alert, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title, Transition } from '@mantine/core'
@@ -30,6 +27,7 @@ import { useRouter } from 'next/router'
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import { useEffect, useState } from 'react'
 import { News } from 'tabler-icons-react'
+import { auth } from '@/utils/auth'
 
 const scaleY = {
   in: { opacity: 1, transform: 'scaleY(1)' },
@@ -38,12 +36,6 @@ const scaleY = {
   transitionProperty: 'transform, opacity',
 }
 
-interface FormValues {
-  classes: {
-    [key: string]: string[]
-  },
-  flatClasses?: string[]
-}
 
 const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp, referralsProp }) => {
 
@@ -57,7 +49,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const [contentLoading, setContentLoading] = useState<boolean>(false)
   const [flagExplanation, setFlagExplanation] = useState<boolean>(false)
   const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
-  const [referredByState, setReferredByState] = useState<State>({ data: '', status: 'initial' })
+  const [referredByState, setReferredByState] = useState<{ data: string, status: 'initial' | 'loading' | 'success' | 'error' }>({ data: '', status: 'initial' })
 
   const [newsOpen, setNewsOpen] = useLocalStorage({
     key: 'newsOpen.3-12-2025',
@@ -105,9 +97,10 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   }, [referredBy])
 
 
-  const form = useForm<FormValues>({
+  const form = useForm<AddClassesFormValues>({
     initialValues: {
-      classes: {}
+      classes: {},
+      flatClasses: []
     },
 
     transformValues: (values) => ({
@@ -123,7 +116,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     })
   }, [academicYearTaken, selectedTerm])
 
-  async function addClasses(values: any) {
+  async function addClasses(values: AddClassesFormValues) {
     console.log(values)
     setContentLoading(true)
     const classesTaken = values.flatClasses.map((classId: string) => ({ _id: classId }))
@@ -301,11 +294,18 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         })
 
         // Merge parsed classes into form's state
+        const classIdsByTerm = Object.entries(classes).reduce<Record<string, string[]>>((acc, [term, classList]) => {
+          acc[term] = classList
+            .map((c) => c._id)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0)
+          return acc
+        }, {})
+
         form.setValues((prevValues) => ({
           ...prevValues,
           classes: {
             ...prevValues.classes,
-            ...classes,
+            ...classIdsByTerm,
           },
         }))
       } else {
@@ -489,7 +489,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   </Grid.Col>
                 </Grid>
                 <Divider variant='dotted' label={"Select your classes"} />
-                <ClassSearch term={academicYearTaken && selectedTerm ? buildTermCode(academicYearTaken, selectedTerm) : ""} display={academicYearTaken && selectedTerm ? formatTermDisplay(buildTermCode(academicYearTaken, selectedTerm)) : ""} form={form as any} />
+                <ClassSearch term={academicYearTaken && selectedTerm ? buildTermCode(academicYearTaken, selectedTerm) : ""} display={academicYearTaken && selectedTerm ? formatTermDisplay(buildTermCode(academicYearTaken, selectedTerm)) : ""} form={form} />
                 <Button type="submit" disabled={
                   form.getTransformedValues().flatClasses?.length === 0
                 }> Submit </Button>
@@ -589,22 +589,23 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
 interface ServerSideProps {
   session: any,
-  userProp: IUser,
+  userProp: IUser & { referredBy: { kerb: string } },
   reviewsProp: IClassReview[],
-  academicYearsProp: number[]
+  academicYearsProp: number[],
+  referralsProp: number
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
   await mongoConnection()
   console.log("attempting to fetch session")
-  // const session: Session | null = await auth(context.req, context.res)
-  const session: Session | null = await getServerSession(context.req, context.res, authOptions)
-  // const session = await auth(context.req, context.res
-  console.log("session", session)
-  console.log("user", session?.user)
+
+  const session = await auth(context.req, context.res)
+
   if (session) {
     if (session.user && session.user?.email) {
-      const user = await User.findOne({ email: session.user.email }).populate([
+      const user = await User.findOne({ email: session.user.email }).populate<{
+        referredBy: { kerb: string }
+      }>([
         { path: 'classesTaken', select: '-description' },
         {
           path: 'referredBy', select: 'kerb'
@@ -613,10 +614,10 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
           path: 'courseAffiliation'
         }
       ]).lean()
-      const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean()
+      const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean() as number[]
       let reviews = []
       if (user) {
-        reviews = await ClassReview.find({ author: (user as IUser)._id }).populate('class').lean()
+        reviews = await ClassReview.find({ author: user._id }).populate<IClass>('class').lean()
       }
       const referralCount = await User.countDocuments({ referredBy: user._id })
 
@@ -633,13 +634,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
   }
 
   return {
-    // redirect: {
-    // destination: '/api/auth/signin',
-    // permanent: false
-    // }
-    props: {
-
-    }
+    props: {} as ServerSideProps
   }
 }
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -7,6 +6,8 @@ import { withApiLogger } from '@/utils/apiLogger'
 
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
+import { addKarma } from '@/utils/karma'
+import { KARMA_GRADE_REPORT } from '@/utils/karmaConstants'
 import { IClassReview } from '@/types'
 import mongoose from 'mongoose'
 
@@ -91,6 +92,9 @@ async function handler(
                         }
                         await ClassReview.create(reviewsToMake)
 
+                        if (reviewsToMake.length > 0) {
+                            await addKarma(user._id, KARMA_GRADE_REPORT, 'Uploaded grade report')
+                        }
                         await User.updateOne({ email }, { lastGradeReportUpload: body.partialReviews.length > 0 ? new Date() : null })
                     }
 

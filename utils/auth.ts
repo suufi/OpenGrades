@@ -1,5 +1,3 @@
-
-// @ts-nocheck
 import CourseOption from '@/models/CourseOption'
 import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
@@ -10,10 +8,15 @@ import type {
 } from "next"
 import { getServerSession, Profile } from "next-auth"
 import AuditLog from '@/models/AuditLog'
+import type { NextAuthOptions } from "next-auth"
 
-const LATEST_GRAD_YEAR = 2028
-// You'll need to import and pass this
-// to `NextAuth` in `app/api/auth/[...nextauth]/route.ts`
+function getLatestGradYear(): number {
+    const d = new Date()
+    const year = d.getFullYear()
+    const month = d.getMonth() // 0–11
+    return month >= 7 ? year + 4 : year + 3 // August (7) or later means new academic year
+}
+
 export const config = {
     providers: [
         {
@@ -69,9 +72,6 @@ export const config = {
         async session ({ session, token }) {
             // Send properties to the client, like an access_token from a provider.
             // session.accessToken = token.accessToken
-            console.log("session", session)
-            console.log("token", token)
-
             session.user = token.user as { _id: string; trustLevel: number; verified: boolean; kerb: string; name: string; classOf: number; affiliation: string } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
             return session
         },
@@ -87,10 +87,11 @@ export const config = {
     // },
     events: {
         async signIn ({ profile }: { profile?: Profile }) {
-            console.log("profile", profile)
             await mongoConnection()
 
-            console.log("process.env.MIT_API_CLIENT_ID", process.env.MIT_API_CLIENT_ID)
+            if (!process.env.MIT_API_CLIENT_ID || !process.env.MIT_API_CLIENT_SECRET) {
+                throw new Error('MIT API credentials are not configured')
+            }
 
             const requestHeaders = new Headers()
             requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
@@ -102,7 +103,6 @@ export const config = {
                     headers: requestHeaders
                 }).then(async (response) => {
                     const res = await response.json()
-                    console.log(res)
 
                     if (response.ok) {
 
@@ -149,14 +149,14 @@ export const config = {
 
                         // Safely compute classOf, handling the absence of classYear
                         const classOf = (classYearAffiliation && classYearAffiliation.classYear !== 'G' && classYearAffiliation.classYear !== 'U')
-                            ? (LATEST_GRAD_YEAR + 1) - Number(classYearAffiliation.classYear)
+                            ? (getLatestGradYear() + 1) - Number(classYearAffiliation.classYear)
                             : existingUser?.classOf || null
 
                         const courseAffiliation = shouldPreserveAffiliation
                             ? existingUser?.courseAffiliation || []
                             : courseOptionObjects
 
-                        if (shouldPreserveAffiliation && apiAffiliationType === 'affiliate') {
+                        if (shouldPreserveAffiliation && apiAffiliationType === 'affiliate' && existingUser) {
                             await AuditLog.create({
                                 actor: existingUser._id,
                                 description: `Preserved ${existingAffiliation || 'prior'} status and course affiliations for ${existingUser.kerb} despite API reporting "affiliate"`,
@@ -214,10 +214,8 @@ export const config = {
                     } else {
                         throw new Error(res.errorDescription)
                     }
-                    // console.log('res111111')
                 })
             } catch (error: unknown) {
-                console.log(error)
                 if (error instanceof Error) {
                     throw new Error(error.message)
                 }
@@ -238,7 +236,8 @@ export const config = {
         colorScheme: 'light' as const,
         brandColor: '#008CFF'
     }
-}
+} satisfies NextAuthOptions
+
 // Use it in server contexts
 export function auth (
     ...args:
