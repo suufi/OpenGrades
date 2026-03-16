@@ -34,6 +34,18 @@ const termsOrdered = [
     "SP"
 ]
 
+const formatMengHeader = (yearTerm: string): string => {
+    const parts = yearTerm.split(' ')
+    const termCode = parts[1] || ''
+    let termLabel = termCode
+
+    if (termCode === 'FA') termLabel = 'Fall'
+    else if (termCode === 'SP') termLabel = 'Spring'
+    else if (termCode === 'JA') termLabel = 'IAP'
+
+    return `${termLabel} Semester (MEng)`
+}
+
 type ClassEntry = { subjectNumber: string; subjectTitle: string; count: number | string; realCount?: number }
 
 type CourseOptionLite = {
@@ -209,7 +221,7 @@ const WhosTakenWhatPage: NextPage<InferGetServerSidePropsType<typeof getServerSi
                                                 .map(([yearTerm, classList]: [string, ClassEntry[]]) => (
                                                     <div key={yearTerm}>
                                                         <Space h="md" />
-                                                        <Title order={4}>{yearTerm}</Title>
+                                                        <Title order={4}>{formatMengHeader(yearTerm)}</Title>
                                                         <Center>
                                                             <Table striped>
                                                                 <Table.Thead>
@@ -405,14 +417,18 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
             const userMap = new Map<string, { classOf: number, programTerms?: Array<{ program: ICourseOption, terms: string[] }>, isMEng: boolean }>()
             affiliatedUsers.forEach(u => {
-                const isMEng = hasMEngProgram && u.courseAffiliation?.some((aff) =>
-                    aff._id.toString() === mengProgram._id.toString()
+                const affiliations = Array.isArray(u.courseAffiliation)
+                    ? u.courseAffiliation
+                    : (u.courseAffiliation ? [u.courseAffiliation] : [])
+
+                const isMEng = hasMEngProgram && affiliations.some((aff: any) =>
+                    aff && aff._id && aff._id.toString() === mengProgram._id.toString()
                 )
 
                 userMap.set(u._id.toString(), {
                     classOf: u.classOf,
                     programTerms: u.programTerms?.map((pt) => ({ program: pt.program as ICourseOption, terms: pt.terms })) || [],
-                    isMEng: isMEng || false
+                    isMEng: isMEng
                 })
             })
 
@@ -437,7 +453,11 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
                 const programId = programForTerm?.program?._id?.toString() || programForTerm?.program
 
                 const belongsToCurrentProgram = programId === courseOption._id.toString()
-                const belongsToMEngProgram = hasMEngProgram && programId === mengProgram._id.toString()
+                const isPostUndergrad = classDoc.academicYear > userData.classOf
+                const belongsToMEngProgram = hasMEngProgram && (
+                    programId === mengProgram._id.toString() ||
+                    (!programForTerm && userData.isMEng && isPostUndergrad)
+                )
 
                 if (hasMEngProgram && userData.isMEng && userData.programTerms && userData.programTerms.length > 0) {
                     if (belongsToMEngProgram) {
