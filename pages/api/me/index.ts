@@ -80,7 +80,7 @@ async function handler(
               firstYear: z.boolean()
             })).optional()
           }).partial({
-            identityFlags: true,
+            flags: true,
             flatClasses: true,
             referredBy: true,
             undergradProgramIds: true,
