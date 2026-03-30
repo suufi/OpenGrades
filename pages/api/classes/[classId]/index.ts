@@ -21,7 +21,7 @@ async function handler(
   const { method } = req
   const user = await getUserFromRequest(req, res)
 
-  if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
+  // if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
 
   switch (method) {
     case 'GET':
