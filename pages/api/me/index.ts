@@ -73,6 +73,7 @@ async function handler(
             undergradProgramIds: z.array(z.string()).optional(),
             emailOptIn: z.boolean().optional(),
             karmaDisplayKerb: z.boolean().optional(),
+            creditedSubjects: z.array(z.string()).optional(),
             partialReviews: z.array(z.object({
               class: z.string(),
               letterGrade: z.string(),
@@ -114,9 +115,12 @@ async function handler(
             updateData.courseAffiliation = uniqueAffiliations
           }
 
-          await User.findOneAndUpdate({ email },
-            updateData
-          )
+          const updateOps: any = { $set: updateData }
+          if (data.creditedSubjects && data.creditedSubjects.length > 0) {
+            updateOps.$addToSet = { creditedSubjects: { $each: data.creditedSubjects } }
+          }
+
+          await User.findOneAndUpdate({ email }, updateOps)
 
           if (data.partialReviews) {
             const reviewsToMake = []

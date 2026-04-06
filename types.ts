@@ -125,6 +125,7 @@ export interface IUser {
     }>,
     aiEmbeddingOptOut?: boolean,
     qaEmailOptOut?: boolean,
+    creditedSubjects?: string[],
     favoriteClasses?: string[],
     karmaDisplayKerb?: boolean,
     createdAt: Date,

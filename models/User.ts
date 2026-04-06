@@ -92,6 +92,9 @@ const UserSchema = new mongoose.Schema<IUser>({
       type: String
     }]
   }],
+  creditedSubjects: [{
+    type: String
+  }],
   // Privacy settings
   aiEmbeddingOptOut: {
     type: Boolean,

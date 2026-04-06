@@ -103,6 +103,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                         }
                     })
 
+                // Merge credited subjects (ASE / transfer credit)
+                if (user.creditedSubjects && Array.isArray(user.creditedSubjects)) {
+                    user.creditedSubjects.forEach((subj: string) => userSubjectNumbers.add(subj))
+                }
+
                 console.log(`Generating embedding recommendations for ${recentClasses.length} classes`)
                 console.log(`Filtering out ${userSubjectNumbers.size} subject numbers (including aliases)`)
 
