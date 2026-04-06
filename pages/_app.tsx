@@ -574,10 +574,6 @@ export default function AppWrapper({ Component, pageProps, router }: AppProps) {
       <meta name="og:description" content="MIT OpenGrades is a platform for students to share their experiences with classes at MIT." />
       <meta name="og:url" content="https://opengrades.mit.edu" />
 
-      <link id="theme-link" rel="stylesheet" href="css/themes/lara-dark-blue/theme.css" />
-      <link id="theme-link" rel="stylesheet" href="css/themes/lara-light-blue/theme.css" />
-
-
       <ColorSchemeScript defaultColorScheme='auto' />
     </Head>
 
