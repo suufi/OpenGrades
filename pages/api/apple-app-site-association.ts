@@ -9,8 +9,13 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           appIDs: ["A35W4MM59Y.edu.mit.OpenGrades"],
           components: [
             {
+              "/": "/api/*",
+              exclude: true,
+              comment: "Exclude API paths so Auth callbacks don't break",
+            },
+            {
               "/": "*",
-              comment: "Allow all paths",
+              comment: "Allow all other paths",
             },
           ],
         },
