@@ -8,6 +8,7 @@ import { Accordion, Avatar, Badge, Box, Button, Card, Center, Container, Divider
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
 import { getServerSession, Session } from 'next-auth'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 import { useMemo, useState } from 'react'
 
 
