@@ -372,6 +372,11 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
 
     return (
         <Box className={aggregateStyles.page}>
+            <Head>
+                <title>{latestClass?.subjectNumber || router.query.subjectNumber}: {latestClass?.subjectTitle || ''} | MIT OpenGrades</title>
+                <meta property="og:title" content={`${latestClass?.subjectNumber || router.query.subjectNumber}: ${latestClass?.subjectTitle || ''} | MIT OpenGrades`} />
+                <meta property="og:description" content={`View aggregate course reviews, grade distributions, and student experiences for ${latestClass?.subjectNumber || router.query.subjectNumber} at MIT.`} />
+            </Head>
             <Container size="lg" className={aggregateStyles.container}>
                 <Stack gap="lg">
                     <Box>

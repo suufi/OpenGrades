@@ -570,9 +570,12 @@ export default function AppWrapper({ Component, pageProps, router }: AppProps) {
       <meta name="description" content="MIT OpenGrades is a platform for students to share their experiences with classes at MIT." />
       <meta name="keywords" content="MIT, OpenGrades, Course Reviews, Course Ratings, MIT Course Reviews, MIT Course Ratings" />
 
-      <meta name="og:title" content="MIT OpenGrades" />
-      <meta name="og:description" content="MIT OpenGrades is a platform for students to share their experiences with classes at MIT." />
-      <meta name="og:url" content="https://opengrades.mit.edu" />
+      <meta property="og:title" content="MIT OpenGrades" />
+      <meta property="og:description" content="MIT OpenGrades is a platform for students to share their experiences with classes at MIT." />
+      <meta property="og:url" content="https://opengrades.mit.edu" />
+      <meta property="og:image" content="https://opengrades.mit.edu/icons/icon-512x512.png" />
+      <meta property="og:type" content="website" />
+      <meta name="twitter:card" content="summary" />
 
       <ColorSchemeScript defaultColorScheme='auto' />
     </Head>

@@ -1195,6 +1195,8 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
       <Head>
         <title>{classProp.subjectNumber} - MIT OpenGrades</title>
         <meta name="description" content={classProp.description} />
+        <meta property="og:title" content={`${classProp.subjectNumber} - MIT OpenGrades`} />
+        <meta property="og:description" content={classProp.description} />
         <link rel="icon" href="/static/images/favicon.ico" />
       </Head>
 
