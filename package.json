@@ -24,6 +24,7 @@
     "@tabler/icons": "^1.118.0",
     "@types/jsonwebtoken": "^9.0.10",
     "ai": "^5.0.106",
+    "bplist-parser": "^0.3.2",
     "chart.js": "^4.4.7",
     "dayjs": "^1.11.11",
     "dotenv": "^16.4.7",
