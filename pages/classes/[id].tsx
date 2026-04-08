@@ -317,7 +317,7 @@ function ClassReviewComment({ classReview,
                 size={50}
                 thickness={5}
                 roundCaps
-                sections={[{ value: (classReview.recommendationLevel / 7) * 100, color: getRecommendationColor(classReview.recommendationLevel) }]}
+                sections={[{ value: (classReview.recommendationLevel / 5) * 100, color: getRecommendationColor(classReview.recommendationLevel) }]}
                 label={
                   <Center>
                     <IconThumbUp size={16} />
@@ -327,7 +327,7 @@ function ClassReviewComment({ classReview,
             </Tooltip>
             <div>
               <Text size="xs" c="dimmed">Would Recommend</Text>
-              <Text size="sm" fw={500}>{classReview.recommendationLevel}/7</Text>
+              <Text size="sm" fw={500}>{classReview.recommendationLevel}/5</Text>
             </div>
           </Group>
         </Grid.Col>
