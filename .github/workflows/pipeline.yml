@@ -121,7 +121,8 @@ jobs:
             mkdir -p /home/suufi/.deploy
             mkdir -p /home/suufi/.deploy/nginx
 
-      # Copy docker-compose.yml, nginx.conf, and .env to the server
+      # Copy docker-compose.yml, nginx.conf, and .env to the server.
+      # Static assets come from the image (no host ./public bind mount).
       - name: Copy docker-compose.yml and .env to the server
         uses: appleboy/scp-action@master
         with:
@@ -141,6 +142,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }} 
-            docker compose -f /home/suufi/.deploy/docker-compose.yml pull
-            docker compose --env-file /home/suufi/.deploy/.env -f /home/suufi/.deploy/docker-compose.yml up -d
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/mitopengrades:${{ github.sha }}
+            docker compose --env-file /home/suufi/.deploy/.env -f /home/suufi/.deploy/docker-compose.yml pull
+            docker compose --env-file /home/suufi/.deploy/.env -f /home/suufi/.deploy/docker-compose.yml up -d --force-recreate

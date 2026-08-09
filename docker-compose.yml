@@ -40,8 +40,6 @@ services:
       PLAUSIBLE_DOMAIN: ${PLAUSIBLE_DOMAIN}
       PLAUSIBLE_API_KEY: ${PLAUSIBLE_API_KEY}
       PLAUSIBLE_API_DOMAIN: ${PLAUSIBLE_API_DOMAIN}
-    volumes:
-      - ./public:/app/public
 
   nginx:
     image: nginx:mainline-alpine
@@ -52,7 +50,6 @@ services:
     networks:
       - web
     volumes:
-      - ./public:/usr/share/nginx/html
       - /home/suufi/.deploy/nginx:/etc/nginx/conf.d
       - /etc/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt
