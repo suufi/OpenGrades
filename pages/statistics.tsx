@@ -1,5 +1,7 @@
 import GradeReportModal from "@/components/GradeReportModal"
+import Class from "@/models/Class"
 import ClassReview from "@/models/ClassReview"
+import CourseOption from "@/models/CourseOption"
 import User from "@/models/User"
 import { IClass, IUser } from "@/types"
 import { compareDepartmentCodes } from "@/utils/departments"
@@ -104,10 +106,15 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     const [displayLevel, setDisplayLevel] = useState('all')
 
+    const getValidAffiliations = (person: any) => {
+        return (Array.isArray(person.courseAffiliation) ? person.courseAffiliation : [])
+            .filter((aff: any) => aff !== null && aff !== undefined)
+    }
+
     const labels = Array.from(
         new Set(
             people.flatMap((person) =>
-                person.courseAffiliation.map(aff => aff.departmentCode)
+                getValidAffiliations(person).map(aff => aff.departmentCode)
             )
         )
     ).sort(compareDepartmentCodes)
@@ -120,7 +127,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
             ...Array.from(
                 new Set(
                     filteredPeople.flatMap((person) =>
-                        person.courseAffiliation.map(aff => aff.courseOption)
+                        getValidAffiliations(person).map(aff => aff.courseOption)
                     )
                 )
             ).map(courseOption => ({
@@ -128,7 +135,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
                 data: labels.map(dep =>
                     filteredPeople.reduce(
                         (total, person) =>
-                            total + person.courseAffiliation.filter(a => a.departmentCode === dep && a.courseOption === courseOption).length,
+                            total + getValidAffiliations(person).filter(a => a.departmentCode === dep && a.courseOption === courseOption).length,
                         0
                     )
                 ),
@@ -276,6 +283,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     const recBarData = generateBarData(r => r.recommendationLevel, brewerRdYlGn5)
     const ratingBarData = generateBarData(r => r.overallRating, brewerRdYlGn7)
+    const gradeBarData = generateBarData(r => r.letterGrade, brewerRdYlGn7, (a, b) => sortedGrades.indexOf(a) - sortedGrades.indexOf(b))
 
 
     const recBarOptions = {
@@ -309,6 +317,30 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         }
     }
 
+    const gradeBarOptions = {
+        responsive: true,
+        scales: {
+            x: { stacked: true, ticks: { display: true, autoSkip: false }, title: { display: true, text: "Department" } },
+            y: {
+                stacked: true,
+                max: 100,
+                title: { display: true, text: "Percentage" }
+            }
+        },
+        plugins: {
+            title: { display: true, text: "Letter Grades by Department" },
+        }
+    }
+
+    const recBarDataWithGrades = {
+        ...recBarData,
+        datasets: recBarData.datasets.map((dataset, index) => ({
+            ...dataset,
+            label: `${dataset.label} (${gradeBarData.datasets[index].label})`,
+            backgroundColor: dataset.backgroundColor
+        }))
+    }
+
 
     return (
         <Container style={{
@@ -319,7 +351,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
             <Space h="lg" />
 
             <Group align='right'>
-                <SegmentedControl onChange={setDisplayLevel} value={displayLevel} data={['all', 'U', 'G']} />
+                <SegmentedControl onChange={(val) => setDisplayLevel(val)} value={displayLevel} data={['all', 'U', 'G']} />
             </Group>
 
             <Bar data={departmentData} options={departmentOptions} />
@@ -328,6 +360,7 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
             <Bar data={recBarData} options={recBarOptions} />
             <Bar data={ratingBarData} options={ratingBarOptions} />
+            <Bar data={gradeBarData} options={gradeBarOptions} />
 
         </Container >
     )

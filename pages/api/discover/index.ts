@@ -5,6 +5,8 @@ import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getUserFromRequest } from '@/utils/authMiddleware'
+import User from '@/models/User'
+import { hasRecentGradeReport, hasEnoughReviewsForAI } from '@/utils/hasRecentGradeReport'
 import { getClassesPageStats } from '@/utils/plausible'
 import { IClass } from '@/types'
 
@@ -20,6 +22,28 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const user = await getUserFromRequest(req, res)
     if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' })
+    }
+
+    const dbUser = await User.findOne({ email: user.email?.toLowerCase() })
+      .select('lastGradeReportUpload')
+      .lean()
+    const hasRecent = hasRecentGradeReport(dbUser?.lastGradeReportUpload)
+    const reviewCheck = await hasEnoughReviewsForAI(user._id.toString())
+    if (!hasRecent || !reviewCheck.hasAccess) {
+      return res.status(403).json({
+        success: false,
+        code: 'DISCOVER_ELIGIBILITY_REQUIRED',
+        message: 'Discover requires a recent grade report and at least 20% full reviews.',
+        data: {
+          hasRecentGradeReport: hasRecent,
+          hasEnoughReviews: reviewCheck.hasAccess,
+          reviewStats: {
+            fullReviews: reviewCheck.fullReviews,
+            totalReviews: reviewCheck.totalReviews,
+            requiredReviews: reviewCheck.requiredReviews
+          }
+        }
+      })
     }
 
     // Current academic year for filtering
@@ -97,7 +121,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             classData: { $first: '$classInfo' }
           }
         },
-        { $match: { count: { $gte: 3 } } }
+        { $match: { count: { $gte: 3 }, avgRating: { $ne: null, $type: 'number' } } }
       ]),
       getClassesPageStats({ dateRange: '30d', limit: 30 })
     ])
@@ -157,9 +181,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       if (ratings.length < 2) continue
       if (subjectNumber?.endsWith('.UR') || subjectNumber?.endsWith('.URG')) continue
 
-      ratings.sort((a, b) => b.year - a.year)
-      const latest = ratings[0]
-      const previous = ratings[1]
+      const numericRatings = ratings.filter(
+        (r) => typeof r.rating === 'number' && Number.isFinite(r.rating)
+      )
+      if (numericRatings.length < 2) continue
+
+      numericRatings.sort((a, b) => b.year - a.year)
+      const latest = numericRatings[0]
+      const previous = numericRatings[1]
       const improvement = latest.rating - previous.rating
 
       if (improvement > 0.5) {

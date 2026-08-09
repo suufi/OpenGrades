@@ -1,12 +1,18 @@
 
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
+import User from '@/models/User'
 import { IClass } from '@/types'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
+import {
+  applyInstitutionToMongoQuery,
+  parseInstitutionFiltersFromRequest,
+} from '@/utils/institutionFilters'
+import { resolveClassSearchIds } from '@/utils/resolveClassSearch'
 
 import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
@@ -15,7 +21,6 @@ import { decode } from 'html-entities'
 import mongoose, { PipelineStage } from 'mongoose'
 import { parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
 import eecsRenumbering from '@/utils/eecs-renumbering.json'
-import { SearchResponse } from '@elastic/elasticsearch/lib/api/types'
 
 const client = getESClient()
 
@@ -85,11 +90,72 @@ async function handler(
           useDescription = 'false',
           communicationRequirements = '', // CI-H, CI-HW
           girAttributes = '', // REST, LAB, etc.
-          hassAttributes = '' // HASS-A, HASS-E, HASS-H, HASS-S
+          hassAttributes = '', // HASS-A, HASS-E, HASS-H, HASS-S
+          institutions,
+          favoritesOnly = 'false',
         } = req.query
+
+        const selectedInstitutions = parseInstitutionFiltersFromRequest(
+          institutions as string | string[] | undefined
+        )
+
+        if (selectedInstitutions.length === 0) {
+          const pageNumber = parseInt(page as string, 10)
+          return res.status(200).json({
+            success: true,
+            data: [],
+            meta: {
+              currentPage: pageNumber,
+              totalPages: 0,
+              totalClasses: 0,
+              appliedInstitutions: [],
+            },
+          })
+        }
+
+        let favoriteSubjectFilter: string[] | null = null
+
+        if (favoritesOnly === 'true') {
+          if (!user) {
+            return res.status(401).json({
+              success: false,
+              message: 'Authentication required. Please sign in.',
+            })
+          }
+
+          const email =
+            typeof user.email === 'string' ? user.email.toLowerCase() : null
+          if (!email) {
+            return res.status(401).json({
+              success: false,
+              message: 'Authentication required. Please sign in.',
+            })
+          }
+
+          const userDoc = await User.findOne({ email }).select('favoriteClasses').lean()
+          const favoriteNumbers: string[] = userDoc?.favoriteClasses || []
+
+          if (favoriteNumbers.length === 0) {
+            const pageNumber = parseInt(page as string, 10)
+            return res.status(200).json({
+              success: true,
+              data: [],
+              meta: {
+                currentPage: pageNumber,
+                totalPages: 0,
+                totalClasses: 0,
+                appliedInstitutions: selectedInstitutions,
+              },
+            })
+          }
+
+          favoriteSubjectFilter = favoriteNumbers
+        }
 
         // Build the query object
         let query: Record<string, any> = {}
+
+        applyInstitutionToMongoQuery(query, selectedInstitutions)
 
         if (offered === 'true') {
           query.offered = true
@@ -148,6 +214,10 @@ async function handler(
           query.hassAttribute = { $in: hassValues }
         }
 
+        if (favoriteSubjectFilter) {
+          query.subjectNumber = { $in: favoriteSubjectFilter }
+        }
+
         const tokens = (search as string).split(/\s+/).filter(Boolean)
 
         // Prepare for sorting
@@ -174,83 +244,23 @@ async function handler(
         let scores = {}
 
         if (search) {
-
-          const mustClauses = tokens.map(token => ({
-            multi_match: {
-              query: token,
-              fields: [
-                'subjectNumber^3',
-                'subjectTitle^3',
-                'aliases^3',
-                'instructors',
-                'description'
-              ],
-              type: 'phrase_prefix'
-            }
-          }))
-
-
-          let esQuery: any = {
-            bool: {
-              should: [
-                {
-                  term: {
-                    "subjectNumber": {
-                      value: search,
-                      boost: 6
-                    }
-                  }
-                },
-                {
-                  term: {
-                    "aliases": {
-                      value: search,
-                      boost: 3
-                    }
-                  }
-                },
-                {
-                  bool: {
-                    must: mustClauses
-                  }
-                }
-              ],
-              minimum_should_match: 1
-            }
+          try {
+            const searchMatch = await resolveClassSearchIds(
+              client,
+              Class,
+              search as string,
+              tokens,
+              selectedInstitutions,
+              query.offered === true
+            )
+            query._id = { $in: searchMatch.classIds }
+            highlights = searchMatch.highlights
+            scores = searchMatch.scores
+          } catch (error) {
+            console.error('Error during class search', error)
+            const message = error instanceof Error ? error.message : 'Search failed'
+            return res.status(400).json({ success: false, message })
           }
-
-          const searchResults = await client.search({
-            index: 'opengrades_prod.classes',
-            query: esQuery,
-            highlight: {
-              fields: {
-                description: {},
-                subjectTitle: {},
-                aliases: {},
-                instructors: {},
-              },
-              pre_tags: ['<mark>'],
-              post_tags: ['</mark>'],
-              number_of_fragments: 3,
-            },
-            size: 1000
-          }).catch((error) => {
-            console.error("Error during ElasticSearch query", error)
-            return res.status(400).json({ success: false, message: error.message })
-          }) as SearchResponse<{ _id: string, highlight: { [key: string]: string[] } }>
-
-          const classIds = searchResults.hits.hits.map((hit) => new mongoose.Types.ObjectId(hit._id))
-          query._id = { $in: classIds }
-
-          highlights = searchResults.hits.hits.reduce((acc, hit) => {
-            acc[hit._id] = hit.highlight
-            return acc
-          }, {})
-
-          scores = searchResults.hits.hits.reduce((acc, hit) => {
-            acc[hit._id] = hit._score
-            return acc
-          }, {})
         }
 
 
@@ -304,6 +314,20 @@ async function handler(
         }
 
         let classes = await Class.aggregate(aggregationPipeline as PipelineStage[])
+
+        if (favoriteSubjectFilter) {
+          const latestBySubject = new Map<string, (typeof classes)[number]>()
+          for (const classEntry of classes) {
+            const subjectNumber = classEntry.subjectNumber as string
+            const existing = latestBySubject.get(subjectNumber)
+            if (!existing || (classEntry.academicYear ?? 0) > (existing.academicYear ?? 0)) {
+              latestBySubject.set(subjectNumber, classEntry)
+            }
+          }
+          classes = favoriteSubjectFilter
+            .map((subjectNumber) => latestBySubject.get(subjectNumber))
+            .filter(Boolean) as typeof classes
+        }
 
         // If `all` is set to true, return all classes without pagination
         if (all === 'true') {
@@ -365,11 +389,10 @@ async function handler(
         const contentCountMap = new Map(contentCounts.map(({ _id, count }) => [_id.toString(), count]))
         const classesWithReviews = paginatedClasses
           .sort((a, b) => {
-            if (sortField === 'relevance') {
-              return scores[b._id] - scores[a._id]
-            } else {
-              return 0
+            if (sortField === 'relevance' && Object.keys(scores).length > 0) {
+              return (scores[b._id] ?? 0) - (scores[a._id] ?? 0)
             }
+            return 0
           }).map((classEntry) => ({
             ...classEntry,
             classReviewCount: reviewCountMap.get(classEntry._id.toString()) || 0,
@@ -385,6 +408,7 @@ async function handler(
             currentPage: pageNumber,
             totalPages,
             totalClasses,
+            appliedInstitutions: selectedInstitutions,
           },
         })
       } catch (error: unknown) {

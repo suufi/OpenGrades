@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { UserContext } from '../components/UserContextProvider'
 // import Class from '../models/Class'
 import { useDebouncedState, useMediaQuery } from '@mantine/hooks'
-import { IconCheck } from '@tabler/icons'
+import { IconCheck } from '@tabler/icons-react'
 import Link from 'next/link'
 import { IClass, ICourseOption, IdentityFlags, IUser } from '../types'
 import ClassSearch from './ClassSearch'
@@ -62,6 +62,8 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
   const [selectedUndergradPrograms, setSelectedUndergradPrograms] = useState<string[]>([])
   const [loadingPrograms, setLoadingPrograms] = useState(false)
   const [emailOptIn, setEmailOptIn] = useState<boolean | null>(true)
+  const [aiEmbeddingOptIn, setAiEmbeddingOptIn] = useState<boolean | null>(null)
+  const [qaEmailOptIn, setQaEmailOptIn] = useState<boolean | null>(null)
 
   async function verifyReferralKerb(kerb: string) {
     const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
@@ -168,6 +170,22 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
         setFormLoading(false)
         return
       }
+
+      const privacyRes = await fetch('/api/me/privacy', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aiEmbeddingOptOut: aiEmbeddingOptIn === null ? undefined : !aiEmbeddingOptIn,
+          qaEmailOptOut: qaEmailOptIn === null ? undefined : !qaEmailOptIn
+        })
+      })
+      if (!privacyRes.ok) {
+        const privacyBody = await privacyRes.json().catch(() => ({}))
+        showNotification({ title: 'Error!', message: privacyBody.message || 'Failed to save AI/Q&A preferences.' })
+        setFormLoading(false)
+        return
+      }
+
       showNotification({ title: 'Success!', message: 'Your account is now active!' })
       await update()
       await new Promise(resolve => setTimeout(resolve, 150))
@@ -208,6 +226,9 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
       classOf: userProfile?.classOf,
       affiliation: userProfile?.affiliation
     })
+    setEmailOptIn(userProfile?.emailOptIn === null || userProfile?.emailOptIn === undefined ? null : !!userProfile?.emailOptIn)
+    setAiEmbeddingOptIn(userProfile?.aiEmbeddingOptOut === null || userProfile?.aiEmbeddingOptOut === undefined ? null : !userProfile?.aiEmbeddingOptOut)
+    setQaEmailOptIn(userProfile?.qaEmailOptOut === null || userProfile?.qaEmailOptOut === undefined ? null : !userProfile?.qaEmailOptOut)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
@@ -411,6 +432,28 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                     ]}
                     required
                   />
+                  <Select
+                    label="Allow my reviews in AI embeddings/recommendations?"
+                    placeholder="Please select an option"
+                    value={aiEmbeddingOptIn === null ? null : aiEmbeddingOptIn ? 'yes' : 'no'}
+                    onChange={(value) => setAiEmbeddingOptIn(value === 'yes' ? true : value === 'no' ? false : null)}
+                    data={[
+                      { value: 'yes', label: 'Yes, include my reviews for AI features' },
+                      { value: 'no', label: 'No, opt me out of AI embeddings' }
+                    ]}
+                    required
+                  />
+                  <Select
+                    label="Receive Q&A emails for classes I have taken?"
+                    placeholder="Please select an option"
+                    value={qaEmailOptIn === null ? null : qaEmailOptIn ? 'yes' : 'no'}
+                    onChange={(value) => setQaEmailOptIn(value === 'yes' ? true : value === 'no' ? false : null)}
+                    data={[
+                      { value: 'yes', label: 'Yes, send me Q&A emails' },
+                      { value: 'no', label: 'No, do not send Q&A emails' }
+                    ]}
+                    required
+                  />
                 </Stack>
               </Stepper.Step>
               {isGradStudent && (
@@ -556,7 +599,7 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
               {(!profileSubmitted) && (
                 (() => {
                   const nextBoundary = isGradStudent ? 2 : 1
-                  if (active === 1 && (emailOptIn === null || !form.values.classOf)) {
+                  if (active === 1 && (emailOptIn === null || aiEmbeddingOptIn === null || qaEmailOptIn === null || !form.values.classOf)) {
                     return <Button onClick={nextStep} disabled={true}>Next step</Button>
                   }
                   if (active === 2 && isGradStudent && wasMITUndergrad === null) {

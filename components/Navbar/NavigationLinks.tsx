@@ -2,7 +2,7 @@ import { useContext, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useSession } from 'next-auth/react'
 import { Divider, Collapse, UnstyledButton, Group, Text } from '@mantine/core'
-import { ChevronDown, ChevronRight } from 'tabler-icons-react'
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
 
 import { NavLink } from './NavLink'
 import { navConfig, publicNavConfig, NavSection } from './navConfig'
@@ -73,13 +73,13 @@ export function NavigationLinks() {
                                             </Text>
                                         </Group>
                                         {isOpened ? (
-                                            <ChevronDown size={16} />
+                                            <IconChevronDown size={16} />
                                         ) : (
-                                            <ChevronRight size={16} />
+                                            <IconChevronRight size={16} />
                                         )}
                                     </Group>
                                 </UnstyledButton>
-                                <Collapse in={isOpened}>
+                                <Collapse expanded={isOpened}>
                                     <div style={{ paddingLeft: '0.5rem' }}>
                                         {sectionItems.map(item => (
                                             <NavLink

@@ -1,12 +1,14 @@
 import { Badge, Button, Card, Group, SimpleGrid, Stack, Text, Title, Tooltip } from '@mantine/core'
-import { IconArrowRight, IconArrowLeft, IconLink } from '@tabler/icons'
+import { IconArrowRight, IconArrowLeft, IconLink } from '@tabler/icons-react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 interface RelatedClass {
+    _id?: string
     subjectNumber: string
     subjectTitle: string
     department?: string
+    institution?: 'mit' | 'harvard'
 }
 
 interface RelatedClassesProps {
@@ -27,11 +29,15 @@ function ClassCard({ cls, type }: { cls: RelatedClass; type: 'prereq' | 'coreq' 
 
     return (
         <Card
-            shadow="xs"
+            shadow="none"
             padding="sm"
+            radius="md"
             withBorder
             style={{ cursor: 'pointer' }}
-            onClick={() => router.push(`/classes/aggregate/${cls.subjectNumber}`)}
+            onClick={() => {
+                if (cls._id) router.push(`/classes/${cls._id}`)
+                else router.push(`/classes/aggregate/${cls.subjectNumber}`)
+            }}
         >
             <Group justify="space-between" wrap="nowrap">
                 <div style={{ minWidth: 0 }}>
@@ -60,7 +66,7 @@ export default function RelatedClasses({
     return (
         <Stack gap="md">
             <Group justify="space-between" align="center">
-                <Title order={3}>Related Classes</Title>
+                <Title order={3}>Prerequisites & Requirements</Title>
                 <Tooltip label="View full prerequisite graph">
                     <Button
                         variant="light"
@@ -81,7 +87,7 @@ export default function RelatedClasses({
                     </Group>
                     <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="xs">
                         {prerequisites.slice(0, 8).map(cls => (
-                            <ClassCard key={cls.subjectNumber} cls={cls} type="prereq" />
+                            <ClassCard key={cls._id || `${cls.institution || 'mit'}:${cls.subjectNumber}`} cls={cls} type="prereq" />
                         ))}
                     </SimpleGrid>
                     {prerequisites.length > 8 && (
@@ -101,7 +107,7 @@ export default function RelatedClasses({
                     </Group>
                     <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="xs">
                         {corequisites.slice(0, 8).map(cls => (
-                            <ClassCard key={cls.subjectNumber} cls={cls} type="coreq" />
+                            <ClassCard key={cls._id || `${cls.institution || 'mit'}:${cls.subjectNumber}`} cls={cls} type="coreq" />
                         ))}
                     </SimpleGrid>
                 </div>
@@ -116,7 +122,7 @@ export default function RelatedClasses({
                     </Group>
                     <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4 }} spacing="xs">
                         {requiredBy.slice(0, 8).map(cls => (
-                            <ClassCard key={cls.subjectNumber} cls={cls} type="requiredBy" />
+                            <ClassCard key={cls._id || `${cls.institution || 'mit'}:${cls.subjectNumber}`} cls={cls} type="requiredBy" />
                         ))}
                     </SimpleGrid>
                     {requiredBy.length > 8 && (

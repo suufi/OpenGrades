@@ -24,7 +24,7 @@ import {
     SegmentedControl
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
-import { IconCircle, IconArrowRight, IconHome, IconRefresh } from '@tabler/icons'
+import { IconCircle, IconArrowRight, IconHome, IconRefresh } from '@tabler/icons-react'
 import { config as authOptions } from '@/utils/auth'
 import { useRouter } from 'next/router'
 import Class from '@/models/Class'
@@ -32,6 +32,8 @@ import User from '@/models/User'
 import mongoConnection from '@/utils/mongoConnection'
 import { compareDepartmentCodes, formatDepartmentOptionLabel, getDepartmentColor, departmentColors } from '@/utils/departments'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
+import ui from '@/styles/Interface.module.css'
+import styles from '@/styles/ClassNetwork.module.css'
 
 
 const ForceGraph2D = dynamic(
@@ -92,15 +94,15 @@ interface ClassNetworkPageProps {
 }
 
 const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
-    availableYears,
-    departments,
-    initialYear
+    availableYears = [],
+    departments = [],
+    initialYear = 2024
 }) => {
     const router = useRouter()
     const fgRef = useRef<any>(null)
     const fg3dRef = useRef<any>(null)
     const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d')
-    const [academicYear, setAcademicYear] = useState<string>(initialYear.toString())
+    const [academicYear, setAcademicYear] = useState<string>((initialYear || 2024).toString())
     const [department, setDepartment] = useState<string | null>(null)
     const [includeIsolated, setIncludeIsolated] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -381,25 +383,22 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
     }, [nodes, edges])
 
     return (
-        <Container size="xl" py="xl">
+        <Container size="lg" px="md" className={ui.page}>
             <Head>
                 <title>Class Network - MIT OpenGrades</title>
                 <meta name="description" content="Explore the full network of MIT classes and their relationships" />
             </Head>
 
-            <Title order={1} mb="lg">
-                Class Network Explorer
-            </Title>
-            <Text c="dimmed" mb="xl">
-                Visualize all class relationships for an academic year. Click a class to see details, double-click to view it, right-click to explode it.
+            <Title order={1} className={ui.heroTitle}>Class Network</Title>
+            <Text c="dimmed" mt="xs" mb="lg">
+                Visualize prerequisites and corequisites. Click a class for details, double-click to open it, right-click to explode neighbors.
             </Text>
 
-            {/* Controls */}
-            <Paper shadow="sm" p="md" mb="xl" withBorder>
+            <Paper radius="md" p="md" mb="md" withBorder className={styles.controls}>
                 <Grid align="flex-end">
                     <Grid.Col span={{ base: 12, sm: 3 }}>
                         <Select
-                            label="Academic Year"
+                            label="Academic year"
                             placeholder="Select year"
                             value={academicYear}
                             onChange={(v) => v && setAcademicYear(v)}
@@ -408,16 +407,17 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                     </Grid.Col>
                     <Grid.Col span={{ base: 12, sm: 3 }}>
                         <Select
-                            label="Department Filter"
+                            label="Department"
                             placeholder="All departments"
                             value={department}
-                            onChange={setDepartment}
+                            onChange={(v) => setDepartment(v)}
                             clearable
+                            searchable
                             data={departments.map(d => ({ value: d, label: formatDepartmentOptionLabel(d) }))}
                         />
                     </Grid.Col>
                     <Grid.Col span={{ base: 12, sm: 2 }}>
-                        <Text size="sm" fw={500} mb={4} component="label">View</Text>
+                        <Text size="sm" fw={500} mb={4}>View</Text>
                         <SegmentedControl
                             value={viewMode}
                             onChange={(v) => setViewMode(v as '2d' | '3d')}
@@ -428,26 +428,28 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                             fullWidth
                         />
                     </Grid.Col>
-                    <Grid.Col span={{ base: 12, sm: 3 }}>
-                        <Group justify="space-between">
-                            <Button onClick={fetchNetwork} loading={loading}>
-                                Load Network
+                    <Grid.Col span={{ base: 12, sm: 4 }}>
+                        <Group justify="space-between" wrap="wrap" gap="sm">
+                            <Button onClick={fetchNetwork} loading={loading} color="brick">
+                                Load network
                             </Button>
                             <Group gap="xs">
-                                <Tooltip label="Reset to home view">
+                                <Tooltip label="Reload and reset view">
                                     <ActionIcon
                                         variant="light"
                                         onClick={handleHome}
                                         disabled={nodes.length === 0}
+                                        aria-label="Reset to home view"
                                     >
                                         <IconHome size={18} />
                                     </ActionIcon>
                                 </Tooltip>
-                                <Tooltip label="Reset view (zoom to fit)">
+                                <Tooltip label="Zoom to fit">
                                     <ActionIcon
                                         variant="light"
                                         onClick={handleResetView}
                                         disabled={nodes.length === 0}
+                                        aria-label="Reset zoom"
                                     >
                                         <IconRefresh size={18} />
                                     </ActionIcon>
@@ -456,76 +458,54 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                         </Group>
                     </Grid.Col>
                     <Grid.Col span={12}>
-                        <Group justify="flex-end">
-                            <Switch
-                                label="Show isolated classes (may be slow)"
-                                checked={includeIsolated}
-                                onChange={(event) => setIncludeIsolated(event.currentTarget.checked)}
-                            />
-                        </Group>
+                        <Switch
+                            label="Show isolated classes"
+                            description="Includes classes with no connections (slower for large years)"
+                            checked={includeIsolated}
+                            onChange={(event) => setIncludeIsolated(event.currentTarget.checked)}
+                        />
                     </Grid.Col>
                 </Grid>
             </Paper>
 
-            {/* Legend */}
-            <Group mb="md" gap="lg" wrap="wrap">
+            <Group mb="md" gap="lg" wrap="wrap" className={styles.legend}>
                 <Group gap="xs">
                     <ThemeIcon size="sm" color="#FFD700" radius="xl">
                         <IconCircle size={10} />
                     </ThemeIcon>
-                    <Text size="xs" fw={500}>GIR Classes (yellow nodes)</Text>
+                    <Text size="xs" fw={500}>GIR classes</Text>
                 </Group>
                 <Group gap="xs">
                     <ThemeIcon size="sm" color="#999999" radius="xl">
                         <IconCircle size={10} />
                     </ThemeIcon>
-                    <Text size="xs">Prerequisite edges</Text>
+                    <Text size="xs">Prerequisite</Text>
                 </Group>
                 <Group gap="xs">
                     <ThemeIcon size="sm" color="#BE4BDB" radius="xl">
-                            <IconCircle size={10} />
-                        </ThemeIcon>
-                    <Text size="xs">Corequisite edges</Text>
-                    </Group>
+                        <IconCircle size={10} />
+                    </ThemeIcon>
+                    <Text size="xs">Corequisite</Text>
+                </Group>
                 <Text size="xs" c="dimmed">
-                    Arrow direction shows dependency direction.
+                    Arrows point toward dependents.
                 </Text>
             </Group>
 
-            {/* Graph Visualization */}
-            <Paper shadow="sm" withBorder style={{ height: 650, position: 'relative', overflow: 'hidden' }}>
+            <Paper radius="md" withBorder className={styles.graphPanel}>
                 {loading && (
-                    <Center
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: 'rgba(255,255,255,0.8)',
-                            zIndex: 10
-                        }}
-                    >
-                        <Stack align="center">
-                            <Loader size="xl" />
-                            <Text>Loading network... This may take a moment for large datasets.</Text>
+                    <Center className={styles.graphOverlay}>
+                        <Stack align="center" gap="sm">
+                            <Loader size="lg" />
+                            <Text size="sm" c="dimmed">Loading network…</Text>
                         </Stack>
                     </Center>
                 )}
 
                 {nodes.length > 0 ? (
-                    <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
+                    <div className={styles.graphCanvas}>
                         {explodedNode && (
-                            <Badge
-                                color="blue"
-                                variant="filled"
-                                style={{
-                                    position: 'absolute',
-                                    top: 10,
-                                    right: 10,
-                                    zIndex: 10
-                                }}
-                            >
+                            <Badge color="brick" variant="filled" className={styles.explodedBadge}>
                                 Exploring: {explodedNode}
                             </Badge>
                         )}
@@ -610,62 +590,57 @@ const ClassNetworkPage: NextPage<ClassNetworkPageProps> = ({
                     </div>
                 ) : (
                     <Center h="100%">
-                        <Stack align="center" gap="md">
-                            <Text c="dimmed" size="lg">
-                                Select an academic year and click "Load Network" to visualize class relationships
+                        <Stack align="center" gap="xs" px="md">
+                            <Text fw={600}>No network loaded</Text>
+                            <Text c="dimmed" size="sm" ta="center">
+                                Choose a year and department, then click Load network.
                             </Text>
                         </Stack>
                     </Center>
                 )}
             </Paper>
 
-            {/* Selected Node Info */}
             {selectedNode && (
-                <Card shadow="sm" p="md" mt="md" withBorder>
-                    <Group justify="space-between">
+                <Card radius="md" padding="md" mt="md" withBorder>
+                    <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
                         <div>
-                            <Group gap="xs" mb="xs">
+                            <Group gap="xs" mb={6}>
                                 <Badge
                                     color={getDepartmentColor(selectedNode.id)}
                                     variant="filled"
                                 >
                                     {selectedNode.data?.department || 'Unknown'}
                                 </Badge>
-                                <Title order={4}>{selectedNode.id}</Title>
+                                <Title order={4} style={{ margin: 0 }}>{selectedNode.id}</Title>
                             </Group>
-                            <Text>{selectedNode.data?.subjectTitle}</Text>
+                            <Text size="sm">{selectedNode.data?.subjectTitle}</Text>
                         </div>
-                        <Group>
-                            <Tooltip label="View in graph explorer">
-                                <Button
-                                    variant="light"
-                                    size="sm"
-                                    onClick={() => router.push(`/prereq-graph?subject=${selectedNode.id}`)}
-                                >
-                                    Explore Graph
-                                </Button>
-                            </Tooltip>
-                            <Tooltip label="View class page">
-                                <Button
-                                    variant="filled"
-                                    size="sm"
-                                    onClick={() => router.push(`/classes/aggregate/${selectedNode.id}`)}
-                                >
-                                    View Class <IconArrowRight size={14} style={{ marginLeft: 4 }} />
-                                </Button>
-                            </Tooltip>
+                        <Group gap="sm">
+                            <Button
+                                variant="light"
+                                size="sm"
+                                onClick={() => router.push(`/prereq-graph?subject=${selectedNode.id}`)}
+                            >
+                                Explore graph
+                            </Button>
+                            <Button
+                                variant="filled"
+                                size="sm"
+                                color="brick"
+                                rightSection={<IconArrowRight size={14} />}
+                                onClick={() => router.push(`/classes/aggregate/${selectedNode.id}`)}
+                            >
+                                View class
+                            </Button>
                         </Group>
                     </Group>
                 </Card>
             )}
 
-            {/* Stats */}
             {nodes.length > 0 && (
-                <Group mt="md" gap="xl">
-                    <Text size="sm" c="dimmed">
-                        {nodes.length} classes • {edges.length} prerequisite/corequisite connections
-                    </Text>
-                </Group>
+                <Text size="sm" c="dimmed" mt="md">
+                    {nodes.length} classes · {edges.length} connections
+                </Text>
             )}
         </Container>
     )
@@ -677,7 +652,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (!session) {
         return {
             redirect: {
-                destination: '/auth/signin',
+                destination: '/api/auth/signin',
                 permanent: false
             }
         }
@@ -690,7 +665,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (!user) {
         return {
             redirect: {
-                destination: '/auth/signin',
+                destination: '/api/auth/signin',
                 permanent: false
             }
         }
@@ -706,12 +681,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
 
 
+    const mitOffered = { offered: true, institution: 'mit' as const }
+
     // Get available academic years
-    const years = await Class.distinct('academicYear', { offered: true })
+    const years = await Class.distinct('academicYear', mitOffered)
     const availableYears = years.sort((a, b) => b - a)
 
     // Get unique departments
-    const depts = await Class.distinct('department', { offered: true })
+    const depts = await Class.distinct('department', mitOffered)
     const departments = depts.filter(Boolean).sort(compareDepartmentCodes)
 
     return {

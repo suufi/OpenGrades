@@ -12,65 +12,96 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
 import classes from '@/styles/Index.module.css'
-import { AddClassesFormValues, IClass, IClassReview, IUser } from '@/types'
-import { buildTermCode, compareTermsSequential, formatAcademicYear, formatTermDisplay, getTermEmoji, TERM_SELECT_OPTIONS } from '@/utils/formatTerm'
+import { AddClassesFormValues, IClass, IClassReview, ICourseOption, IUser } from '@/types'
+import { buildTermCode, compareTermsSequential, formatAcademicYear, formatTermDisplay, getTermLabel, TERM_SELECT_OPTIONS } from '@/utils/formatTerm'
+import { formatCourseOptionCode } from '@/utils/courseOptions'
 import mongoConnection from '@/utils/mongoConnection'
-import { Accordion, ActionIcon, Alert, Anchor, Button, Card, Collapse, Container, Divider, Flex, Grid, Group, List, LoadingOverlay, Modal, MultiSelect, Select, Space, Stack, Text, TextInput, ThemeIcon, Title, Transition } from '@mantine/core'
+import { Accordion, ActionIcon, Alert, Anchor, Badge, Button, Container, Divider, Grid, Group, LoadingOverlay, Modal, Select, Stack, Text, Title, UnstyledButton } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import { useDebouncedState, useDisclosure, useLocalStorage, useMounted } from '@mantine/hooks'
+import { useDisclosure } from '@mantine/hooks'
 import { showNotification } from '@mantine/notifications'
-import { IconCheck, IconCircleCheck, IconCircleX, IconQuestionMark } from '@tabler/icons'
+import { IconCircleCheck, IconCircleX } from '@tabler/icons-react'
+import ui from '@/styles/Interface.module.css'
 import { GetServerSideProps } from 'next'
 import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth/next'
 import { useRouter } from 'next/router'
 import authOptions from "@/pages/api/auth/[...nextauth]"
-import { useEffect, useState } from 'react'
-import { News } from 'tabler-icons-react'
+import { useEffect, useRef, useState } from 'react'
 import { auth } from '@/utils/auth'
+import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 
-const scaleY = {
-  in: { opacity: 1, transform: 'scaleY(1)' },
-  out: { opacity: 0, transform: 'scaleY(0)' },
-  common: { transformOrigin: 'top' },
-  transitionProperty: 'transform, opacity',
-}
-
-
-const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp, referralsProp }) => {
+const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, userProp, reviewsProp, academicYearsProp }) => {
 
   const academicYears = [...new Set(userProp.classesTaken.map((classTaken: IClass) => classTaken.academicYear))]
+  const sortedAcademicYears = [...academicYears].sort((a, b) => a - b)
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'there'
   const allAcademicYears = academicYearsProp.map((academicYear: number) => ({ value: academicYear.toString(), label: formatAcademicYear(academicYear) }))
   const router = useRouter()
-  const currentMonth = new Date().getMonth()
+  const reviewQueueRef = useRef<HTMLDivElement>(null)
 
-  const [academicYearTaken, setAcademicYearTaken] = useState<string | null>(allAcademicYears[allAcademicYears.length - 1].value)
-  const [selectedTerm, setSelectedTerm] = useState<string | null>(currentMonth < 9 ? 'SP' : 'FA')
+  const fullReviewCount = reviewsProp.filter((review) => !review.partial).length
+  const needsReview = userProp.classesTaken
+    .map((classTaken: IClass) => {
+      const review = reviewsProp.find((item) => item.class._id === classTaken._id)
+      const status = !review ? 'none' : review.partial ? 'partial' : 'full'
+      return { classTaken, review, status }
+    })
+    .filter((item) => item.status !== 'full')
+    .sort((a, b) => compareTermsSequential(b.classTaken.term, a.classTaken.term))
+
+  const needsReviewCount = needsReview.length
+  const hasClasses = userProp.classesTaken.length > 0
+  const hasRecentReport = hasRecentGradeReport(userProp.lastGradeReportUpload)
+  const reviewQueuePreviewCount = 3
+  const classCount = userProp.classesTaken.length
+  const courseAffiliationLabels = (userProp.courseAffiliation ?? [])
+    .filter((course): course is ICourseOption => Boolean(course && typeof course === 'object' && 'departmentCode' in course))
+    .map((course) => formatCourseOptionCode(course))
+  const studentStatusLabel = userProp.year === 'G'
+    ? 'Graduate student'
+    : userProp.classOf
+      ? `Class of ${userProp.classOf}`
+      : null
+  const heroDetailParts = [
+    ...courseAffiliationLabels,
+    studentStatusLabel,
+    userProp.affiliation && userProp.affiliation !== 'student' ? userProp.affiliation : null,
+  ].filter(Boolean) as string[]
+
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const now = new Date()
+  const defaultAcademicYear = now.getFullYear().toString()
+  const [academicYearTaken, setAcademicYearTaken] = useState<string | null>(
+    allAcademicYears.some((year) => year.value === defaultAcademicYear)
+      ? defaultAcademicYear
+      : allAcademicYears[allAcademicYears.length - 1].value
+  )
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(now.getMonth() < 5 ? 'FA' : 'SP')
   const [contentLoading, setContentLoading] = useState<boolean>(false)
-  const [flagExplanation, setFlagExplanation] = useState<boolean>(false)
-  const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
-  const [referredByState, setReferredByState] = useState<{ data: string, status: 'initial' | 'loading' | 'success' | 'error' }>({ data: '', status: 'initial' })
+  const [modalOpened, setModalOpened] = useState(false)
+  const [reviewQueueOpen, setReviewQueueOpen] = useState(false)
+  const [greeting, setGreeting] = useState('Hello')
 
-  const [newsOpen, setNewsOpen] = useLocalStorage({
-    key: 'newsOpen.3-12-2025',
-    defaultValue: true,
-    getInitialValueInEffect: true
-  })
+  useEffect(() => {
+    const hour = new Date().getHours()
+    setGreeting(hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 18 ? 'Good afternoon' : 'Good evening')
+  }, [])
 
   const [degreeTermsModalOpened, setDegreeTermsModalOpened] = useState(false)
-  // Initialize reviewed state based on profile: grad + program terms => reviewed
-  const [degreeTermsReviewed, setDegreeTermsReviewed] = useLocalStorage({
-    key: 'degreeTermsReviewed',
-    defaultValue: ((userProp?.year === 'G') && (userProp?.programTerms?.length ?? 0) > 0) || false,
-    getInitialValueInEffect: true
-  })
+  const [degreeTermsReviewed, setDegreeTermsReviewed] = useState(
+    ((userProp?.year === 'G') && (userProp?.programTerms?.length ?? 0) > 0) || false
+  )
 
   // Sync degreeTermsReviewed when grad has already assigned terms (e.g. in LockdownModule)
   useEffect(() => {
-    if (userProp?.year === 'G' && (userProp?.programTerms?.length ?? 0) > 0) {
+    if (userProp?.year === 'G' && (userProp?.programTerms?.length ?? 0) > 0 && !degreeTermsReviewed) {
       setDegreeTermsReviewed(true)
     }
-  }, [userProp?.year, userProp?.programTerms])
+  }, [userProp?.year, userProp?.programTerms, degreeTermsReviewed, setDegreeTermsReviewed])
 
   const [gradeReportModalOpened, { open: openGradeReportModal, close: closeGradeReportModal }] = useDisclosure(false)
 
@@ -78,24 +109,6 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const isEligibleForDegreeTerms = userProp?.year === 'G'
 
   const hasAssignedTerms = userProp.programTerms && userProp.programTerms.length > 0
-
-  async function verifyReferralKerb(kerb: string) {
-    const res = await fetch(`/api/me/referral-kerb?kerb=${kerb}`)
-    const body = await res.json()
-    if (res.ok && body.data) {
-      setReferredByState({ data: body.data, status: 'success' })
-      return body.data
-    } else {
-      setReferredByState({ data: body.message || 'That kerb is not registered on OpenGrades. Maybe you can refer them?', status: 'error' })
-      return false
-    }
-  }
-
-  useEffect(() => {
-    if (referredBy.length === 0) return
-    verifyReferralKerb(referredBy)
-  }, [referredBy])
-
 
   const form = useForm<AddClassesFormValues>({
     initialValues: {
@@ -186,87 +199,27 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     router.replace(router.asPath)
   }
 
-  async function updateFlags(flags: string[]) {
-
-    await fetch('/api/me/flags', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        flags
-      })
-    }).then(async (res) => {
-      const body = await res.json()
-
-      if (res.ok) {
-        showNotification({
-          title: 'Flags updated!',
-          message: 'Your flags have been updated.',
-          color: 'purple'
-        })
-      } else {
-        showNotification({
-          title: 'Error updating flags',
-          message: body.message,
-          color: 'red'
-        })
-      }
-    })
-
-    router.replace(router.asPath)
-  }
-
-  async function updateReferral(kerb: string) {
-    await fetch('/api/me/referral', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        referredBy: kerb
-      })
-    }).then(async (res) => {
-      const body = await res.json()
-
-      if (res.ok) {
-        showNotification({
-          title: 'Referral updated!',
-          message: 'Your referral has been updated.',
-          color: 'purple'
-        })
-      } else {
-        showNotification({
-          title: 'Error updating referral',
-          message: body.message,
-          color: 'red'
-        })
-      }
-    })
-
-    router.replace(router.asPath)
-  }
-
   const DeleteClassModal = ({ classTaken }: { classTaken: IClass }) => {
     const [opened, { open, close }] = useDisclosure(false)
     return (
       <>
-        <ActionIcon variant="transparent" color="red" radius="xl" onClick={open}>
+        <ActionIcon variant="subtle" color="red" radius="md" onClick={open} className={classes.deleteAction}>
           <IconCircleX size="1rem" />
         </ActionIcon>
-        <Modal opened={opened} onClose={close} title="Class Deletion">
-          <Text> Are you sure you want to delete <b>{classTaken.subjectTitle}</b> (<i>{formatTermDisplay(classTaken.term)}</i>) from your class history? This will remove the class from classes you've taken. This will not delete your review (if any) for the class, however. Please contact <Anchor href="mailto:opengrades@mit.edu">opengrades@mit.edu</Anchor> to delete your review.</Text>
-          <Space h='lg' />
-          <Group justify={'center'}>
-            <Button onClick={close}> Cancel </Button>
-            <Button color='red' onClick={() => classTaken._id && deleteClass(classTaken._id)}> Confirm </Button>
-          </Group>
+        <Modal opened={opened} onClose={close} title="Remove class from history?">
+          <Stack gap="lg">
+            <Text>
+              Are you sure you want to remove <Text span fw={600}>{classTaken.subjectTitle}</Text> ({formatTermDisplay(classTaken.term)}) from your class history? This will not delete your review for the class. Contact <Anchor href="mailto:opengrades@mit.edu">opengrades@mit.edu</Anchor> if you need a review removed.
+            </Text>
+            <Group justify="flex-end">
+              <Button variant="default" onClick={close}>Cancel</Button>
+              <Button color="red" onClick={() => classTaken._id && deleteClass(classTaken._id)}>Remove class</Button>
+            </Group>
+          </Stack>
         </Modal>
       </>
     )
   }
-
-  const [modalOpened, setModalOpened] = useState(false)
 
   const handleAddClassesFromModal = async (classes: { [key: string]: IClass[] }, partialReviews: { class: string; letterGrade: string; droppedClass: boolean, firstYear: boolean }[]) => {
     const flatClasses = Object.values(classes).flat().map((c: IClass) => ({ _id: c._id }))
@@ -327,248 +280,269 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     }
   }
 
-  const isMounted = useMounted()
+  const getReviewBadge = (reviewForClass?: IClassReview) => {
+    if (!reviewForClass) {
+      return <Badge size="xs" variant="light" color="gray">Review</Badge>
+    }
+    if (reviewForClass.partial) {
+      return <Badge size="xs" variant="light" color="yellow">Partial</Badge>
+    }
+    return null
+  }
+
+  const groupClassesByTerm = (classesTaken: IClass[]) => {
+    const byTerm = new Map<string, IClass[]>()
+
+    for (const classTaken of classesTaken) {
+      const term = classTaken.term || 'unknown'
+      const existing = byTerm.get(term) ?? []
+      existing.push(classTaken)
+      byTerm.set(term, existing)
+    }
+
+    return Array.from(byTerm.entries())
+      .sort(([termA], [termB]) => compareTermsSequential(termA, termB))
+      .map(([term, termClasses]) => ({
+        term,
+        termClasses: termClasses.sort((a, b) => a.subjectNumber.localeCompare(b.subjectNumber)),
+      }))
+  }
+
+  const visibleNeedsReview = reviewQueueOpen ? needsReview : needsReview.slice(0, reviewQueuePreviewCount)
 
   return (
-    <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
+    <Container size="lg" px="md" className={ui.page}>
       <Head>
         <title>MIT OpenGrades</title>
-        <meta name="description" content="Generated by create next app" />
+        <meta name="description" content="Manage your classes, reviews, and profile on MIT OpenGrades." />
         <link rel="icon" href="/static/images/favicon.ico" />
       </Head>
 
-      <Title>
-        Hello, {session?.user?.name.split(' ')[0]}! 👋🏾
-      </Title>
-
-      <Space h="lg" />
-      {/* Generate a dashboard listing of classes the person has taken in the past and allow them to add more */}
-
-      <Grid>
-        <Grid.Col span={{ md: 6 }}>
-          {
-            isMounted &&
-            <>
-              <Transition
-                duration={500}
-                timingFunction="ease"
-                transition={scaleY}
-                mounted={newsOpen}
-              >
-                {
-                  (transitionStyle) => (
-                    <>
-                      <Alert variant='light' color='blue' title='Bulletin' withCloseButton icon={<News size={24} />} onClose={() => setNewsOpen(false)} style={{ ...transitionStyle }}>
-                        <Title order={6}> March 12, 2025 </Title>
-                        <Text className={classes.text} c='gray'>
-                          👨🏽‍🎓 Who's Taken What page to see what classes other people have taken for each major and term. <br />
-                          📊 Statistics page! See the best and worst rated departments.
-                        </Text>
-                        <Title order={6}> January 25, 2025 </Title>
-                        <Text className={classes.text} c='gray'>
-                          🔎 Searching is significantly faster and now powered by ElasticSearch. Filters and sorting are improved. List view is now available. <br />
-                          📚 Spring 2025 classes have been uploaded, but are not yet reviewable. Toggle advanced search settings to view. <br />
-                          ℹ️ About Page created with information about OpenGrades, its maintainers + supporters, and some fun 'real-time' statistics.
-                        </Text>
-                        <Space h="md" />
-                      </Alert>
-                      <Space h="lg" />
-                    </>
-                  )
-                }
-              </Transition>
-            </>
-          }
-
-          {
-            isEligibleForDegreeTerms && !degreeTermsReviewed && (
-              <>
-                <Alert
-                  variant="light"
-                  color="grape"
-                  title="📚 Graduate Degree Program Assignment"
-                  icon={<IconCircleCheck size={24} />}
-                >
-                  <Text size="sm" mb="sm">
-                    As a graduate student who was an MIT undergrad, you can assign your semesters to either your undergraduate or graduate degree program. This helps categorize your classes on the "Who's Taken What" page.
-                  </Text>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    onClick={() => setDegreeTermsModalOpened(true)}
-                  >
-                    {hasAssignedTerms ? 'Review & Edit Assignments' : 'Assign Terms Now'}
-                  </Button>
-                </Alert>
-                <Space h="lg" />
-              </>
-            )
-          }
-
-          <RecommendationsPanel />
-          <Space h="lg" />
-
-          <Card>
-            <LoadingOverlay visible={contentLoading} />
-            <Title order={3}> 📚 Classes Taken </Title>
-            <Space h="sm" />
-            {
-              (userProp.classesTaken.length === 0) &&
-              <Text className={classes.text}> You haven&apos;t reported any classes yet! Use the add form on the right side to add classes! </Text>
-            }
-            <Accordion variant={'contained'} defaultValue={academicYears.length > 0 ? academicYears[academicYears.length - 1].toString() : "None"}>
-              {
-                academicYears.reverse().map((academicYear: number) => {
-                  let classesTakenInAcademicYear = userProp.classesTaken.filter((classTaken: IClass) => classTaken.academicYear === academicYear)
-
-                  return (
-                    <Accordion.Item value={academicYear.toString()} key={academicYear}>
-                      <Accordion.Control> {formatAcademicYear(academicYear)} </Accordion.Control>
-                      <Accordion.Panel>
-                        <List
-                          icon={
-                            <ThemeIcon color="red" size={24} radius="xl">
-                              <IconCircleX size="1rem" />
-                            </ThemeIcon>
-                          }
-                          spacing="xs"
-                        >
-                          {
-                            classesTakenInAcademicYear.sort((a: IClass, b: IClass) => compareTermsSequential(a.term, b.term)).map((classTaken: IClass) => {
-                              const reviewForClass = reviewsProp.find((review: IClassReview) => (review.class._id === classTaken._id))
-
-                              const icon = reviewForClass ? reviewForClass?.partial ?
-                                <ThemeIcon color='yellow' size={24} radius='xl'>
-                                  <IconQuestionMark size='1rem' />
-                                </ThemeIcon>
-                                : <ThemeIcon color="green" size={24} radius="xl">
-                                  <IconCircleCheck size="1rem" />
-                                </ThemeIcon> : null
-
-
-                              return (
-                                <List.Item
-                                  // className={classes.linkedText}
-                                  key={classTaken._id}
-                                  icon={icon}
-                                >
-                                  <Flex align={'center'}>
-                                    <Text className={classes.linkedText} onClick={() => router.push(`/classes/${classTaken._id}`)}>
-                                      {getTermEmoji(classTaken.term)} {classTaken.subjectNumber}: {classTaken.subjectTitle}
-                                    </Text>
-
-                                    {/* Delete class button */}
-                                    <DeleteClassModal classTaken={classTaken} />
-                                  </Flex>
-                                </List.Item>
-                              )
-                            })
-                          }
-                        </List>
-                      </Accordion.Panel>
-                    </Accordion.Item>
-                  )
-                })
-              }
-
-            </Accordion>
-
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={{ md: 6 }}>
-          <Card>
-            <Title order={3}> ➕ Add Classes </Title>
-            <form onSubmit={form.onSubmit((values) => addClasses(form.getTransformedValues()))}>
-              <Stack gap="xs">
-                <Grid>
-                  <Grid.Col span={6}>
-                    <Select allowDeselect={false} placeholder="Academic year" label="Academic Year" data={allAcademicYears} value={academicYearTaken} onChange={setAcademicYearTaken} />
-                  </Grid.Col>
-                  <Grid.Col span={6}>
-                    <Select allowDeselect={false} placeholder="Term" label="Term" data={TERM_SELECT_OPTIONS} value={selectedTerm} onChange={setSelectedTerm} />
-                  </Grid.Col>
-                </Grid>
-                <Divider variant='dotted' label={"Select your classes"} />
-                <ClassSearch term={academicYearTaken && selectedTerm ? buildTermCode(academicYearTaken, selectedTerm) : ""} display={academicYearTaken && selectedTerm ? formatTermDisplay(buildTermCode(academicYearTaken, selectedTerm)) : ""} form={form} />
-                <Button type="submit" disabled={
-                  form.getTransformedValues().flatClasses?.length === 0
-                }> Submit </Button>
-                <Divider variant='dotted' label={"Or paste your grade report"} />
-                <Button variant='outline' onClick={() => setModalOpened(true)}> Add Classes from Grade Report </Button>
-                <GradeReportModal opened={modalOpened} onClose={() => setModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
-              </Stack>
-            </form>
-          </Card>
-          <Space h="lg" />
-          <Card>
-            <Title order={3}> ℹ️ About You! </Title>
-            <Space h="sm" />
-            <Text className={classes.text}>
-              You have taken {userProp.classesTaken.length} classes.
+      <Stack className={classes.pageStack}>
+        <header className={ui.hero}>
+          <Title order={1} className={ui.heroTitle}>{greeting}, {firstName}</Title>
+          {heroDetailParts.length > 0 && (
+            <Text className={ui.heroSubtitle}>
+              {heroDetailParts.join(' · ')}
             </Text>
-            <Text className={classes.text}>
-              You have {reviewsProp.length} reviews, {reviewsProp.filter((review) => review.partial).length} of which are partial.
-            </Text>
-            <Text className={classes.text}>
-              You have {referralsProp} referrals.
-            </Text>
-            <Divider my='md' />
-            <MultiSelect value={userProp.flags} onChange={(selected) => {
-              updateFlags(selected)
-            }} label='Identity Tags' description={<Text fz="sm" c='dimmed' style={{ cursor: 'pointer' }} onClick={() => setFlagExplanation(!flagExplanation)}> Please select identities that you identify with. Click me for more info! </Text>} data={[
-              {
-                value: 'First Gen',
-                label: 'First Generation'
-              },
-              {
-                value: 'Low Income',
-                label: 'Low Income'
-              },
-              {
-                value: 'International',
-                label: 'International'
-              },
-              {
-                value: 'BIL',
-                label: 'Black, Native American/Indigenous, or Latino'
-              }
-            ]} />
-            <Collapse in={flagExplanation}>
-              <Space h="sm" />
-              <Text c='dimmed' fz='sm'>
-                The following field is optional. Data collected from this field will only be used in aggregate form to observe trends in classes where students of a particular background consistently have a less favorable experience compared to the overall rating of the class. If we do observe such a trend, we may reach out to the Office of Minority Education, student groups, and/or committees to identify and address issues regarding classes.
-              </Text>
-              <Space />
-              <Text c="dimmed" fz="sm">
-                The following definitions are used for the identity tags:
-              </Text>
-              <List withPadding>
-                <List.Item> <Text c='dimmed' fz='sm'>First Generation: no parent in your household has received a Bachelor&apos;s degree or more in any country. </Text> </List.Item>
-                <List.Item> <Text c='dimmed' fz='sm'>Low Income: you are a Pell-eligible student and/or your family EFC at MIT is &le; $5,000 </Text> </List.Item>
-                <List.Item> <Text c='dimmed' fz='sm'>International: any student who does not hold United States citizenship or permanent residency, regardless of where they live or attend school.⁠ </Text> </List.Item>
-              </List>
-            </Collapse>
-            <Divider my='md' />
-          </Card>
-
-          <Card style={{ marginTop: 'var(--mantine-spacing-lg)' }}>
-            <Title order={3}> 🤝 Referral </Title>
-            <Space h="sm" />
-            {userProp.referredBy && <Text className={classes.text}> Referred by: {userProp.referredBy.kerb} </Text>}
-            {
-              !userProp.referredBy && (
+          )}
+          {hasClasses && (
+            <Text className={classes.statusLine}>
+              You&apos;ve reviewed {fullReviewCount} of your {classCount} {classCount === 1 ? 'class' : 'classes'}
+              {needsReviewCount > 0 ? (
                 <>
-                  <Text className={classes.text}> If you were referred by someone, please enter their kerb here. </Text>
-                  <Stack gap="xs">
-                    <TextInput defaultValue={referredBy} disabled={referredByState.status == 'loading'} onChange={(e) => setReferredBy(e.target.value)} error={referredByState.status == 'error' && referredByState.data} rightSectionPointerEvents='none' rightSection={referredByState.status == 'success' && <IconCheck color='green' />} label="OpenGrades Referral" placeholder='kerb' />
-                    <Button onClick={() => updateReferral(referredBy)} disabled={referredByState.status != 'success'}> Update Referral </Button>
-                  </Stack>
+                  {' — '}
+                  <button type="button" className={classes.statusLink} onClick={() => scrollToSection(reviewQueueRef)}>
+                    {needsReviewCount} {needsReviewCount === 1 ? 'is' : 'are'} still waiting on you
+                  </button>
+                  .
                 </>
-              )
-            }
-          </Card>
-        </Grid.Col>
-      </Grid>
+              ) : (
+                <> — you&apos;re all caught up.</>
+              )}
+            </Text>
+          )}
+        </header>
+
+        {!hasClasses && (
+          <section className={`${ui.sectionCard} ${classes.panel} ${classes.getStarted}`}>
+            <div>
+              <Title order={3} className={ui.sectionTitle}>Get started</Title>
+              <Text className={classes.text} mt="xs">Upload your grade report to import your classes.</Text>
+            </div>
+            <Button onClick={() => setModalOpened(true)}>Upload grade report</Button>
+          </section>
+        )}
+
+        {hasClasses && !hasRecentReport && (
+          <Alert variant="light" color="orange" title="Grade report out of date" className={classes.alertBanner}>
+            <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+              <Text size="sm">Re-upload your grade report to keep Discover and recommendations current.</Text>
+              <Button size="sm" variant="light" onClick={() => setModalOpened(true)}>Upload grade report</Button>
+            </Group>
+          </Alert>
+        )}
+
+        {isEligibleForDegreeTerms && !degreeTermsReviewed && (
+          <Alert
+            variant="light"
+            color="grape"
+            title="Graduate degree program assignment"
+            icon={<IconCircleCheck size={20} />}
+            className={classes.alertBanner}
+          >
+            <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+              <Text size="sm">Assign semesters to your undergrad or grad program for Who&apos;s Taken What.</Text>
+              <Button size="sm" variant="light" onClick={() => setDegreeTermsModalOpened(true)}>
+                {hasAssignedTerms ? 'Edit assignments' : 'Assign terms'}
+              </Button>
+            </Group>
+          </Alert>
+        )}
+
+        <Grid className={classes.summaryGrid}>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Stack gap="md">
+        {needsReview.length > 0 && (
+          <section ref={reviewQueueRef} className={`${ui.sectionCard} ${classes.panel}`}>
+            <div className={classes.panelHeader}>
+              <Title order={3} className={`${ui.sectionTitle} ${classes.sectionHeading}`}>
+                Waiting on your review
+              </Title>
+              {needsReviewCount > reviewQueuePreviewCount && (
+                <Button
+                  variant="subtle"
+                  size="compact-sm"
+                  color="brick"
+                  onClick={() => setReviewQueueOpen((open) => !open)}
+                >
+                  {reviewQueueOpen ? 'Show less' : 'Show all'}
+                </Button>
+              )}
+            </div>
+
+            <div className={classes.reviewQueueList}>
+              {visibleNeedsReview.map(({ classTaken, status }) => (
+                <UnstyledButton
+                  key={classTaken._id}
+                  className={classes.reviewQueueItem}
+                  onClick={() => router.push(`/classes/${classTaken._id}`)}
+                >
+                  <Text span className={classes.reviewQueueNumber}>{classTaken.subjectNumber}</Text>
+                  <Text span className={classes.reviewQueueTitle} lineClamp={1}>
+                    {classTaken.subjectTitle}
+                  </Text>
+                  <Badge size="xs" variant="light" color={status === 'partial' ? 'yellow' : 'gray'}>
+                    {status === 'partial' ? 'Partial' : formatTermDisplay(classTaken.term)}
+                  </Badge>
+                </UnstyledButton>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {hasClasses && (
+          <section className={`${ui.sectionCard} ${classes.panel}`} style={{ position: 'relative' }}>
+            <LoadingOverlay visible={contentLoading} />
+            <div className={classes.panelHeader}>
+              <Title order={3} className={`${ui.sectionTitle} ${classes.sectionHeading}`}>Classes taken</Title>
+            </div>
+
+            <Accordion
+              variant="default"
+              className={classes.accordion}
+              defaultValue={sortedAcademicYears.length > 0 ? sortedAcademicYears[sortedAcademicYears.length - 1].toString() : undefined}
+            >
+              {sortedAcademicYears.slice().reverse().map((academicYear: number) => {
+                const classesTakenInAcademicYear = userProp.classesTaken.filter((classTaken: IClass) => classTaken.academicYear === academicYear)
+
+                return (
+                  <Accordion.Item value={academicYear.toString()} key={academicYear}>
+                    <Accordion.Control>{formatAcademicYear(academicYear)}</Accordion.Control>
+                    <Accordion.Panel>
+                      <Stack gap="md" className={classes.classList}>
+                        {groupClassesByTerm(classesTakenInAcademicYear as IClass[]).map(({ term, termClasses }) => (
+                          <div className={classes.termSection} key={term}>
+                            <Text className={classes.termHeader} size="sm" fw={600}>
+                              {getTermLabel(term, { withEmoji: true })}
+                            </Text>
+                            <Stack gap={2}>
+                              {termClasses.map((classTaken: IClass) => {
+                                const reviewForClass = reviewsProp.find((review: IClassReview) => review.class._id === classTaken._id)
+                                const reviewBadge = getReviewBadge(reviewForClass)
+
+                                return (
+                                  <div className={classes.classRow} key={classTaken._id}>
+                                    <button
+                                      type="button"
+                                      className={classes.classRowButton}
+                                      onClick={() => router.push(`/classes/${classTaken._id}`)}
+                                    >
+                                      {reviewBadge}
+                                      <Text span className={classes.classNumber}>{classTaken.subjectNumber}</Text>
+                                      <Text span className={classes.classTitle}>{classTaken.subjectTitle}</Text>
+                                    </button>
+                                    <DeleteClassModal classTaken={classTaken} />
+                                  </div>
+                                )
+                              })}
+                            </Stack>
+                          </div>
+                        ))}
+                      </Stack>
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                )
+              })}
+            </Accordion>
+          </section>
+        )}
+
+            </Stack>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Stack gap="md">
+            <section className={`${ui.sectionCard} ${classes.panel} ${classes.columnPanel}`} style={{ position: 'relative' }}>
+              <LoadingOverlay visible={contentLoading} />
+              <div className={classes.panelHeader}>
+                <Title order={3} className={`${ui.sectionTitle} ${classes.sectionHeading}`}>Add classes</Title>
+              </div>
+
+              <form onSubmit={form.onSubmit(() => addClasses(form.getTransformedValues()))}>
+                <Stack gap="sm" mt="sm">
+                  <Button type="button" variant={hasClasses ? 'default' : 'filled'} onClick={() => setModalOpened(true)}>
+                    Upload grade report
+                  </Button>
+                  <GradeReportModal opened={modalOpened} onClose={() => setModalOpened(false)} onAddClasses={handleAddClassesFromModal} />
+
+                  <Divider className={classes.formDivider} label="Or add manually" labelPosition="left" />
+
+                  <Grid>
+                    <Grid.Col span={6}>
+                      <Select
+                        allowDeselect={false}
+                        placeholder="Academic year"
+                        label="Academic year"
+                        data={allAcademicYears}
+                        value={academicYearTaken}
+                        onChange={(val) => setAcademicYearTaken(val || '')}
+                      />
+                    </Grid.Col>
+                    <Grid.Col span={6}>
+                      <Select
+                        allowDeselect={false}
+                        placeholder="Term"
+                        label="Term"
+                        data={TERM_SELECT_OPTIONS}
+                        value={selectedTerm}
+                        onChange={(val) => setSelectedTerm(val || '')}
+                      />
+                    </Grid.Col>
+                  </Grid>
+
+                  <ClassSearch
+                    term={academicYearTaken && selectedTerm ? buildTermCode(academicYearTaken, selectedTerm) : ''}
+                    display={academicYearTaken && selectedTerm ? formatTermDisplay(buildTermCode(academicYearTaken, selectedTerm)) : ''}
+                    form={form}
+                  />
+                  <Button
+                    type="submit"
+                    variant="default"
+                    disabled={form.getTransformedValues().flatClasses?.length === 0}
+                  >
+                    Add selected classes
+                  </Button>
+                </Stack>
+              </form>
+            </section>
+              <RecommendationsPanel />
+            </Stack>
+          </Grid.Col>
+        </Grid>
+
+
+      </Stack>
 
       <GradeReportModal opened={gradeReportModalOpened} onClose={closeGradeReportModal} onAddClasses={handleAddClassesFromModal} />
       <DegreeTermsModal
@@ -583,7 +557,7 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           router.reload()
         }}
       />
-    </Container >
+    </Container>
   )
 }
 
@@ -592,7 +566,6 @@ interface ServerSideProps {
   userProp: IUser & { referredBy: { kerb: string } },
   reviewsProp: IClassReview[],
   academicYearsProp: number[],
-  referralsProp: number
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
@@ -617,9 +590,14 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
       const academicYears = await Class.find().select('academicYear').distinct('academicYear').lean() as number[]
       let reviews = []
       if (user) {
+        if (Array.isArray(user.classesTaken)) {
+          user.classesTaken = user.classesTaken.filter(Boolean)
+        }
+        if (Array.isArray(user.courseAffiliation)) {
+          user.courseAffiliation = user.courseAffiliation.filter(Boolean)
+        }
         reviews = await ClassReview.find({ author: user._id }).populate<IClass>('class').lean()
       }
-      const referralCount = await User.countDocuments({ referredBy: user._id })
 
       return {
         props: {
@@ -627,7 +605,6 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
           userProp: JSON.parse(JSON.stringify(user)),
           reviewsProp: JSON.parse(JSON.stringify(reviews)),
           academicYearsProp: JSON.parse(JSON.stringify(academicYears)),
-          referralsProp: referralCount
         }
       }
     }

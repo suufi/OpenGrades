@@ -41,6 +41,8 @@ export function NavLink({ icon: Icon, label, href, color, active, external, badg
                         variant="light"
                         color={color}
                         className={classes.navLinkIcon}
+                        radius="xl"
+                        size={34}
                     >
                         <Icon size={18} />
                     </ThemeIcon>

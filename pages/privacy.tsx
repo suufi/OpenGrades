@@ -1,5 +1,5 @@
 import { Container, Divider, Space, Text, Title, List, Anchor, Paper, ThemeIcon, Group, Stack } from "@mantine/core"
-import { IconShield, IconLock, IconEye, IconTrash, IconMail, IconDatabase, IconUserCheck } from "@tabler/icons"
+import { IconShield, IconLock, IconEye, IconTrash, IconMail, IconDatabase, IconUserCheck } from "@tabler/icons-react"
 import { NextPage } from "next"
 import Head from "next/head"
 

@@ -85,6 +85,38 @@ export function logApiError(
   }
 }
 
+export interface LlmEventData {
+  provider: 'ollama' | 'gemini' | 'parley'
+  model: string
+  step: 'reranker' | 'advisor' | 'query_generation'
+  latencyMs: number
+  inputTokens?: number
+  outputTokens?: number
+  totalTokens?: number
+  success: boolean
+  error?: string
+}
+
+export function logLlmEvent(
+  req: NextApiRequest,
+  data: LlmEventData,
+  meta?: ApiLoggerMeta
+): void {
+  const payload = {
+    ts: new Date().toISOString(),
+    type: 'llm',
+    ...data,
+    path: (req.url ?? '').split('?')[0] || req.url,
+    user: meta?.user ? safeUser(meta.user as ApiLogUser) : undefined
+  }
+  const line = JSON.stringify(payload)
+  if (LOG_LEVEL === 'debug') {
+    console.log('[llm]', line)
+  } else {
+    console.log(line)
+  }
+}
+
 function wrapResForLogging(
   req: NextApiRequest,
   res: NextApiResponse,

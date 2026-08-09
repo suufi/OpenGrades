@@ -2,21 +2,34 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { Alert, Badge, Box, Card, Center, Checkbox, Code, Collapse, Container, Divider, Flex, Grid, Group, List, Loader, LoadingOverlay, Mark, MultiSelect, Pagination, Select, Space, Stack, Switch, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
+import { Badge, Box, Center, Checkbox, Chip, Code, Collapse, Container, Divider, Grid, Group, List, Loader, LoadingOverlay, Mark, MultiSelect, Pagination, SegmentedControl, Select, Stack, Switch, Text, TextInput, Title, Tooltip, UnstyledButton } from '@mantine/core'
 
 
 import { IClass } from '../types'
-
+import { formatTermDisplay } from '@/utils/formatTerm'
 import { useDebouncedValue, useDisclosure, useHotkeys, useToggle } from '@mantine/hooks'
-
-import { IconFile, IconGridPattern, IconList, IconSearch, IconUserCircle } from '@tabler/icons'
+import { useFilters, useClasses } from '@/lib/query'
+import {
+  DEFAULT_INSTITUTIONS,
+  getInstitutionScope,
+  institutionsToQueryParam,
+  hasInstitutionSelection,
+  isDefaultInstitutionFilter,
+  parseInstitutionFiltersFromSession,
+  type Institution,
+} from '@/utils/institutionFilters'
+import { compareDepartmentCodes, formatDepartmentOptionLabel, sortDepartmentCodes } from '@/utils/departments'
+import { IconFile, IconGridPattern, IconList, IconSearch, IconUserCircle } from '@tabler/icons-react'
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
 
 import ClassesPageClasses from '../styles/ClassesPage.module.css'
+import ui from '@/styles/Interface.module.css'
 type ClassAPIEntry = IClass & { classReviewCount: number, contentSubmissionCount: number, userCount?: number, withDescription?: boolean, searchTerm?: string, highlight?: object }
-const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight }: ClassAPIEntry) => {
+type SelectOption = { value: string, label: string }
+const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTitle, subjectNumber, aliases, instructors, term, academicYear, display, description, department, units, offered, reviewable, userCount, withDescription, searchTerm, highlight, institution }: ClassAPIEntry) => {
   const router = useRouter()
 
   let formattedDescription = (
@@ -24,7 +37,7 @@ const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTit
   )
 
   let formattedInstructors = (
-    <> {instructors.join(', ')} </>
+    <>{instructors?.join(', ')}</>
   )
 
   const regex = /("[^"]+"|[^,| ]+)/g
@@ -75,44 +88,62 @@ const ClassButton = ({ _id, classReviewCount, contentSubmissionCount, subjectTit
     })
   }
 
+  const cardContent = (
+    <UnstyledButton onClick={() => router.push(`/classes/${_id}`)} className={ClassesPageClasses.classButton}>
+      <div className={ClassesPageClasses.classHeader}>
+        <Text className={ClassesPageClasses.classTitle}>
+          <Text span className={ClassesPageClasses.classNumber}>{subjectNumber}</Text>
+          <Text span> · {subjectTitle}</Text>
+        </Text>
+      </div>
+
+      <div className={ClassesPageClasses.classMetaRow}>
+        {units && <Text size="xs" c="dimmed" className={ClassesPageClasses.classUnits}>{units.trim()}</Text>}
+        <Badge variant="light" color="gray" size="xs">{formatTermDisplay(term)}</Badge>
+        {aliases && aliases.length > 0 && (
+          <Badge variant="outline" color="gray" size="xs">AKA {aliases.join(', ')}</Badge>
+        )}
+        {instructors && instructors.length > 0 && (
+          <Text size="xs" c="dimmed" lineClamp={1} className={ClassesPageClasses.instructors}>
+            {formattedInstructors}
+          </Text>
+        )}
+      </div>
+
+      {withDescription && (
+        <div className={ClassesPageClasses.classDescription}>{formattedDescription}</div>
+      )}
+
+      <div className={ClassesPageClasses.statsRow}>
+        <div className={ClassesPageClasses.badgesRow}>
+          {!!classReviewCount && (
+            <Badge size="xs" variant="light">{classReviewCount} {classReviewCount === 1 ? 'review' : 'reviews'}</Badge>
+          )}
+          {institution === 'harvard' && <Badge variant="light" color="red" size="xs">Harvard</Badge>}
+          {!reviewable && offered && institution !== 'harvard' && <Badge variant="light" color="red" size="xs">Not reviewable</Badge>}
+          {!offered && <Badge variant="light" color="red" size="xs">Not offered</Badge>}
+        </div>
+        <div className={ClassesPageClasses.statsRight}>
+          {contentSubmissionCount > 0 && (
+            <Text size="xs" c="dimmed" className={ClassesPageClasses.statChip}>
+              <IconFile size={14} /> {contentSubmissionCount}
+            </Text>
+          )}
+          <Text size="xs" c="dimmed" className={ClassesPageClasses.statChip}>
+            <IconUserCircle size={14} /> {userCount}
+          </Text>
+        </div>
+      </div>
+    </UnstyledButton>
+  )
+
+  if (withDescription) {
+    return cardContent
+  }
 
   return (
     <Tooltip w={300} withArrow multiline label={description || 'No description provided.'}>
-      <UnstyledButton onClick={() => router.push(`/classes/${_id}`)} className={ClassesPageClasses.ClassButton}>
-        <Title order={5}>
-          {`${subjectNumber}: ${subjectTitle}`}
-        </Title>
-        <Text c='dimmed' size='xs'> ({units.trim()}) </Text>
-        <Space h="sm" />
-        <Text c="dimmed" size="sm"> {`${Number(term.substring(0, 4)) - 1}-${term}`} - {formattedInstructors} {(aliases && aliases.length > 0) && `- AKA ${aliases?.join(', ')}`} </Text>
-        <Space h="sm" />
-        {withDescription && formattedDescription}
-
-        <Space h="sm" />
-        <Group justify={(classReviewCount || !offered || !reviewable) ? 'space-between' : 'flex-end'}>
-          {
-            (classReviewCount || !offered || !reviewable) && (
-              <Flex align='left'>
-                {!!classReviewCount && (<Badge size='sm' variant="filled">{classReviewCount} {classReviewCount === 1 ? 'Response' : 'Responses'}</Badge>)}
-                {(!reviewable && offered) && <Badge variant='filled' color='red' size='sm'> Not Reviewable </Badge>}
-                {!offered && <Badge variant='filled' color='red' size='sm'> Not Offered </Badge>}
-              </Flex>
-            )
-          }
-          <Flex justify={'flex-end'} align={'center'} gap={8}>
-            {contentSubmissionCount > 0 && (
-              <Flex align={'center'} gap={2}>
-                <IconFile size={18} fontWeight={300} color='gray' />
-                <Text c='dimmed' size='sm'>{contentSubmissionCount}</Text>
-              </Flex>
-            )}
-            <Flex align={'center'} gap={2}>
-              <IconUserCircle size={18} fontWeight={300} color='gray' />
-              <Text c='dimmed' size='sm'>{userCount}</Text>
-            </Flex>
-          </Flex>
-        </Group>
-      </UnstyledButton>
+      {cardContent}
     </Tooltip>
   )
 }
@@ -125,6 +156,8 @@ interface ClassesProps {
 
 const Classes: NextPage = () => {
   const router = useRouter()
+  const { status: authStatus } = useSession()
+  const favoritesView = router.isReady && router.query.view === 'favorites'
 
   let initialState = {
     searchTerm: '',
@@ -137,6 +170,7 @@ const Classes: NextPage = () => {
     communicationFilter: [],
     girFilter: [],
     hassFilter: [],
+    schoolFilter: DEFAULT_INSTITUTIONS,
     currentPage: 1,
   }
 
@@ -144,16 +178,46 @@ const Classes: NextPage = () => {
     const saved = sessionStorage.getItem('classesPageState')
     if (saved) {
       const parsed = JSON.parse(saved)
-      initialState = { ...initialState, ...parsed }
+      initialState = {
+        ...initialState,
+        ...parsed,
+        schoolFilter: parseInstitutionFiltersFromSession(parsed),
+      }
     }
   }
 
 
   const [searchTerm, setSearchTerm] = useState(initialState.searchTerm)
   const [debounced] = useDebouncedValue(searchTerm, 500, { leading: true })
-  const [classes, setClasses] = useState([])
-  const [academicYears, setAcademicYears] = useState([])
-  const [allDepartments, setAllDepartments] = useState([])
+  const { data: filtersData } = useFilters()
+  const academicYears = useMemo(() => {
+    const fData = filtersData as any
+    if (!fData?.years) return []
+    return fData.years.map((year: number) => ({
+      value: year.toString(),
+      label: `${year - 1}-${year}`,
+    }))
+  }, [filtersData])
+
+  const mitDepartments = useMemo((): SelectOption[] => {
+    const fData = filtersData as any
+    const depts = (fData?.mitDepartments ?? fData?.departments ?? []) as string[]
+    return sortDepartmentCodes(depts.filter(Boolean)).map((dept) => ({
+      value: dept,
+      label: formatDepartmentOptionLabel(dept),
+    }))
+  }, [filtersData])
+
+  const harvardDepartments = useMemo((): SelectOption[] => {
+    const fData = filtersData as any
+    const depts = ((fData?.harvardDepartments ?? []) as string[]).filter(Boolean)
+    return [...depts]
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+      .map((dept) => ({
+        value: dept,
+        label: dept,
+      }))
+  }, [filtersData])
 
   const [offeredFilter, setOfferedFilter] = useState(initialState.offeredFilter)
   const [reviewableFilter, setReviewable] = useState(initialState.reviewableFilter)
@@ -164,19 +228,86 @@ const Classes: NextPage = () => {
   const [communicationFilter, setCommunicationFilter] = useState<string[]>(initialState.communicationFilter)
   const [girFilter, setGirFilter] = useState<string[]>(initialState.girFilter)
   const [hassFilter, setHassFilter] = useState<string[]>(initialState.hassFilter)
+  const [schoolFilter, setSchoolFilter] = useState<Institution[]>(initialState.schoolFilter)
 
   const [currentPage, setCurrentPage] = useState(initialState.currentPage)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalClasses, setTotalClasses] = useState(0)
-  const [timeForResults, setTimeForResults] = useState(0)
 
   const itemsPerPage = 21 // Set the number of items per page
-  const [loading, setLoading] = useState(true)
   const [helpOpened, setHelpOpened] = useState(false)
+  const [tipsOpened, { toggle: toggleTips }] = useDisclosure(false)
   const [filtersOpened, { toggle: toggleFilterView }] = useDisclosure(false)
-  const [filters, setFilters] = useState({})
   const [sort, setSort] = useState('relevance')
   const [viewMode, setViewMode] = useToggle(['grid', 'list'])
+
+  const institutionScope = useMemo(() => getInstitutionScope(schoolFilter), [schoolFilter])
+  const { includesHarvard, harvardOnly, label: schoolFilterLabel } = institutionScope
+
+  const classQueryParams = useMemo(() => ({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: debounced,
+    offered: offeredFilter.toString(),
+    reviewable: reviewableFilter.toString(),
+    reviewsOnly: reviewsOnlyFilter.toString(),
+    useDescription: viewMode === 'list' ? 'true' : 'false',
+    sortField: sort,
+    academicYears: academicYearFilter.length > 0 ? academicYearFilter.join(',') : undefined,
+    departments: departmentFilter.length > 0 ? departmentFilter.join(',') : undefined,
+    terms: termFilter.length > 0 ? termFilter.join(',') : undefined,
+    communicationRequirements: communicationFilter.length > 0 ? communicationFilter.join(',') : undefined,
+    girAttributes: girFilter.length > 0 ? girFilter.join(',') : undefined,
+    hassAttributes: hassFilter.length > 0 ? hassFilter.join(',') : undefined,
+    institutions: institutionsToQueryParam(schoolFilter),
+    favoritesOnly: favoritesView ? 'true' : undefined,
+  }), [
+    currentPage, debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter,
+    academicYearFilter, departmentFilter, termFilter, communicationFilter,
+    girFilter, hassFilter, schoolFilter, sort, viewMode, favoritesView,
+  ])
+
+  const classesEnabled = router.isReady && (!favoritesView || authStatus === 'authenticated')
+  const { data: classesResult, isLoading, isFetching, isPlaceholderData } = useClasses(classQueryParams, classesEnabled)
+
+  useEffect(() => {
+    if (favoritesView) {
+      setOfferedFilter(false)
+    }
+  }, [favoritesView])
+
+  const rawClasses = ((isFetching && isPlaceholderData) ? [] : (classesResult?.data ?? [])) as IClass[]
+  const unauthenticatedFavoritesView = favoritesView && authStatus !== 'authenticated'
+  const classes = unauthenticatedFavoritesView ? [] : rawClasses
+  const totalClasses = unauthenticatedFavoritesView ? 0 : (classesResult?.meta?.totalClasses ?? 0)
+  const totalPages = unauthenticatedFavoritesView ? 1 : (classesResult?.meta?.totalPages ?? 1)
+  const loading = (favoritesView && authStatus === 'loading') || isLoading || isFetching
+  const showResultsOverlay = isFetching && (classes.length > 0 || isPlaceholderData)
+
+  const availableDepartments = useMemo(() => {
+    if (harvardOnly) return harvardDepartments
+    const combined = includesHarvard ? [...mitDepartments, ...harvardDepartments] : mitDepartments
+    return combined
+      .filter((option, index, array) => array.findIndex((entry) => entry.value === option.value) === index)
+      .sort((a, b) => {
+        const mitComparison = compareDepartmentCodes(a.value, b.value)
+        if (mitComparison !== 0) return mitComparison
+        return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      })
+  }, [harvardOnly, includesHarvard, mitDepartments, harvardDepartments])
+
+  useEffect(() => {
+    if (includesHarvard || harvardDepartments.length === 0) {
+      return
+    }
+
+    const mitDepartmentValues = new Set(mitDepartments.map((dept) => dept.value))
+    const harvardOnlyDepartmentValues = new Set(
+      harvardDepartments
+        .map((dept) => dept.value)
+        .filter((dept) => !mitDepartmentValues.has(dept))
+    )
+
+    setDepartmentFilter((current) => current.filter((dept) => !harvardOnlyDepartmentValues.has(dept)))
+  }, [includesHarvard, mitDepartments, harvardDepartments])
 
   // Update sessionStorage whenever state changes
   useEffect(() => {
@@ -191,10 +322,11 @@ const Classes: NextPage = () => {
       communicationFilter,
       girFilter,
       hassFilter,
+      schoolFilter,
       currentPage,
     }
     sessionStorage.setItem('classesPageState', JSON.stringify(state))
-  }, [searchTerm, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, currentPage])
+  }, [searchTerm, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, schoolFilter, currentPage])
 
 
   // useEffect(() => {
@@ -290,103 +422,15 @@ const Classes: NextPage = () => {
   //   setLoading(false)
   // }, [offeredFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter])
 
-  useEffect(() => {
-    const fetchFilters = async () => {
-      try {
-        const response = await fetch('/api/classes/filters')
-        const result = await response.json()
-
-        if (result.success) {
-          setAcademicYears(result.data.years.map((year: number) => ({
-            value: year.toString(),
-            label: `${year - 1}-${year}`,
-          })))
-
-          setAllDepartments(result.data.departments.map((dept: string) => ({
-            value: dept,
-            label: dept,
-          })))
-        }
-      } catch (error) {
-        console.error('Error fetching filters:', error)
-      }
-    }
-
-    fetchFilters()
-  }, [])
+  const skipPageReset = useRef(true)
 
   useEffect(() => {
-    const controller = new AbortController()
-
-    const fetchClasses = async () => {
-      setLoading(true)
-      try {
-        const queryParams = new URLSearchParams({
-          page: currentPage.toString(),
-          limit: itemsPerPage.toString(),
-          search: debounced,
-          offered: offeredFilter.toString(),
-          reviewable: reviewableFilter.toString(),
-          reviewsOnly: reviewsOnlyFilter.toString(),
-          useDescription: viewMode === 'list' ? 'true' : 'false',
-          sortField: sort,
-        })
-
-        if (academicYearFilter.length > 0) {
-          queryParams.append('academicYears', academicYearFilter.join(','))
-        }
-        if (departmentFilter.length > 0) {
-          queryParams.append('departments', departmentFilter.join(','))
-        }
-        if (termFilter.length > 0) {
-          queryParams.append('terms', termFilter.join(','))
-        }
-        if (communicationFilter.length > 0) {
-          queryParams.append('communicationRequirements', communicationFilter.join(','))
-        }
-        if (girFilter.length > 0) {
-          queryParams.append('girAttributes', girFilter.join(','))
-        }
-        if (hassFilter.length > 0) {
-          queryParams.append('hassAttributes', hassFilter.join(','))
-        }
-
-        const startTime = performance.now()
-        const response = await fetch(`/api/classes?${queryParams}`, {
-          signal: controller.signal
-        })
-        const result = await response.json()
-        const endTime = performance.now()
-
-        setTimeForResults(endTime - startTime)
-
-        if (result.success) {
-          setClasses(result.data)
-          setTotalClasses(result.meta.totalClasses)
-          setTotalPages(result.meta.totalPages)
-          setLoading(false)
-        }
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Error fetching classes:', error)
-        }
-      }
+    if (skipPageReset.current) {
+      skipPageReset.current = false
+      return
     }
-
-    fetchClasses()
-
-    return () => {
-      controller.abort()
-    }
-  }, [
-    currentPage, debounced, offeredFilter, reviewableFilter,
-    reviewsOnlyFilter, academicYearFilter, departmentFilter,
-    termFilter, communicationFilter, girFilter, hassFilter, sort
-  ])
-
-  useEffect(() => {
     setCurrentPage(1)
-  }, [debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, sort])
+  }, [debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, schoolFilter, sort, viewMode, favoritesView])
 
   useHotkeys([
     ['mod+\\', () => {
@@ -394,201 +438,262 @@ const Classes: NextPage = () => {
     }]
   ])
 
+  const schoolFilterIsActive = !isDefaultInstitutionFilter(schoolFilter)
+
+  const activeFilterCount = Object.entries({
+    offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter,
+    termFilter, communicationFilter, girFilter, hassFilter,
+    ...(schoolFilterIsActive ? { schoolFilter } : {}),
+  }).filter(([_, value]) => Array.isArray(value) ? value.length > 0 : !!value).length
+
+  const setView = (value: string) => {
+    const nextQuery = { ...router.query }
+    if (value === 'favorites') {
+      nextQuery.view = 'favorites'
+      setOfferedFilter(false)
+    } else {
+      delete nextQuery.view
+    }
+    router.replace({ pathname: '/classes', query: nextQuery }, undefined, { shallow: true })
+  }
+
   return (
-    <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
+    <Container size="lg" px="md" className={`${ui.page} ${ClassesPageClasses.page}`}>
       <Head>
-        <title> Classes | MIT OpenGrades</title>
-        <meta name="description" content="Generated by create next app" />
+        <title>Classes | MIT OpenGrades</title>
+        <meta name="description" content="Search MIT and Harvard classes on OpenGrades." />
         <link rel="icon" href="/static/images/favicon.ico" />
       </Head>
-      <Alert color="blue" title="New: Advanced searching!" style={{ marginBottom: 'var(--mantine-spacing-lg)' }}>
 
-        <Text>Here are a few quick tips for using our new ElasticSearch-powered search:
-          <List>
-            <List.Item>Use quotes to find exact phrases, such as <Code>"computer science"</Code>.</List.Item>
-            <List.Item>Use wildcards to broaden your matches, like <Code>bio*</Code> for any words starting with "bio".</List.Item>
-            <List.Item>Flip the switch to see more details about each class.</List.Item>
-          </List>
-        </Text>
-      </Alert>
-      <Title>
-        Class Query
-      </Title>
-      <Collapse in={helpOpened}>
-        <Card>
-          <Title order={4}> Filter Tags (BETA) </Title>
-          <Text size="sm">
-            The following filters can be used to narrow down your search.
-            <List>
-              <List.Item> <b>@academicYear:2022</b> - Find classes offered in academic year 2022-2023 </List.Item>
-              <List.Item> <b>@offered:false</b> - Find classes that aren&apos;t offered during AY2022-2023 (default: true) </List.Item>
-              <List.Item> <b>@term:(2022FA|2022JA|2022SP)</b> - Find classes that are offered in the Fall, IAP, and Spring semesters of AY2022-2023 (default: true) </List.Item>
-            </List>
-          </Text>
-        </Card>
-      </Collapse>
-      <Space h='md' />
-      <TextInput
-        leftSection={<IconSearch size={18} stroke={1.5} />}
-        radius="xl"
-        size="md"
-        rightSection={loading && <Loader size='sm' />}
-        placeholder="Search classes"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        rightSectionWidth={42}
-      />
-
-      <Divider
-        my="md"
-        label={`Advanced Search (${Object.entries({ offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter })
-          .filter(([_, value]) =>
-            Array.isArray(value) ? value.length > 0 : !!value
-          ).length
-          } selected) ${filtersOpened ? '▲' : '▼'}`}
-        labelPosition="center"
-        onClick={toggleFilterView}
-      />
-
-      <Collapse in={filtersOpened}>
-        <Grid grow>
-          <Grid.Col span={3}>
-            <Checkbox label="Offered classes only" checked={offeredFilter} onChange={(e) => setOfferedFilter(e.target.checked)} />
-            <Space h="sm" />
-            <Checkbox label="Reviewable classes only" checked={reviewableFilter} onChange={(e) => setReviewable(e.target.checked)} />
-            <Space h="sm" />
-            <Checkbox label="Show only classes with reviews" checked={reviewsOnlyFilter} onChange={(e) => setReviewsOnlyFilter(e.target.checked)} />
-          </Grid.Col>
-          <Grid.Col span={9}>
-            <MultiSelect placeholder="Academic Year" data={academicYears} value={academicYearFilter} onChange={setAcademicYearFilter} />
-            <Space h="sm" />
-            <MultiSelect placeholder="Term" data={[
-              { label: 'Fall', value: 'FA' },
-              { label: 'IAP', value: 'JA' },
-              { label: 'Spring', value: 'SP' }
-            ]} value={termFilter} onChange={setTermFilter} />
-            <Space h="sm" />
-            <MultiSelect placeholder="Department" data={allDepartments} value={departmentFilter} onChange={setDepartmentFilter} />
-            <Space h="sm" />
-            <MultiSelect
-              placeholder="Communication Intensive"
+      <Stack gap="md" className={ClassesPageClasses.pageStack}>
+        <div className={ClassesPageClasses.pageHeader}>
+          <Group gap="md" align="center" wrap="wrap" className={ClassesPageClasses.pageHeaderLeft}>
+            <Title order={1} className={ui.heroTitle}>Classes</Title>
+            <SegmentedControl
+              size="xs"
+              value={favoritesView ? 'favorites' : 'all'}
+              onChange={setView}
               data={[
-                { label: 'CI-H (Humanities)', value: 'CI-H' },
-                { label: 'CI-HW (Humanities Writing)', value: 'CI-HW' }
+                { label: 'All', value: 'all' },
+                { label: 'Favorites', value: 'favorites' },
               ]}
-              value={communicationFilter}
-              onChange={setCommunicationFilter}
-            />
-            <Space h="sm" />
-            <MultiSelect
-              placeholder="GIR Attributes"
-              data={[
-                { label: 'REST (Science)', value: 'REST' },
-                { label: 'LAB (Laboratory)', value: 'LAB' },
-                { label: 'Chemistry (GIR)', value: 'CHEM' },
-                { label: 'Biology (GIR)', value: 'BIOL' },
-                { label: 'Physics I (GIR)', value: 'PHY1' },
-                { label: 'Physics II (GIR)', value: 'PHY2' },
-                { label: 'Calculus I (GIR)', value: 'CAL1' },
-                { label: 'Calculus II (GIR)', value: 'CAL2' }
-              ]}
-              value={girFilter}
-              onChange={setGirFilter}
-            />
-            <Space h="sm" />
-            <MultiSelect
-              placeholder="HASS Attributes"
-              data={[
-                { label: 'HASS-A (Arts)', value: 'HASS-A' },
-                { label: 'HASS-E (Elective)', value: 'HASS-E' },
-                { label: 'HASS-H (Humanities)', value: 'HASS-H' },
-                { label: 'HASS-S (Social Sciences)', value: 'HASS-S' }
-              ]}
-              value={hassFilter}
-              onChange={setHassFilter}
-            />
-          </Grid.Col>
-        </Grid>
-
-      </Collapse>
-
-      {/* <Space h="md" /> */}
-      {/* <Text> <b> Filters: </b> {Object.entries(filters).length > 0 ? Object.entries(filters).filter(([key]) => key !== 'searchPhrases').map(([key, value]) => (<Badge key={key}> {`${ key }: ${ value.toString() }`} </Badge>)) : (<> None </>)} </Text> */}
-      <Space h="lg" />
-      {
-        !loading &&
-        <Flex justify="space-between" align={'center'}>
-
-          <Text c='gray'> Found {totalClasses.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} result{totalClasses === 1 ? '' : 's'}. ({Math.round(timeForResults)} ms) </Text>
-
-          <Group>
-            <Select size='sm' placeholder="Sort by" data={[
-              { label: 'Relevance', value: 'relevance' },
-              { label: 'Alphabetical', value: 'alphabetical' },
-              { label: 'Reviews', value: 'reviews' },
-              { label: 'Users', value: 'users' },
-            ]} defaultValue={sort} onChange={(value) => setSort(value)} clearable={false} allowDeselect={false} />
-            <Switch
-              size='lg'
-              color='purple'
-              onLabel={<IconGridPattern size={16} />}
-              offLabel={<IconList size={16} />}
-              checked={viewMode == 'grid'}
-              onChange={(e) => setViewMode(e.target.checked ? 'grid' : 'list')}
             />
           </Group>
-        </Flex>
-      }
-      <Space h="md" />
-      <Box pos="relative">
-        <LoadingOverlay visible={loading && classes.length > 0} />
-        {
-          viewMode === 'grid' ? (
+          <button type="button" className={ClassesPageClasses.tipsToggle} onClick={toggleTips}>
+            {tipsOpened ? 'Hide search tips' : 'Search tips'}
+          </button>
+        </div>
 
-            <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 1500: 2, 1200: 3 }}>
-              <Masonry gutter={'0.5rem'}>
-                {
-                  classes.map((classEntry: IClass) => (
-                    <ClassButton key={`${classEntry.subjectNumber} ${classEntry.term}`} classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0} contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0} {...classEntry} />
-                  ))
-                }
-              </Masonry>
-            </ResponsiveMasonry>) : (
-            <Stack gap="md">
-              {
-                classes.map((classEntry: IClass) => (
-                  <ClassButton key={classEntry._id} classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0} contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0} withDescription searchTerm={searchTerm} highlight={(classEntry as ClassAPIEntry).highlight} {...classEntry} />
-                ))
-              }
+        <Collapse expanded={tipsOpened}>
+          <div className={ClassesPageClasses.tipsPanel}>
+            <List spacing={4} size="sm" className={ClassesPageClasses.tipsList}>
+              <List.Item>Use quotes for exact phrases, such as <Code>"computer science"</Code>.</List.Item>
+              <List.Item>Use wildcards like <Code>bio*</Code> to broaden matches.</List.Item>
+              <List.Item>Switch to list view for descriptions on each result.</List.Item>
+            </List>
+          </div>
+        </Collapse>
+
+        <Collapse expanded={helpOpened}>
+          <div className={`${ui.sectionCard} ${ClassesPageClasses.helpPanel}`}>
+            <Title order={5}>Filter tags (beta)</Title>
+            <List size="sm" mt="xs" spacing={4}>
+              <List.Item><b>@academicYear:2022</b> — classes in AY 2022–2023</List.Item>
+              <List.Item><b>@offered:false</b> — classes not offered this year</List.Item>
+              <List.Item><b>@term:(2022FA|2022JA|2022SP)</b> — filter by term codes</List.Item>
+            </List>
+          </div>
+        </Collapse>
+
+        <section className={`${ui.sectionCard} ${ClassesPageClasses.searchPanel}`}>
+          <TextInput
+            leftSection={<IconSearch size={18} stroke={1.5} />}
+            radius="md"
+            size="sm"
+            rightSection={loading && <Loader size="sm" />}
+            placeholder="Search by number, title, instructor, or department"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            rightSectionWidth={42}
+          />
+
+          <button type="button" className={ClassesPageClasses.filterToggle} onClick={toggleFilterView}>
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''} {filtersOpened ? '▴' : '▾'}
+          </button>
+
+          <Collapse expanded={filtersOpened}>
+            <div className={ClassesPageClasses.filtersPanel}>
+              <div className={ClassesPageClasses.schoolFilterSection}>
+                <Text className={ClassesPageClasses.filterGroupLabel}>Schools</Text>
+                <Chip.Group
+                  multiple
+                  value={schoolFilter}
+                  onChange={(value) => setSchoolFilter(value as Institution[])}
+                >
+                  <Group gap="sm" className={ClassesPageClasses.schoolChips}>
+                    <Chip value="mit" variant="outline" size="md" classNames={{ label: ClassesPageClasses.schoolChipLabel }}>
+                      MIT
+                    </Chip>
+                    <Chip value="harvard" variant="outline" size="md" classNames={{ label: ClassesPageClasses.schoolChipLabel }}>
+                      Harvard
+                    </Chip>
+                  </Group>
+                </Chip.Group>
+              </div>
+
+              <Grid className={ClassesPageClasses.filterGrid}>
+                <Grid.Col span={{ base: 12, md: 4 }}>
+                  <Stack gap="sm" className={ClassesPageClasses.filterColumn}>
+                    <Text className={ClassesPageClasses.filterGroupLabel}>Quick filters</Text>
+                    <Stack gap="xs" className={ClassesPageClasses.checkboxGroup}>
+                      <Checkbox label="Offered only" checked={offeredFilter} onChange={(e) => setOfferedFilter(e.target.checked)} />
+                      <Checkbox label="Reviewable only" checked={reviewableFilter} onChange={(e) => setReviewable(e.target.checked)} />
+                      <Checkbox label="Has reviews" checked={reviewsOnlyFilter} onChange={(e) => setReviewsOnlyFilter(e.target.checked)} />
+                    </Stack>
+                  </Stack>
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, md: 8 }}>
+                  <Stack gap="sm" className={ClassesPageClasses.filterColumn}>
+                    <Text className={ClassesPageClasses.filterGroupLabel}>Refine results</Text>
+                    <Stack gap="sm" className={ClassesPageClasses.filterFields}>
+                      <MultiSelect placeholder="Academic year" data={academicYears} value={academicYearFilter} onChange={setAcademicYearFilter} />
+                      <MultiSelect placeholder="Term" data={[
+                        { label: 'Fall', value: 'FA' },
+                        { label: 'IAP', value: 'JA' },
+                        { label: 'Spring', value: 'SP' },
+                      ]} value={termFilter} onChange={setTermFilter} />
+                      <MultiSelect placeholder="Department" data={availableDepartments} value={departmentFilter} onChange={setDepartmentFilter} />
+                      <MultiSelect placeholder="Communication intensive" data={[
+                        { label: 'CI-H', value: 'CI-H' },
+                        { label: 'CI-HW', value: 'CI-HW' },
+                      ]} value={communicationFilter} onChange={setCommunicationFilter} />
+                      <MultiSelect placeholder="GIR attributes" data={[
+                        { label: 'REST', value: 'REST' },
+                        { label: 'LAB', value: 'LAB' },
+                        { label: 'PLAB', value: 'PLAB' },
+                        { label: 'Chemistry', value: 'CHEM' },
+                        { label: 'Biology', value: 'BIOL' },
+                        { label: 'Physics I', value: 'PHY1' },
+                        { label: 'Physics II', value: 'PHY2' },
+                        { label: 'Calculus I', value: 'CAL1' },
+                        { label: 'Calculus II', value: 'CAL2' },
+                      ]} value={girFilter} onChange={setGirFilter} />
+                      <MultiSelect placeholder="HASS attributes" data={[
+                        { label: 'HASS-A', value: 'HASS-A' },
+                        { label: 'HASS-E', value: 'HASS-E' },
+                        { label: 'HASS-H', value: 'HASS-H' },
+                        { label: 'HASS-S', value: 'HASS-S' },
+                      ]} value={hassFilter} onChange={setHassFilter} />
+                    </Stack>
+                  </Stack>
+                </Grid.Col>
+              </Grid>
+            </div>
+          </Collapse>
+        </section>
+
+        <Group justify="space-between" align="center" wrap="wrap" gap="sm" className={ClassesPageClasses.resultsToolbar}>
+          {!loading && (
+            <Stack gap={2}>
+              <Text size="sm" className={ClassesPageClasses.resultsMeta}>
+                {totalClasses.toLocaleString()} result{totalClasses === 1 ? '' : 's'}
+              </Text>
+              <Text size="xs" c="dimmed">{schoolFilterLabel}</Text>
             </Stack>
-          )
-        }
-      </Box>
-      <Space h="md" />
-      {/* align Pagination to center */}
-      {
-        (loading && classes.length == 0) && (
-          <>
-            <Center>
-              <Loader size='lg' />
-            </Center>
-            <Space h="md" />
-          </>
-        )
-      }
-      <Center>
-        <Pagination
-          value={currentPage}
-          onChange={(page) => {
-            setLoading(true)
-            setCurrentPage(page)
-          }}
-          total={totalPages}
-          withControls
-          radius="md"
-        />
-      </Center>
+          )}
+          {!loading && (
+            <Group gap="sm" wrap="nowrap" className={ClassesPageClasses.resultsControls}>
+              <Select
+                size="xs"
+                placeholder="Sort"
+                data={[
+                  { label: 'Relevance', value: 'relevance' },
+                  { label: 'Alphabetical', value: 'alphabetical' },
+                  { label: 'Reviews', value: 'reviews' },
+                  { label: 'Users', value: 'users' },
+                ]}
+                value={sort}
+                onChange={(value) => value && setSort(value)}
+                clearable={false}
+                allowDeselect={false}
+                w={130}
+              />
+              <Switch
+                size="md"
+                color="brick"
+                onLabel={<IconGridPattern size={14} />}
+                offLabel={<IconList size={14} />}
+                checked={viewMode === 'grid'}
+                onChange={(e) => setViewMode(e.target.checked ? 'grid' : 'list')}
+              />
+            </Group>
+          )}
+        </Group>
 
+        <section className={ClassesPageClasses.resultsSection}>
+          <Box pos="relative" className={ClassesPageClasses.resultsBox}>
+            <LoadingOverlay visible={showResultsOverlay} />
+
+            {loading && classes.length === 0 ? (
+              <Center py="md">
+                <Loader size="lg" />
+              </Center>
+            ) : classes.length === 0 ? (
+              <Center py="md">
+                <Text size="sm" c="dimmed">
+                  {favoritesView && authStatus === 'unauthenticated'
+                    ? 'Sign in to see favorites.'
+                    : favoritesView
+                      ? 'No favorites yet. Bookmark a class from its page.'
+                      : hasInstitutionSelection(schoolFilter)
+                        ? 'No classes match your search and filters.'
+                        : 'Select at least one school to see results.'}
+                </Text>
+              </Center>
+            ) : viewMode === 'grid' ? (
+              <ResponsiveMasonry columnCountBreakPoints={{ 600: 1, 900: 2, 1200: 3 }}>
+                <Masonry gutter="1rem">
+                  {classes.map((classEntry: IClass) => (
+                    <ClassButton
+                      key={`${classEntry.subjectNumber}-${classEntry.term}`}
+                      classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0}
+                      contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0}
+                      {...classEntry}
+                    />
+                  ))}
+                </Masonry>
+              </ResponsiveMasonry>
+            ) : (
+              <Stack gap="md">
+                {classes.map((classEntry: IClass) => (
+                  <ClassButton
+                    key={classEntry._id}
+                    classReviewCount={(classEntry as ClassAPIEntry).classReviewCount || 0}
+                    contentSubmissionCount={(classEntry as ClassAPIEntry).contentSubmissionCount || 0}
+                    withDescription
+                    searchTerm={searchTerm}
+                    highlight={(classEntry as ClassAPIEntry).highlight}
+                    {...classEntry}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Box>
+
+          {totalPages > 1 && (
+            <Center mt="md">
+              <Pagination
+                value={currentPage}
+                onChange={setCurrentPage}
+                total={totalPages}
+                withControls
+                radius="md"
+                size="sm"
+              />
+            </Center>
+          )}
+        </section>
+      </Stack>
     </Container>
   )
 }

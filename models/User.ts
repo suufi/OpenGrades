@@ -104,12 +104,22 @@ const UserSchema = new mongoose.Schema<IUser>({
     type: Boolean,
     default: false  // False = opted-in (receive Q&A emails)
   },
+  includeHarvardCourses: {
+    type: Boolean,
+    default: false
+  },
   favoriteClasses: [{
     type: String
   }],
   karmaDisplayKerb: {
     type: Boolean,
     default: false
+  },
+  notificationPreferences: {
+    feature_updates: { type: Boolean, default: true },
+    catalog_updates: { type: Boolean, default: true },
+    pe_updates: { type: Boolean, default: true },
+    academic_calendar: { type: Boolean, default: true }
   }
 }, { timestamps: true })
 

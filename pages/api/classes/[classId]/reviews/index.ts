@@ -10,6 +10,7 @@ import { withApiLogger } from '@/utils/apiLogger'
 import AuditLog from '@/models/AuditLog'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
+import ReviewVote from '@/models/ReviewVote'
 import User from '@/models/User'
 import { addKarma } from '@/utils/karma'
 import { KARMA_REVIEW_FULL } from '@/utils/karmaConstants'
@@ -64,6 +65,42 @@ async function handler(
         let reviews = canSeeAuthors
           ? await ClassReview.find({ class: classId, display: true }).populate(['class', 'author']).lean()
           : await ClassReview.find({ class: classId, display: true }).populate(['class']).lean()
+
+        const reviewIds = reviews.map((r) => r._id)
+        const voterId = user?._id && mongoose.Types.ObjectId.isValid(user._id.toString())
+          ? new mongoose.Types.ObjectId(user._id.toString())
+          : null
+        const voteAggregates = reviewIds.length > 0
+          ? await ReviewVote.aggregate([
+            { $match: { classReview: { $in: reviewIds } } },
+            {
+              $group: {
+                _id: '$classReview',
+                upvotes: { $sum: { $cond: [{ $eq: ['$vote', 1] }, 1, 0] } },
+                downvotes: { $sum: { $cond: [{ $eq: ['$vote', -1] }, 1, 0] } },
+                userVote: {
+                  $max: {
+                    $cond: [
+                      voterId ? { $eq: ['$user', voterId] } : { $eq: [1, 0] },
+                      '$vote',
+                      null
+                    ]
+                  }
+                }
+              }
+            }
+          ])
+          : []
+        const votesByReview = new Map(voteAggregates.map((v) => [v._id.toString(), v]))
+        reviews = reviews.map((r) => {
+          const votes = votesByReview.get(r._id.toString())
+          return {
+            ...r,
+            upvotes: votes?.upvotes ?? 0,
+            downvotes: votes?.downvotes ?? 0,
+            userVote: votes?.userVote && votes.userVote !== 0 ? votes.userVote : null
+          }
+        })
 
         // Extract grades separately (for grade distribution chart)
         const grades = reviews

@@ -1,14 +1,17 @@
 import { AppProps } from 'next/app'
+import { Inter } from 'next/font/google'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { createAppQueryClient } from '@/lib/query'
 
-import { ActionIcon, AppShell, Badge, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Modal, NumberInput, Stack, Switch, Text, TextInput, Tooltip, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
-import { useDisclosure, useHotkeys, useMounted } from '@mantine/hooks'
+import { AppShell, Badge, Box, Burger, Button, Center, ColorSchemeScript, Container, Divider, Group, Loader, MantineProvider, Menu, Modal, MultiSelect, NumberInput, Stack, Switch, Text, TextInput, createTheme, useMantineColorScheme, useMantineTheme } from '@mantine/core'
+import { IconCheck } from '@tabler/icons-react'
+import { useDebouncedState, useDisclosure, useHotkeys } from '@mantine/hooks'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications, notifications } from '@mantine/notifications'
-import { Moon, Sun } from 'tabler-icons-react'
 
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react'
 
@@ -17,17 +20,20 @@ import LockdownModule from '@/components/LockdownModule'
 import NotLoggedIn from '@/components/NotLoggedIn'
 import { UserContext, UserContextProvider } from '@/components/UserContextProvider'
 import { NavigationLinks, UserSection } from '@/components/Navbar'
+import Logo from '@/components/Logo'
 import { formatCourseOptionCode } from '@/utils/courseOptions'
+import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 
 import PlausibleProvider from 'next-plausible'
 
 import '@mantine/charts/styles.css'
+import '@mantine/dates/styles.css';
 import '@mantine/core/styles.css'
 import '@mantine/dropzone/styles.css'
 import '@mantine/notifications/styles.css'
 import '@mantine/spotlight/styles.css'
 
-
+import '@/styles/globals.css'
 import mainClasses from '@/styles/Main.module.css'
 import { ICourseOption, IUser } from '@/types'
 
@@ -58,8 +64,47 @@ const availableAcademicYears = getAvailableAcademicYears()
 
 
 
+const inter = Inter({ subsets: ['latin'] })
+
 const theme = createTheme({
-  /** Put your mantine theme override here */
+  fontFamily: 'var(--app-body-font)',
+  headings: {
+    fontFamily: 'var(--app-display-font)',
+    fontWeight: '600'
+  },
+  primaryColor: 'brick',
+  defaultRadius: 'lg',
+  colors: {
+    brick: [
+      '#fff5f0',
+      '#ffe8db',
+      '#ffd0b8',
+      '#ffb38e',
+      '#f08a5a',
+      '#e95b2b',
+      '#d14f24',
+      '#b8431f',
+      '#9a3819',
+      '#7c2d14',
+    ],
+    sand: [
+      '#fafafa',
+      '#f0f0f0',
+      '#e5e5e5',
+      '#d4d4d4',
+      '#c7c7c7',
+      '#b8b8b8',
+      '#a3a3a3',
+      '#8f8f8f',
+      '#7a7a7a',
+      '#666666',
+    ]
+  },
+  shadows: {
+    xs: '0 2px 6px rgba(51, 51, 51, 0.04)',
+    sm: '0 2px 8px rgba(51, 51, 51, 0.05)',
+    md: '0 4px 14px rgba(51, 51, 51, 0.06)'
+  },
   components: {
     Container: {
       defaultProps: {
@@ -68,19 +113,101 @@ const theme = createTheme({
           lg: 1500
         }
       }
+    },
+    Card: {
+      defaultProps: {
+        radius: 'md',
+        shadow: 'xs',
+        padding: 'lg',
+        withBorder: true
+      }
+    },
+    Paper: {
+      defaultProps: {
+        radius: 'md',
+        shadow: 'xs',
+        withBorder: true
+      }
+    },
+    Button: {
+      defaultProps: {
+        radius: 'xl'
+      }
+    },
+    Badge: {
+      defaultProps: {
+        radius: 'sm'
+      }
     }
-  },
-
-  // shade text colors lighter on dark theme
-
+  }
 })
 
 function useEditProfileModal() {
   const [opened, { open, close }] = useDisclosure(false)
   const { userProfile, setUserProfile } = useContext(UserContext)
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const [classOf, setClassOf] = useState<number | string>('')
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [referredBy, setReferredBy] = useDebouncedState<string>('', 500)
+  const [referredByState, setReferredByState] = useState<{ data: string, status: 'initial' | 'loading' | 'success' | 'error' }>({ data: '', status: 'initial' })
+
+  useEffect(() => {
+    if (referredBy.length === 0) return
+    fetch(`/api/me/referral-kerb?kerb=${referredBy}`).then(async (res) => {
+      const body = await res.json()
+      if (res.ok && body.data) {
+        setReferredByState({ data: body.data, status: 'success' })
+      } else {
+        setReferredByState({ data: body.message || 'That kerb is not registered on OpenGrades. Maybe you can refer them?', status: 'error' })
+      }
+    })
+  }, [referredBy])
+
+  const updateFlags = async (flags: string[]) => {
+    const previousFlags = userProfile?.flags
+    setUserProfile({ ...userProfile, flags } as IUser)
+
+    const res = await fetch('/api/me/flags', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flags })
+    })
+
+    if (!res.ok) {
+      const body = await res.json()
+      setUserProfile({ ...userProfile, flags: previousFlags } as IUser)
+      notifications.show({
+        title: 'Error',
+        message: body.message || 'Failed to update identity tags',
+        color: 'red'
+      })
+    }
+  }
+
+  const saveReferral = async () => {
+    const res = await fetch('/api/me/referral', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referredBy })
+    })
+    const body = await res.json()
+
+    if (res.ok) {
+      setUserProfile({ ...userProfile, referredBy } as unknown as IUser)
+      notifications.show({
+        title: 'Referral saved',
+        message: 'Thanks for letting us know who referred you.',
+        color: 'green'
+      })
+    } else {
+      notifications.show({
+        title: 'Error',
+        message: body.message || 'Failed to save referral',
+        color: 'red'
+      })
+    }
+  }
 
   useEffect(() => {
     if (opened && userProfile?.classOf) {
@@ -228,7 +355,7 @@ function useEditProfileModal() {
           </Box>
         )}
 
-        {userProfile?.courseAffiliation && userProfile.courseAffiliation.length > 0 && (
+        {Array.isArray(userProfile?.courseAffiliation) && userProfile.courseAffiliation.length > 0 && (
           <Box>
             <Group justify="space-between" align="center" mb={4}>
               <Text size="sm" fw={500}>Course Affiliations</Text>
@@ -242,11 +369,13 @@ function useEditProfileModal() {
               </Button>
             </Group>
             <Group gap="xs">
-              {userProfile.courseAffiliation.map((course: ICourseOption, idx: number) => (
-                <Badge key={idx} color="blue" variant="light" size="md">
-                  {formatCourseOptionCode(course)} ({course.courseLevel})
-                </Badge>
-              ))}
+              {userProfile.courseAffiliation
+                .filter((course: ICourseOption | null | undefined): course is ICourseOption => course !== null && course !== undefined)
+                .map((course: ICourseOption, idx: number) => (
+                  <Badge key={idx} color="blue" variant="light" size="md">
+                    {formatCourseOptionCode(course)} ({course.courseLevel})
+                  </Badge>
+                ))}
             </Group>
             <Text size="xs" c="dimmed" mt={4}>
               Your current course affiliations from MIT
@@ -261,7 +390,7 @@ function useEditProfileModal() {
           placeholder="e.g., 2025"
           description="Your expected or actual graduation year"
           value={classOf}
-          onChange={setClassOf}
+          onChange={(val) => setClassOf(val)}
           min={2000}
           max={2040}
           required
@@ -272,6 +401,46 @@ function useEditProfileModal() {
             Last grade report upload: {new Date(userProfile.lastGradeReportUpload).toLocaleDateString()}
           </Text>
         )}
+
+        <MultiSelect
+          label="Identity tags (optional)"
+          description="Used only in aggregate to study class experience trends across backgrounds."
+          value={userProfile?.flags ?? []}
+          onChange={updateFlags}
+          data={[
+            { value: 'First Gen', label: 'First Generation' },
+            { value: 'Low Income', label: 'Low Income' },
+            { value: 'International', label: 'International' },
+            { value: 'BIL', label: 'Black, Native American/Indigenous, or Latino' },
+          ]}
+        />
+
+        {!userProfile?.referredBy && (
+          <Group align="flex-end" gap="sm" wrap="nowrap">
+            <TextInput
+              style={{ flex: 1 }}
+              defaultValue=""
+              onChange={(e) => setReferredBy(e.target.value)}
+              error={referredByState.status === 'error' && referredByState.data}
+              rightSectionPointerEvents="none"
+              rightSection={referredByState.status === 'success' && <IconCheck color="green" size={18} />}
+              label="Who referred you? (optional)"
+              placeholder="kerb"
+            />
+            <Button variant="default" onClick={saveReferral} disabled={referredByState.status !== 'success'}>
+              Save
+            </Button>
+          </Group>
+        )}
+
+        <Divider my="md" label="Appearance" labelPosition="center" />
+
+        <Switch
+          label="Dark mode"
+          description="Use a dark color scheme across OpenGrades (⌘/Ctrl+J)"
+          checked={colorScheme === 'dark'}
+          onChange={() => toggleColorScheme()}
+        />
 
         <Divider my="md" label="Privacy Settings" labelPosition="center" />
 
@@ -310,6 +479,44 @@ function useEditProfileModal() {
             <Text size="xs" c="dimmed" mt={4}>
               Learn more about our <a href="/about" style={{ color: 'inherit' }}>AI and privacy practices</a>. You must enable this to use AI features.
             </Text>
+          </div>
+
+          <div>
+            <Switch
+              label="Include Harvard courses in AI recommendations"
+              description={
+                hasRecentGradeReport(userProfile?.lastGradeReportUpload)
+                  ? 'Show Harvard catalog matches in similar courses, AI search, and personalized recommendations.'
+                  : 'Upload a grade report within the last 4 months to enable Harvard course recommendations.'
+              }
+              checked={userProfile?.includeHarvardCourses === true}
+              disabled={!hasRecentGradeReport(userProfile?.lastGradeReportUpload)}
+              onChange={(event) => {
+                const next = event.currentTarget.checked
+                setUserProfile({ ...userProfile, includeHarvardCourses: next } as IUser)
+
+                fetch('/api/me/privacy', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ includeHarvardCourses: next })
+                }).then(res => res.json()).then(data => {
+                  if (data.success) {
+                    notifications.show({
+                      title: 'Success',
+                      message: data.message || 'Harvard preference updated',
+                      color: 'green'
+                    })
+                  } else {
+                    notifications.show({
+                      title: 'Error',
+                      message: data.message || 'Failed to update Harvard preference',
+                      color: 'red'
+                    })
+                    setUserProfile({ ...userProfile, includeHarvardCourses: !next } as IUser)
+                  }
+                })
+              }}
+            />
           </div>
 
           <div>
@@ -494,10 +701,13 @@ function App({ pageProps, Component, router }: AppProps) {
   const [opened, { toggle }] = useDisclosure()
   console.log("App.props", pageProps)
 
-
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const theme = useMantineTheme()
-  const isMounted = useMounted()
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!window.location.pathname.startsWith('/api/auth')) return
+    void router.replace('/')
+  }, [router])
 
   return (
     <>
@@ -508,10 +718,14 @@ function App({ pageProps, Component, router }: AppProps) {
           collapsed: { mobile: !opened }
         }}
         header={{
-          height: 70,
+          height: { base: 60, sm: 70 },
         }}
       >
-        <AppShell.Navbar p="md" hidden={!opened}>
+        <AppShell.Navbar
+          p="md"
+          hidden={!opened}
+          className={mainClasses.shellNavbar}
+        >
           <AppShell.Section grow>
             <NavigationLinks />
           </AppShell.Section>
@@ -520,7 +734,11 @@ function App({ pageProps, Component, router }: AppProps) {
         {/* <AppShell.Footer>
           <p> Footer </p>
         </AppShell.Footer> */}
-        <AppShell.Header p="md">
+        <AppShell.Header
+          px="md"
+          py="xs"
+          className={mainClasses.shellHeader}
+        >
           <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', justifyContent: 'space-between' }}>
             {/* <MediaQuery largerThan="sm" styles={{ display: 'none' }}> */}
             <Burger
@@ -528,19 +746,14 @@ function App({ pageProps, Component, router }: AppProps) {
               onClick={toggle}
               size="sm"
               hiddenFrom="sm"
-              color={theme.colors.gray[6]}
+              color={theme.colors.sand[7]}
               mr="xl"
             />
             {/* </MediaQuery> */}
             <Group justify='space-between' style={{ width: '100%' }}>
-              <Text fw={'bold'} size={'xl'} variant="gradient" gradient={{ from: 'orange', to: 'yellow', deg: 45 }}>
-                MIT OpenGrades
-              </Text>
-              <Tooltip label="Alt J" position="left" withArrow>
-                <ActionIcon onClick={toggleColorScheme} variant='transparent' color='gray' size='sm'>
-                  {isMounted ? colorScheme === 'dark' ? <Sun /> : <Moon /> : <Loader />}
-                </ActionIcon>
-              </Tooltip>
+              <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                <Logo variant="full" height={32} />
+              </Link>
             </Group>
           </div>
         </AppShell.Header>
@@ -553,6 +766,8 @@ function App({ pageProps, Component, router }: AppProps) {
 }
 
 export default function AppWrapper({ Component, pageProps, router }: AppProps) {
+  const [queryClient] = useState(() => createAppQueryClient())
+
   useEffect(() => {
     (window as any).dataLayer = (window as any).dataLayer || []
     function gtag(...args: any[]) { (window as any).dataLayer.push(args) }
@@ -580,7 +795,14 @@ export default function AppWrapper({ Component, pageProps, router }: AppProps) {
       <ColorSchemeScript defaultColorScheme='auto' />
     </Head>
 
+    <style jsx global>{`
+      :root {
+        --font-inter: ${inter.style.fontFamily};
+      }
+    `}</style>
+
     <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
       <PlausibleProvider domain="opengrades.mit.edu" customDomain="https://analytics.mit.edu" trackOutboundLinks selfHosted taggedEvents>
         <SessionProvider session={pageProps.session}>
           <UserContextProvider>
@@ -598,6 +820,7 @@ export default function AppWrapper({ Component, pageProps, router }: AppProps) {
           </UserContextProvider>
         </SessionProvider>
       </PlausibleProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   </>
 }

@@ -36,6 +36,8 @@ export const config = {
                     throw new Error('No email found in profile')
                 }
 
+                console.log("profile", profile)
+
                 const user = await User.findOne({ email: profile.email })
 
                 return {
@@ -65,17 +67,17 @@ export const config = {
         }
     ],
     callbacks: {
-        async jwt ({ token, user }) {
+        async jwt({ token, user }) {
             user && (token.user = user)
             return token
         },
-        async session ({ session, token }) {
+        async session({ session, token }) {
             // Send properties to the client, like an access_token from a provider.
             // session.accessToken = token.accessToken
             session.user = token.user as { _id: string; trustLevel: number; verified: boolean; kerb: string; name: string; classOf: number; affiliation: string } & { name?: string | null | undefined; email?: string | null | undefined; image?: string | null | undefined }
             return session
         },
-        async redirect ({ url, baseUrl }) {
+        async redirect({ url, baseUrl }) {
             // Allow mobile app deep link callback
             if (url.startsWith('opengrades://')) return url
             if (url.startsWith(baseUrl)) return url
@@ -118,7 +120,7 @@ export const config = {
                             : null
 
                         // Get courseOption objects for each course that the user is affiliated with
-                        const courseOptionObjects = await Promise.all(courseOptions.map(async (course: any) => {
+                        const courseOptionObjects = (await Promise.all(courseOptions.map(async (course: any) => {
                             const query = {
                                 departmentCode: course.departmentCode,
                                 courseOption: course.courseOption,
@@ -132,7 +134,7 @@ export const config = {
                             const courseOption = await CourseOption.findOne(query).select('_id')
 
                             return courseOption
-                        }))
+                        }))).filter((c): c is NonNullable<typeof c> => c !== null && c !== undefined)
 
                         const apiAffiliationType = res.item.affiliations[0]?.type || null
                         const existingUser = await User.findOne({ email: profile?.email }).lean()
@@ -239,7 +241,7 @@ export const config = {
 } satisfies NextAuthOptions
 
 // Use it in server contexts
-export function auth (
+export function auth(
     ...args:
         | [GetServerSidePropsContext["req"], GetServerSidePropsContext["res"]]
         | [NextApiRequest, NextApiResponse]

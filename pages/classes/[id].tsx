@@ -27,26 +27,31 @@ import User from '../../models/User'
 import CourseEmbedding from '../../models/CourseEmbedding'
 
 import { IClass, IClassReview, IContentSubmission, IParams, IReport, IUser, LetterGrade, TimeRange } from '../../types'
+import { formatTermDisplay } from '@/utils/formatTerm'
+import type { IHarvardMeetingPattern } from '@/types/harvardCourse'
 
 import GradeChart from '../../components/GradeChart'
 import RelatedClasses from '../../components/RelatedClasses'
+import SimilarCourses, { SimilarCourseEntry } from '../../components/SimilarCourses'
+import { findSimilarCoursesByEmbedding } from '@/utils/courseSimilarity'
+import { userCanIncludeHarvardCourses } from '@/utils/userHarvardPreference'
 
 
 import GradeReportModal from '@/components/GradeReportModal'
 import { DonutChart } from '@mantine/charts'
-import { IconAlertCircle, IconArrowDownCircle, IconArrowUpCircle, IconClock, IconGraph, IconMessage, IconPhoto, IconStar, IconThumbUp, IconTrash, IconUpload, IconX, IconDatabase } from '@tabler/icons'
+import { IconAlertCircle, IconClock, IconGraph, IconMessage, IconPhoto, IconStar, IconThumbDown, IconThumbUp, IconTrash, IconUpload, IconX, IconDatabase, IconEye, IconEyeOff, IconFlag, IconPencil, IconPlus } from '@tabler/icons-react'
 import moment from 'moment-timezone'
 import mongoose from 'mongoose'
 import { Session, getServerSession } from 'next-auth'
 import Link from 'next/link'
 import authOptions from "@/pages/api/auth/[...nextauth]"
-import { Eye, EyeOff, Flag2, Pencil, Plus } from 'tabler-icons-react'
 import styles from '../../styles/ClassPage.module.css'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 import { usePlausibleTracker } from '@/utils/plausible'
 import { buildExactCourseNumberRegex, createMitCourseNumberRegex, normalizeCourseNumber } from '@/utils/courseNumbers'
 import { extractCourseNumbers } from '@/utils/prerequisiteGraph'
 import { auth } from '@/utils/auth'
+import { useToggleFavorite } from '@/lib/query/hooks'
 
 const RecommendationLevels: Record<number, string> = {
   1: 'Definitely not recommend',
@@ -123,7 +128,7 @@ function HideContent({ classId, classReview, contentSubmission, callback, hidden
   return (
     <>
       <ActionIcon variant='outline' radius='xl' color='red' onClick={() => setOpened(true)}>
-        {!hidden ? <EyeOff size={20} /> : <Eye size={20} />}
+        {!hidden ? <IconEyeOff size={20} /> : <IconEye size={20} />}
       </ActionIcon>
       <Modal title={`${goal} this post ? `} size='lg' centered opened={opened} onClose={() => setOpened(false)}>
         <Stack>
@@ -162,7 +167,7 @@ function ClassReviewComment({ classReview,
     }
 
     // Send the vote request to the API to register or update the vote
-    const response = await fetch(`/ api / classes / ${classReview.class.toString()} /reviews/${classReview._id}/vote`, {
+    const response = await fetch(`/api/classes/${classReview.class.toString()}/reviews/${classReview._id}/vote`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -262,7 +267,7 @@ function ClassReviewComment({ classReview,
       </Group>
 
       {/* Metrics Grid */}
-      <Grid mb="md" gutter="md">
+      <Grid mb="md" gap="md">
         {/* Overall Rating */}
         <Grid.Col span={{ base: 4, sm: 4 }}>
           <Group gap="xs" align="center">
@@ -377,7 +382,7 @@ function ClassReviewComment({ classReview,
               color={userVote === 1 ? 'green' : 'gray'}
               size="sm"
             >
-              <IconArrowUpCircle size={16} />
+              <IconThumbUp size={16} />
             </ActionIcon>
           </Tooltip>
           <Text size="sm" fw={500} c={upvotes - downvotes > 0 ? 'green' : upvotes - downvotes < 0 ? 'red' : 'gray'}>
@@ -390,7 +395,7 @@ function ClassReviewComment({ classReview,
               color={userVote === -1 ? 'red' : 'gray'}
               size="sm"
             >
-              <IconArrowDownCircle size={16} />
+              <IconThumbDown size={16} />
             </ActionIcon>
           </Tooltip>
         </Group>
@@ -436,7 +441,7 @@ function ReportField({ contentSubmission, classReview, callback }: { contentSubm
   return (
     <>
       <ActionIcon variant='outline' radius='xl' color='red' onClick={() => setOpened(true)}>
-        <Flag2 size={20} />
+        <IconFlag size={20} />
       </ActionIcon>
       <Modal title={`Report a problem with ${contentSubmission ? "content submission" : "class review"}`} size='lg' centered opened={opened} onClose={() => setOpened(false)}>
         <Stack>
@@ -646,11 +651,17 @@ function AddReview({ classData, refreshData, editData }: AddReviewProps) {
 
       </Modal>
 
-      {/* <Button style={{ verticalAlign: 'text-bottom' }} variant='outline' radius='xl' size='sm' onClick={() => setOpened(true)}> {editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'} </Button> */}
-
-      <Button variant='light' style={{ width: '100%' }} onClick={() => setOpened(true)} color={editData ? 'violet' : 'green'} disabled={!classData.reviewable}>
+      <Button
+        className={styles.addReviewButton}
+        style={{ verticalAlign: 'text-bottom' }}
+        variant='outline'
+        radius='xl'
+        size='sm'
+        disabled={!classData.reviewable}
+        onClick={() => setOpened(true)}
+      >
         {
-          !classData.reviewable ? 'Course reviews are disabled for this class.' : editData ? (<><Pencil size={16} /> EDIT</>) : '+ ADD'
+          !classData.reviewable ? 'Course reviews are disabled for this class.' : editData ? (<><IconPencil size={16} /> EDIT</>) : '+ ADD'
         }
       </Button>
     </>
@@ -829,7 +840,7 @@ function AddContent({ classData, refreshData }: AddContentProps) {
       </Modal>
 
       <ActionIcon variant='outline' radius='xl' color='blue' onClick={() => setOpened(true)}>
-        <Plus size={20} />
+        <IconPlus size={20} />
       </ActionIcon>
     </>
   )
@@ -856,6 +867,7 @@ interface ClassPageProps {
     corequisites: { subjectNumber: string; subjectTitle: string }[]
     requiredBy: { subjectNumber: string; subjectTitle: string }[]
   }
+  similarCourses?: SimilarCourseEntry[]
 }
 
 // const ContentSubmissionCard = ({ classId, contentSubmission, refreshData, reportsProp }: { classId: string, contentSubmission: IContentSubmission, refreshData: Function, reportsProp: IReport[] }) => {
@@ -980,8 +992,22 @@ const ContentSubmissionCard = ({
 }
 
 
-const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses, favoriteClasses, referencedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+function formatHarvardMeetingDays(p: IHarvardMeetingPattern): string {
+  const days: string[] = []
+  if (p.meetsOnMonday) days.push('Mon')
+  if (p.meetsOnTuesday) days.push('Tue')
+  if (p.meetsOnWednesday) days.push('Wed')
+  if (p.meetsOnThursday) days.push('Thu')
+  if (p.meetsOnFriday) days.push('Fri')
+  if (p.meetsOnSaturday) days.push('Sat')
+  if (p.meetsOnSunday) days.push('Sun')
+  return days.join(', ') || '—'
+}
+
+const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses, similarCourses, favoriteClasses, referencedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter()
+  const isHarvard = classProp.institution === 'harvard'
+  const harvard = classProp.harvardSource
 
   const refreshData = () => {
     router.replace(router.asPath)
@@ -990,6 +1016,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
   const [reviews, setReviews] = useState(classReviewsProp)
   const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
   const [isFavorite, setIsFavorite] = useState((favoriteClasses || []).includes(classProp.subjectNumber))
+  const { mutateAsync: toggleFavoriteMutation } = useToggleFavorite()
   const referencedClassMap = useMemo(() => {
     return new Map((referencedClasses || []).map((c) => [c.subjectNumber?.toUpperCase(), c]))
   }, [referencedClasses])
@@ -1028,23 +1055,17 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
   }
 
   const toggleFavorite = async () => {
-    const method = isFavorite ? 'DELETE' : 'POST'
-    const res = await fetch('/api/me/favorites', {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subjectNumber: classProp.subjectNumber })
-    })
-    const data = await res.json()
-    if (res.ok && data?.success) {
+    try {
+      await toggleFavoriteMutation({ subjectNumber: classProp.subjectNumber, isFavorite })
       setIsFavorite(!isFavorite)
       showNotification({
         title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
         message: `${classProp.subjectNumber} ${isFavorite ? 'removed from' : 'added to'} your favorites.`
       })
-    } else {
+    } catch (error) {
       showNotification({
         title: 'Error',
-        message: data?.message || 'Failed to update favorites.',
+        message: error instanceof Error ? error.message : 'Failed to update favorites.',
         color: 'red'
       })
     }
@@ -1217,13 +1238,16 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
       </Group>
 
       <Title order={4}>
-        {classProp.instructors.join(', ')} - {classProp.term}
+        {classProp.instructors.join(', ')} - {formatTermDisplay(classProp.term)}
       </Title>
 
       <Space h="sm" />
       <Group>
         {
-          classProp.units.includes('P/D/F') && <Badge color='blue' variant='filled'> P/D/F </Badge>
+          isHarvard && <Badge color='indigo' variant='filled'> Harvard </Badge>
+        }
+        {
+          classProp.units?.includes('P/D/F') && <Badge color='blue' variant='filled'> P/D/F </Badge>
         }
 
         {
@@ -1262,22 +1286,70 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         }
       </Group>
 
+      {isHarvard && harvard && (
+        <>
+          <Space h="md" />
+          <Card withBorder shadow="sm" radius="md" padding="lg">
+            <Title order={4}>Harvard catalog details</Title>
+            <Text size="sm" c="dimmed" mt="sm">
+              {harvard.semester} · Section {harvard.classSection || '—'} · {harvard.component || '—'} · {harvard.level || '—'} · {harvard.academicGroup || '—'}
+            </Text>
+            {harvard.instructors.length > 0 && (
+              <Text size="sm" mt="xs">
+                Instructors:{' '}
+                {harvard.instructors.map(i => i.email ? `${i.name} (${i.email})` : i.name).join('; ')}
+              </Text>
+            )}
+            <Group mt="sm" gap="xs">
+              {harvard.genEdArea.map(area => (
+                <Badge key={`ge-${area}`} color="teal" variant="light">GenEd: {area}</Badge>
+              ))}
+              {harvard.divisionalDist.map(area => (
+                <Badge key={`dd-${area}`} color="grape" variant="light">Division: {area}</Badge>
+              ))}
+            </Group>
+            {harvard.meetingPatterns.length > 0 && (
+              <Stack mt="md" gap="xs">
+                <Text size="sm" fw={500}>Meeting times</Text>
+                {harvard.meetingPatterns.map((p, idx) => (
+                  <Text key={idx} size="sm" c="dimmed">
+                    {formatHarvardMeetingDays(p)} {p.startTime}–{p.endTime} ({p.startDate} – {p.endDate})
+                  </Text>
+                ))}
+              </Stack>
+            )}
+          </Card>
+        </>
+      )}
+
       <Space h="lg" />
-      <Card withBorder shadow="sm" p='lg' >
-        {classProp.aliases && classProp.aliases.length > 0 && <><Text size='sm' c='dimmed'> Alias{classProp.aliases.length > 1 ? 'es' : ''}: {classProp.aliases.join(', ')} </Text><br /></>}
-        <Text c='light'>
+      <Card withBorder shadow="sm" radius="md" padding="lg">
+        {classProp.aliases && classProp.aliases.length > 0 && (
+          <Text size="sm" c="dimmed" mb="sm">
+            Alias{classProp.aliases.length > 1 ? 'es' : ''}: {classProp.aliases.join(', ')}
+          </Text>
+        )}
+        <Text>
           {renderDescriptionWithLinks(classProp.description)}
         </Text>
       </Card>
 
-      <Group justify='end'>
-        <Button variant='transparent' onClick={() => router.push(`/classes/aggregate/${classProp.subjectNumber}`)}>
-          See Aggregated Data
-        </Button>
-      </Group>
+      {!isHarvard && (
+        <Group justify='end'>
+          <Button variant='transparent' onClick={() => router.push(`/classes/aggregate/${classProp.subjectNumber}`)}>
+            See Aggregated Data
+          </Button>
+        </Group>
+      )}
 
       <Space h="lg" />
       <Stack>
+        {isHarvard ? (
+          <Text c="dimmed" size="sm">
+            MIT OpenGrades reviews and grade data are not available for Harvard catalog listings.
+          </Text>
+        ) : (
+        <>
         {
           gradePointsProp.length > 0 ?
 
@@ -1338,15 +1410,6 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
           <AddContent classData={classProp} refreshData={refreshData} />
         </Group>
 
-        {relatedClasses && (
-          <RelatedClasses
-            subjectNumber={classProp.subjectNumber}
-            prerequisites={relatedClasses.prerequisites}
-            corequisites={relatedClasses.corequisites}
-            requiredBy={relatedClasses.requiredBy}
-          />
-        )}
-
         <Title order={3}> Reviews </Title>
 
         <AddReview classData={classProp} refreshData={refreshData} editData={myReview} />
@@ -1369,6 +1432,30 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
             ))
             : (<Box>  No class reviews yet. Please check back later or be the first one if you have taken this class. Thank you! </Box>)
         }
+
+        <Box mt="xl">
+          <Text size="sm" c="dimmed">
+            Questions & answers for this subject are on the aggregate page.{' '}
+            <Link href={`/classes/aggregate/${encodeURIComponent(classProp.subjectNumber)}`}>
+              View Q&A for {classProp.subjectNumber}
+            </Link>
+          </Text>
+        </Box>
+        </>
+        )}
+
+      {relatedClasses && (
+        <RelatedClasses
+          subjectNumber={classProp.subjectNumber}
+          prerequisites={relatedClasses.prerequisites}
+          corequisites={relatedClasses.corequisites}
+          requiredBy={relatedClasses.requiredBy}
+        />
+      )}
+
+      {similarCourses && similarCourses.length > 0 && (
+        <SimilarCourses courses={similarCourses} />
+      )}
       </Stack>
 
       <Spotlight actions={actions} shortcut="mod + K" />
@@ -1517,51 +1604,77 @@ export const getServerSideProps = (async (context) => {
         Class.find({
           subjectNumber: { $in: prereqNumbers },
           offered: true,
-          academicYear: classData.academicYear
-        }).select('subjectNumber subjectTitle department academicYear').lean(),
+        }).select('subjectNumber subjectTitle department academicYear institution').lean(),
 
         Class.find({
           subjectNumber: { $in: coreqNumbers },
           offered: true,
-          academicYear: classData.academicYear
-        }).select('subjectNumber subjectTitle department academicYear').lean(),
+        }).select('subjectNumber subjectTitle department academicYear institution').lean(),
 
         Class.find({
           offered: true,
-          academicYear: classData.academicYear,
           $or: [
             { prerequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } },
             { corequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } }
           ]
-        }).select('subjectNumber subjectTitle department academicYear').lean()
+        }).select('subjectNumber subjectTitle department academicYear institution').lean()
       ])
 
-      // Helper to deduplicate by subjectNumber within each related list
-      const dedupeBySubjectNumber = (items: IClass[]) => {
+      const dedupeByInstitutionAndSubjectNumber = (items: IClass[]) => {
         const seen = new Set<string>()
         return items.filter((c) => {
           if (!c?.subjectNumber) return false
-          if (seen.has(c.subjectNumber)) return false
-          seen.add(c.subjectNumber)
+          const institution = c.institution === 'harvard' ? 'harvard' : 'mit'
+          const key = `${institution}:${c.subjectNumber}`
+          if (seen.has(key)) return false
+          seen.add(key)
           return true
         })
       }
 
+      const includeHarvard = userCanIncludeHarvardCourses(user)
+      let similarCourses: SimilarCourseEntry[] = []
+      try {
+        const similar = await findSimilarCoursesByEmbedding(id, {
+          limit: 12,
+          includeHarvard,
+          scope: 'public'
+        })
+        console.log('found similar courses:', similar)
+        similarCourses = similar.map(s => ({
+          _id: s.class._id!.toString(),
+          subjectNumber: s.class.subjectNumber,
+          subjectTitle: s.class.subjectTitle,
+          department: s.class.department,
+          term: s.class.term,
+          institution: s.class.institution || 'mit',
+          score: s.score
+        }))
+      } catch (err) {
+        console.error('Failed to load similar courses:', err)
+      }
+
       const relatedClasses = {
-        prerequisites: dedupeBySubjectNumber(prerequisiteClasses).map((c) => ({
+        prerequisites: dedupeByInstitutionAndSubjectNumber(prerequisiteClasses).map((c) => ({
+          _id: c._id?.toString?.(),
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
-          department: c.department
+          department: c.department,
+          institution: (c.institution as any) || 'mit'
         })),
-        corequisites: dedupeBySubjectNumber(corequisiteClasses).map((c) => ({
+        corequisites: dedupeByInstitutionAndSubjectNumber(corequisiteClasses).map((c) => ({
+          _id: c._id?.toString?.(),
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
-          department: c.department
+          department: c.department,
+          institution: (c.institution as any) || 'mit'
         })),
-        requiredBy: dedupeBySubjectNumber(requiredByClasses).map((c) => ({
+        requiredBy: dedupeByInstitutionAndSubjectNumber(requiredByClasses).map((c) => ({
+          _id: c._id?.toString?.(),
           subjectNumber: c.subjectNumber,
           subjectTitle: c.subjectTitle,
-          department: c.department
+          department: c.department,
+          institution: (c.institution as any) || 'mit'
         }))
       }
 
@@ -1589,6 +1702,7 @@ export const getServerSideProps = (async (context) => {
           lastGradeReportUpload,
           embeddingStatus,
           relatedClasses: JSON.parse(JSON.stringify(relatedClasses)),
+          similarCourses: JSON.parse(JSON.stringify(similarCourses)),
           favoriteClasses: JSON.parse(JSON.stringify(favoriteClasses)),
           referencedClasses: JSON.parse(JSON.stringify(referencedClasses))
         }

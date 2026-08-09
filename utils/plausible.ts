@@ -26,6 +26,8 @@ export type PlausibleEvents = {
   'AI Query': {
     queryLength: string
     isFollowUp: string
+    provider: string
+    model: string
   }
   'Review Submit': {
     classNumber: string

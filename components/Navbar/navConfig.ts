@@ -1,31 +1,31 @@
 import { ComponentType } from 'react'
 import {
-    Books,
-    FireHydrant,
-    Graph,
-    History,
-    Home,
-    InfoCircle,
-    Key,
-    Mail,
-    Road,
-    Robot,
-    Settings,
-    Shield,
-    Star,
-    Network,
-    GitBranch,
-    Diamonds,
-    News,
-    Trophy
-} from 'tabler-icons-react'
-import { IconQuestionCircle } from '@tabler/icons'
+    IconBook,
+    IconChartBar,
+    IconCirclesRelation,
+    IconClipboardList,
+    IconCompass,
+    IconFireHydrant,
+    IconFlag,
+    IconGitBranch,
+    IconHome,
+    IconInfoCircle,
+    IconKey,
+    IconListDetails,
+    IconLock,
+    IconMessageCircle,
+    IconRoute,
+    IconSearch,
+    IconSettings,
+    IconSoup,
+    IconTrophy,
+    IconUsersGroup,
+} from '@tabler/icons-react'
 
 export type NavSection = 'main' | 'admin' | 'sipb' | 'other'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface NavItem {
-
     label: string
     icon: ComponentType<any>
     href: string
@@ -38,39 +38,37 @@ export interface NavItem {
 
 export const navConfig: NavItem[] = [
     // Main section
-    { label: 'Dashboard', icon: Home, href: '/', color: 'blue', section: 'main' },
-    { label: 'AI Search', icon: Robot, href: '/ai-search', color: 'violet', section: 'main', badge: 'NEW' },
-    { label: 'Discover', icon: Diamonds, href: '/discover', color: 'pink', section: 'main' },
-    { label: 'Classes', icon: Books, href: '/classes', color: 'orange', section: 'main' },
-    { label: 'Favorites', icon: Star, href: '/favorites', color: 'yellow', section: 'main' },
-    { label: 'Class Network', icon: Network, href: '/class-network', color: 'indigo', section: 'main' },
-    { label: 'Prereq Graph', icon: GitBranch, href: '/prereq-graph', color: 'lime', section: 'main' },
-    { label: 'Statistics', icon: Graph, href: '/statistics', color: 'cyan', section: 'main' },
-    { label: 'Leaderboard', icon: Trophy, href: '/leaderboard', color: 'yellow', section: 'main' },
-    { label: "Who's Taken What?", icon: IconQuestionCircle, href: '/ofcourse', color: 'teal', section: 'main' },
+    { label: 'Dashboard', icon: IconHome, href: '/', color: 'blue', section: 'main' },
+    { label: 'AI Search', icon: IconSearch, href: '/ai-search', color: 'violet', section: 'main' },
+    { label: 'Discover', icon: IconCompass, href: '/discover', color: 'pink', section: 'main' },
+    { label: 'Classes', icon: IconBook, href: '/classes', color: 'orange', section: 'main' },
+    { label: 'Class Network', icon: IconCirclesRelation, href: '/class-network', color: 'indigo', section: 'main' },
+    { label: 'Statistics', icon: IconChartBar, href: '/statistics', color: 'cyan', section: 'main' },
+    { label: 'Leaderboard', icon: IconTrophy, href: '/leaderboard', color: 'grape', section: 'main' },
+    { label: "Who's Taken What?", icon: IconUsersGroup, href: '/ofcourse', color: 'teal', section: 'main' },
 
     // Admin section (trust level > 1)
-    { label: 'Reports', icon: Shield, href: '/reports', color: 'green', minTrust: 2, section: 'admin' },
-    { label: 'Settings', icon: Settings, href: '/settings', color: 'yellow', minTrust: 2, section: 'admin' },
-    { label: 'Audit Logs', icon: History, href: '/auditlogs', color: 'red', minTrust: 2, section: 'admin' },
+    { label: 'Reports', icon: IconFlag, href: '/reports', color: 'brick', minTrust: 2, section: 'admin' },
+    { label: 'Settings', icon: IconSettings, href: '/settings', color: 'gray', minTrust: 2, section: 'admin' },
+    { label: 'Audit Logs', icon: IconClipboardList, href: '/auditlogs', color: 'grape', minTrust: 2, section: 'admin' },
 
-    { label: 'Hydrant', icon: FireHydrant, href: 'https://hydrant.mit.edu/', color: 'orange', external: true, section: 'sipb' },
-    { label: 'CourseRoad', icon: Road, href: 'https://courseroad.mit.edu/', color: 'blue', external: true, section: 'sipb' },
-    { label: 'DormSoup', icon: Mail, href: 'https://dormsoup.mit.edu/', color: 'green', external: true, section: 'sipb' },
+    { label: 'Hydrant', icon: IconFireHydrant, href: 'https://hydrant.mit.edu/', color: 'orange', external: true, section: 'sipb' },
+    { label: 'CourseRoad', icon: IconRoute, href: 'https://courseroad.mit.edu/', color: 'blue', external: true, section: 'sipb' },
+    { label: 'DormSoup', icon: IconSoup, href: 'https://dormsoup.mit.edu/', color: 'green', external: true, section: 'sipb' },
 
     // Other links
-    { label: 'About', icon: InfoCircle, href: '/about', color: 'grape', section: 'other' },
-    { label: 'Changelog', icon: News, href: '/changelog', color: 'blue', section: 'other' },
-    { label: 'Privacy Policy', icon: Shield, href: '/privacy', color: 'gray', section: 'other' },
-    { label: 'Feedback', icon: Star, href: 'https://forms.gle/pyj7zY45AVnjX2Nc8', color: 'yellow', external: true, section: 'other' },
-    { label: 'Affiliate Access', icon: Key, href: 'https://forms.gle/8iandxQpc6abmQtZA', color: 'pink', external: true, section: 'other' },
+    { label: 'About', icon: IconInfoCircle, href: '/about', color: 'grape', section: 'other' },
+    { label: 'Changelog', icon: IconListDetails, href: '/changelog', color: 'blue', section: 'other' },
+    { label: 'Privacy Policy', icon: IconLock, href: '/privacy', color: 'gray', section: 'other' },
+    { label: 'Feedback', icon: IconMessageCircle, href: 'https://forms.gle/pyj7zY45AVnjX2Nc8', color: 'cyan', external: true, section: 'other' },
+    { label: 'Affiliate Access', icon: IconKey, href: 'https://forms.gle/8iandxQpc6abmQtZA', color: 'pink', external: true, section: 'other' },
 ]
 
 // Links shown to unauthenticated users
 export const publicNavConfig: NavItem[] = [
-    { label: 'About', icon: InfoCircle, href: '/about', color: 'grape', section: 'main' },
-    { label: 'Changelog', icon: News, href: '/changelog', color: 'blue', section: 'other' },
-    { label: 'Privacy Policy', icon: Shield, href: '/privacy', color: 'gray', section: 'other' },
-    { label: 'Feedback', icon: Star, href: 'https://forms.gle/pyj7zY45AVnjX2Nc8', color: 'yellow', external: true, section: 'other' },
-    { label: 'Affiliate Access', icon: Key, href: 'https://forms.gle/8iandxQpc6abmQtZA', color: 'pink', external: true, section: 'other' },
+    { label: 'About', icon: IconInfoCircle, href: '/about', color: 'grape', section: 'main' },
+    { label: 'Changelog', icon: IconListDetails, href: '/changelog', color: 'blue', section: 'other' },
+    { label: 'Privacy Policy', icon: IconLock, href: '/privacy', color: 'gray', section: 'other' },
+    { label: 'Feedback', icon: IconMessageCircle, href: 'https://forms.gle/pyj7zY45AVnjX2Nc8', color: 'cyan', external: true, section: 'other' },
+    { label: 'Affiliate Access', icon: IconKey, href: 'https://forms.gle/8iandxQpc6abmQtZA', color: 'pink', external: true, section: 'other' },
 ]

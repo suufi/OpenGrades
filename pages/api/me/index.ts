@@ -44,6 +44,14 @@ async function handler(
       try {
         if (user?.email) {
           const userDoc = await User.findOne({ email: user.email.toLowerCase() }).populate('classesTaken').populate('courseAffiliation').lean()
+          if (userDoc) {
+            if (Array.isArray(userDoc.classesTaken)) {
+              userDoc.classesTaken = userDoc.classesTaken.filter(Boolean)
+            }
+            if (Array.isArray(userDoc.courseAffiliation)) {
+              userDoc.courseAffiliation = userDoc.courseAffiliation.filter(Boolean)
+            }
+          }
           const reviewCount = await ClassReview.countDocuments({ author: userDoc?._id })
           const karmaBalance = userDoc?._id ? await getKarmaBalance((userDoc as any)._id) : 0
 

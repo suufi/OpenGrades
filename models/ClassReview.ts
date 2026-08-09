@@ -69,4 +69,5 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   }
 }, { timestamps: true })
 
-export default (mongoose.models.ClassReview as Model<IClassReview> || mongoose.model<IClassReview>('ClassReview', ClassReviewSchema))
+export default ((mongoose.models?.ClassReview as Model<IClassReview> | undefined) ||
+    mongoose.model<IClassReview>('ClassReview', ClassReviewSchema))

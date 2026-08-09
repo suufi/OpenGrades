@@ -1,6 +1,7 @@
 import { useSession, signIn, signOut } from 'next-auth/react'
+import { useRouter } from 'next/router'
 import { Avatar, Box, Button, Group, Menu, Text, UnstyledButton } from '@mantine/core'
-import { ChevronRight, Logout, User as UserIcon } from 'tabler-icons-react'
+import { IconChevronRight, IconLogout, IconUser } from '@tabler/icons-react'
 import classes from './Navbar.module.css'
 
 interface UserSectionProps {
@@ -8,12 +9,22 @@ interface UserSectionProps {
     modal: React.ReactNode
 }
 
+function getSafeSignInCallbackUrl(asPath: string): string {
+    const path = asPath.split('?')[0]
+    if (path.startsWith('/api/auth')) return '/'
+    return asPath || '/'
+}
+
 export function UserSection({ onEditProfile, modal }: UserSectionProps) {
     const { data: session, status } = useSession()
+    const router = useRouter()
 
     if (status !== 'authenticated') {
         return (
-            <Button onClick={() => signIn('mit-oidc')} loading={status === 'loading'}>
+            <Button
+                onClick={() => signIn('mit-oidc', { callbackUrl: getSafeSignInCallbackUrl(router.asPath) })}
+                loading={status === 'loading'}
+            >
                 Sign In
             </Button>
         )
@@ -38,16 +49,16 @@ export function UserSection({ onEditProfile, modal }: UserSectionProps) {
                                         {session?.user?.email}
                                     </Text>
                                 </Box>
-                                <ChevronRight size={16} />
+                                <IconChevronRight size={16} />
                             </Group>
                         </UnstyledButton>
                     </Box>
                 </Menu.Target>
                 <Menu.Dropdown>
-                    <Menu.Item leftSection={<UserIcon />} onClick={onEditProfile}>
+                    <Menu.Item leftSection={<IconUser />} onClick={onEditProfile}>
                         Edit Profile
                     </Menu.Item>
-                    <Menu.Item leftSection={<Logout />} onClick={() => signOut()}>
+                    <Menu.Item leftSection={<IconLogout />} onClick={() => signOut()}>
                         Sign Out
                     </Menu.Item>
                 </Menu.Dropdown>

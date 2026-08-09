@@ -1,5 +1,3 @@
-import ClassReview from '@/models/ClassReview'
-
 /**
  * Check if a user has uploaded a grade report within the specified period
  * @param lastGradeReportUpload - The date of the user's last grade report upload
@@ -34,6 +32,7 @@ export async function hasEnoughReviewsForAI(
     percentageRequired: number
 }> {
     const percentageRequired = 20
+    const ClassReview = (await import('@/models/ClassReview')).default
 
     const [totalReviews, fullReviews] = await Promise.all([
         ClassReview.countDocuments({ author: userId }),

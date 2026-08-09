@@ -14,10 +14,10 @@ import {
   ThemeIcon,
   SegmentedControl,
 } from '@mantine/core'
-import { IconInfoCircle } from '@tabler/icons'
+import { IconInfoCircle, IconTrophy } from '@tabler/icons-react'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState, useCallback } from 'react'
-import { Trophy } from 'tabler-icons-react'
+
 import { formatDepartmentOptionLabel } from '@/utils/departments'
 
 type LeaderboardRow = {
@@ -86,9 +86,9 @@ export default function LeaderboardPage() {
 
   const isCurrentUser = (row: LeaderboardRow) => me && row.userId === me.userId
   const rankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy size={18} color="#d4af37" /> // gold
-    if (rank === 2) return <Trophy size={18} color="#c0c0c0" /> // silver
-    if (rank === 3) return <Trophy size={18} color="#cd7f32" /> // bronze
+    if (rank === 1) return <IconTrophy size={18} color="#d4af37" /> // gold
+    if (rank === 2) return <IconTrophy size={18} color="#c0c0c0" /> // silver
+    if (rank === 3) return <IconTrophy size={18} color="#cd7f32" /> // bronze
     return null
   }
 

@@ -1,4 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@opengrades/api-client'
+import {
+  useMe,
+  useQuestions,
+  useReviewsBySubject,
+  useQaRecipientCount,
+} from '@/lib/query'
 import {
   Box,
   Button,
@@ -19,7 +27,7 @@ import {
 } from '@mantine/core'
 import { useSession } from 'next-auth/react'
 import { showNotification } from '@mantine/notifications'
-import { IconChevronDown, IconChevronUp, IconMail, IconMessageCircle, IconThumbDown, IconThumbUp } from '@tabler/icons'
+import { IconChevronDown, IconChevronUp, IconMail, IconMessageCircle, IconThumbDown, IconThumbUp } from '@tabler/icons-react'
 import { formatTermDisplay, isMitTermCode } from '@/utils/formatTerm'
 import { QA_BLAST_COST_MIN } from '@/utils/karmaConstants'
 import { hashToColor, getAnonLabel } from '@/utils/anonymousId'
@@ -49,8 +57,12 @@ type Question = {
 
 export default function ClassQASection({ subjectNumber }: { subjectNumber: string }) {
   const { status } = useSession()
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const { data: questions = [], isLoading: loading } = useQuestions(subjectNumber)
+  const { data: meData } = useMe(status === 'authenticated')
+  const karmaBalance = meData?.karmaBalance ?? null
+  const { data: termOptionsData = [] } = useReviewsBySubject(subjectNumber, status === 'authenticated')
+  const termOptions = termOptionsData.map((t) => ({ value: t.term, label: t.label }))
   const [askModalOpen, setAskModalOpen] = useState(false)
   const [blastModalOpen, setBlastModalOpen] = useState(false)
   const [questionBody, setQuestionBody] = useState('')
@@ -63,68 +75,27 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
   const [answerBodies, setAnswerBodies] = useState<Record<string, string>>({})
   const [answerTerms, setAnswerTerms] = useState<Record<string, string>>({})
   const [submittingA, setSubmittingA] = useState<Record<string, boolean>>({})
-  const [termOptions, setTermOptions] = useState<{ value: string; label: string }[]>([])
-  const [karmaBalance, setKarmaBalance] = useState<number | null>(null)
   const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({})
   const [votingAnswerId, setVotingAnswerId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!subjectNumber) return
-    setLoading(true)
-    fetch(`/api/questions?subjectNumber=${encodeURIComponent(subjectNumber)}`, { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) setQuestions(data.data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [subjectNumber])
+  const qaCountEnabled = !!subjectNumber && (
+    (blastModalOpen && !!blastQuestionId) || (askModalOpen && blastEnabled)
+  )
+  const { data: qaRecipientData } = useQaRecipientCount(subjectNumber, qaCountEnabled)
 
   useEffect(() => {
-    if (!subjectNumber || status !== 'authenticated') return
-    fetch(`/api/me/reviews-by-subject?subjectNumber=${encodeURIComponent(subjectNumber)}`, { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data?.length) {
-          setTermOptions(data.data.map((t: { term: string; label: string }) => ({ value: t.term, label: t.label })))
-        }
-      })
-  }, [subjectNumber, status])
+    if (!qaRecipientData || !qaCountEnabled) return
+    if (qaRecipientData.count != null) setRecipientCount(qaRecipientData.count)
+    if (qaRecipientData.cost != null) setBlastCost(qaRecipientData.cost)
+  }, [qaRecipientData, qaCountEnabled])
 
-  useEffect(() => {
-    if (!subjectNumber || !blastModalOpen || !blastQuestionId) return
-    fetch(`/api/questions/qa-recipient-count?subjectNumber=${encodeURIComponent(subjectNumber)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) {
-          if (data.data.count != null) setRecipientCount(data.data.count)
-          if (data.data.cost != null) setBlastCost(data.data.cost)
-        }
-      })
-  }, [subjectNumber, blastModalOpen, blastQuestionId])
+  const invalidateQuestions = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.questions(subjectNumber) })
+  }
 
-  useEffect(() => {
-    if (!subjectNumber || !askModalOpen || !blastEnabled) return
-    fetch(`/api/questions/qa-recipient-count?subjectNumber=${encodeURIComponent(subjectNumber)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) {
-          if (data.data.count != null) setRecipientCount(data.data.count)
-          if (data.data.cost != null) setBlastCost(data.data.cost)
-        }
-      })
-  }, [subjectNumber, askModalOpen, blastEnabled])
-
-  useEffect(() => {
-    if (status !== 'authenticated') return
-    fetch('/api/me', { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data?.user) {
-          setKarmaBalance(data.data.user.karmaBalance ?? 0)
-        }
-      })
-  }, [status])
+  const invalidateMe = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.me })
+  }
 
   const openAskModal = () => {
     setQuestionBody('')
@@ -174,14 +145,13 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
       })
       const data = await res.json()
       if (data.success) {
-        const newQ = { ...data.data, isAuthor: true, answers: [], blasted: false }
-        setQuestions((prev) => [newQ, ...prev])
         closeAskModal()
+        invalidateQuestions()
         showNotification({ title: 'Success', message: 'Your question has been posted.', color: 'green' })
         if (blastEnabled) {
           const blastResult = await doBlast(data.data._id)
           const spent = blastResult?.data?.karmaSpent
-          if (typeof spent === 'number') setKarmaBalance((p) => (p != null ? p - spent : null))
+          if (typeof spent === 'number') invalidateMe()
         }
       } else {
         showNotification({ title: 'Error', message: data.message, color: 'red' })
@@ -203,9 +173,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
       })
       const data = await res.json()
       if (data.success) {
-        setQuestions((prev) =>
-          prev.map((q) => (q._id === questionId ? { ...q, blasted: true } : q))
-        )
+        invalidateQuestions()
         showNotification({
           title: 'Q&A sent',
           message: `Emailed ${data.data?.recipientCount ?? 0} people who took this class.`,
@@ -232,7 +200,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
     }
     doBlast(blastQuestionId).then((result) => {
       const spent = result?.data?.karmaSpent
-      if (typeof spent === 'number' && karmaBalance != null) setKarmaBalance(karmaBalance - spent)
+      if (typeof spent === 'number') invalidateMe()
     })
   }
 
@@ -253,29 +221,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
       if (data.success) {
         setAnswerBodies((prev) => ({ ...prev, [questionId]: '' }))
         setAnswerTerms((prev) => ({ ...prev, [questionId]: termOptions[0]?.value ?? '' }))
-        setQuestions((prev) =>
-          prev.map((q) =>
-            q._id === questionId
-              ? {
-                ...q,
-                answers: [
-                  ...(q.answers || []),
-                  {
-                    _id: data.data._id,
-                    body: data.data.body,
-                    termTaken: data.data.termTaken,
-                    createdAt: data.data.createdAt,
-                    upvotes: 0,
-                    downvotes: 0,
-                    userVote: 0,
-                    authorAnonymousId: data.data.authorAnonymousId,
-                    isAuthor: true,
-                  },
-                ],
-              }
-              : q
-          )
-        )
+        invalidateQuestions()
         setReplyOpen((prev) => ({ ...prev, [questionId]: false }))
         showNotification({ title: 'Success', message: 'Your answer has been posted.', color: 'green' })
       } else {
@@ -294,12 +240,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
   }
 
   const fetchQuestions = () => {
-    if (!subjectNumber) return
-    fetch(`/api/questions?subjectNumber=${encodeURIComponent(subjectNumber)}`, { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) setQuestions(data.data)
-      })
+    invalidateQuestions()
   }
 
   const voteAnswer = async (questionId: string, answerId: string, vote: number) => {
@@ -326,9 +267,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
       })
       const data = await res.json()
       if (data.success) {
-        setQuestions((prev) =>
-          prev.map((q) => (q._id === questionId ? { ...q, solvedAt: solved ? new Date().toISOString() : null } : q))
-        )
+        invalidateQuestions()
         showNotification({ title: solved ? 'Success' : 'Success', message: solved ? 'Question marked as solved.' : 'Question unmarked.', color: 'green' })
       }
     } catch {
@@ -573,7 +512,7 @@ export default function ClassQASection({ subjectNumber }: { subjectNumber: strin
                   >
                     {replyOpen[q._id] ? 'Cancel' : 'Reply'}
                   </Button>
-                  <Collapse in={!!replyOpen[q._id]}>
+                  <Collapse expanded={!!replyOpen[q._id]}>
                     <Stack gap="xs" mt="sm">
                       <Textarea
                         placeholder="Your answer..."

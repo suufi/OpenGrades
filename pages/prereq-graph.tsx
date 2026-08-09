@@ -20,10 +20,11 @@ import {
     ActionIcon,
     Card,
     Grid,
-    ThemeIcon
+    ThemeIcon,
+    useMantineColorScheme
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
-import { IconSearch, IconRefresh, IconArrowRight, IconCircle, IconHome, IconZoomIn } from '@tabler/icons'
+import { IconSearch, IconRefresh, IconArrowRight, IconCircle, IconHome, IconZoomIn } from '@tabler/icons-react'
 import { config as authOptions } from '@/utils/auth'
 import { useRouter } from 'next/router'
 import User from '@/models/User'
@@ -71,6 +72,7 @@ interface PrereqGraphPageProps {
 
 const PrereqGraphPage: NextPage<PrereqGraphPageProps> = ({ initialSubject }) => {
     const router = useRouter()
+    const { colorScheme } = useMantineColorScheme()
     const fgRef = useRef<any>(null)
     const [searchValue, setSearchValue] = useState(initialSubject || '')
     const [rootSubject, setRootSubject] = useState(initialSubject || '')
@@ -366,12 +368,12 @@ const PrereqGraphPage: NextPage<PrereqGraphPageProps> = ({ initialSubject }) => 
                 return {
                     source: e.source,
                     target: e.target,
-                    color: e.data?.type === 'corequisite' ? nodeColors.corequisite : '#888',
+                    color: e.data?.type === 'corequisite' ? nodeColors.corequisite : (colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'),
                     curvature: curvature
                 }
             })
         }
-    }, [nodes, edges])
+    }, [nodes, edges, colorScheme])
 
     return (
         <Container size="xl" py="xl">
@@ -496,17 +498,32 @@ const PrereqGraphPage: NextPage<PrereqGraphPageProps> = ({ initialSubject }) => 
                             graphData={graphData}
                             width={undefined}
                             height={600}
-                            nodeLabel={(node: any) => {
-                                if (node.data?.isGIRRequirement) {
-                                    return node.data.subjectTitle || node.id
-                                }
-                                return `${node.name || node.id}${node.data?.subjectTitle ? `: ${node.data.subjectTitle}` : ''}`
-                            }}
-                            nodeColor={(node: any) => {
-                                if (node.data?.isGIRRequirement) {
-                                    return '#FFD700' // Gold for GIR requirements
-                                }
-                                return nodeColors[node.data?.type || 'root']
+                            nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+                                const size = node.data?.type === 'root' ? 9 : 6;
+
+                                ctx.beginPath();
+                                ctx.arc(node.x, node.y, size, 0, 2 * Math.PI, false);
+                                ctx.fillStyle = node.data?.isGIRRequirement 
+                                    ? '#FFD700' 
+                                    : (nodeColors[node.data?.type || 'root'] || '#888');
+                                ctx.fill();
+
+                                ctx.strokeStyle = colorScheme === 'dark' ? '#241d1a' : '#fff';
+                                ctx.lineWidth = 1.5;
+                                ctx.stroke();
+
+                                const label = node.id;
+                                const fontSize = 10 / Math.max(1, globalScale * 0.8);
+                                ctx.font = `600 ${fontSize}px sans-serif`;
+                                
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'top';
+                                
+                                ctx.shadowColor = colorScheme === 'dark' ? '#0a0a0a' : '#fafafa';
+                                ctx.shadowBlur = 4;
+                                ctx.fillStyle = colorScheme === 'dark' ? '#f5efe6' : '#201913';
+                                ctx.fillText(label, node.x, node.y + size + 2);
+                                ctx.shadowBlur = 0;
                             }}
                             nodeVal={(node: any) => {
                                 if (node.data?.isGIRRequirement || node.data?.type === 'root') {
@@ -627,7 +644,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (!session) {
         return {
             redirect: {
-                destination: '/auth/signin',
+                destination: '/api/auth/signin',
                 permanent: false
             }
         }
@@ -640,7 +657,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (!user) {
         return {
             redirect: {
-                destination: '/auth/signin',
+                destination: '/api/auth/signin',
                 permanent: false
             }
         }

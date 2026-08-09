@@ -22,8 +22,9 @@ import { compareTermsLatest, compareTermsSequential } from '@/utils/formatTerm'
 import { BarChart, DonutChart } from '@mantine/charts'
 import { showNotification } from '@mantine/notifications'
 import moment from 'moment-timezone'
-import { IconArrowUpCircle, IconClock, IconMessage, IconThumbUp } from '@tabler/icons'
+import { IconArrowUpCircle, IconClock, IconMessage, IconThumbUp } from '@tabler/icons-react'
 import RelatedClasses from '@/components/RelatedClasses'
+import ClassQASection from '@/components/ClassQASection'
 import { extractCourseNumbers } from '@/utils/prerequisiteGraph'
 
 
@@ -159,7 +160,7 @@ function ClassReviewComment({ classReview,
                 </Group>
             </Group>
 
-            <Grid mb="md" gutter="md">
+            <Grid mb="md" gap="md">
                 <Grid.Col span={{ base: 4, sm: 4 }}>
                     <Group gap="xs" align="center">
                         <Tooltip label={`${classReview.overallRating}/7 overall rating`}>
@@ -260,7 +261,7 @@ function ClassReviewComment({ classReview,
                     <Text size="sm" fw={500} c={upvotes - downvotes > 0 ? 'green' : upvotes - downvotes < 0 ? 'red' : 'gray'}>
                         {upvotes - downvotes}
                     </Text>
-                    <IconArrowUpCircle size={20} />
+                    <IconThumbUp size={20} />
                 </Group>
             </Group>
         </Paper>
@@ -408,7 +409,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                         </Group>
                     </Card>
 
-                    <Grid gutter="md">
+                    <Grid gap="md">
                         <Grid.Col span={{ base: 12, md: 4 }}>
                             <Card withBorder className={aggregateStyles.statCard}>
                                 <Group gap="sm">
@@ -697,6 +698,9 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                         )
                     }
 
+                    <Space h='xl' />
+                    <ClassQASection subjectNumber={String(router.query.subjectNumber || classesProp[0]?.subjectNumber || '')} />
+
                 </Stack>
             </Container>
         </Box>
@@ -713,7 +717,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (!session) {
         return {
             redirect: {
-                destination: '/auth/signin',
+                destination: '/api/auth/signin',
                 permanent: false
             }
         }

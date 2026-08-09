@@ -84,6 +84,7 @@ async function checkPrerequisitesMet(
     const { extractCourseNumbersWithGIR } = await import('./prerequisiteGraph')
     const prereqNumbers = await extractCourseNumbersWithGIR(course.prerequisites || '')
     const coreqNumbers = await extractCourseNumbersWithGIR(course.corequisites || '')
+
     const hasPrereqs = prereqNumbers.length === 0 || prereqNumbers.every(num => userSubjectNumbers.has(num))
     const hasCoreqs = coreqNumbers.length === 0 || coreqNumbers.some(num => userSubjectNumbers.has(num))
 
@@ -260,13 +261,10 @@ export async function collaborativeFiltering(
                 
                 if (prereqCheck.hasPrereqs && prereqCheck.hasCoreqs) {
                     score *= 1.3
-                    reason += '\n✓ You have the prerequisites and corequisites'
                 } else if (prereqCheck.hasPrereqs) {
                     score *= 1.2
-                    reason += '\n✓ You have the prerequisites'
                 } else if (prereqCheck.hasCoreqs) {
                     score *= 1.1
-                    reason += '\n✓ You have the corequisites'
                 }
             }
 
@@ -295,11 +293,12 @@ export async function departmentAffinityRecommendations(
         .populate('classesTaken')
         .lean()
 
-    if (!user || !user.courseAffiliation || user.courseAffiliation.length === 0) {
+    const courseAffiliation = (user?.courseAffiliation || []).filter((a: any) => a !== null && a !== undefined)
+    if (courseAffiliation.length === 0) {
         return []
     }
 
-    const departments = user.courseAffiliation.map((aff: ICourseOption) => aff.departmentCode)
+    const departments = courseAffiliation.map((aff: ICourseOption) => aff.departmentCode)
 
     const userSubjectNumbers = new Set<string>()
         ; (user.classesTaken || []).forEach((cls: IClass) => {
@@ -482,13 +481,10 @@ export async function contentBasedRecommendations(
 
         if (prereqCheck.hasPrereqs && prereqCheck.hasCoreqs) {
             finalScore *= 1.3
-            reason += '\n✓ You have the prerequisites and corequisites'
         } else if (prereqCheck.hasPrereqs) {
             finalScore *= 1.2
-            reason += '\n✓ You have the prerequisites'
         } else if (prereqCheck.hasCoreqs) {
             finalScore *= 1.1
-            reason += '\n✓ You have the corequisites'
         }
 
         return {
@@ -516,8 +512,10 @@ export async function hybridRecommendations(
     classId: string,
     limit: number = 10,
     semanticWeight: number = 0.6,
-    userTakenClasses?: IClass[]
+    userTakenClasses?: IClass[],
+    options?: { includeHarvard?: boolean }
 ): Promise<Array<{ class: IClass; score: number; reason: string }>> {
+    const includeHarvard = options?.includeHarvard ?? false
     try {
         const sourceClass = await Class.findById(classId).lean()
         if (!sourceClass) {
@@ -580,10 +578,21 @@ export async function hybridRecommendations(
 
             console.log(`  ✓ Got ${hybridResults?.length || 0} hybrid search results`)
 
+            const seenSubjects = new Set<string>()
+            const sourceKey = (sourceClass.subjectNumber || '').trim().toUpperCase()
+            if (sourceKey) seenSubjects.add(sourceKey)
+
             if (hybridResults && Array.isArray(hybridResults)) {
                 semanticResults = await Promise.all(
                     hybridResults
-                        .filter(r => r.class._id.toString() !== classId && r.class.subjectNumber !== sourceClass.subjectNumber)
+                        .filter(r => {
+                            if (r.class._id.toString() === classId) return false
+                            if (r.class.institution === 'harvard' && !includeHarvard) return false
+                            const key = (r.class.subjectNumber || '').trim().toUpperCase()
+                            if (!key || key === sourceKey || seenSubjects.has(key)) return false
+                            seenSubjects.add(key)
+                            return true
+                        })
                         .map(async r => {
                         const dept = r.class.subjectNumber?.split('.')[0] || ''
                         const isBoosted = departmentBoosts.has(dept) && (departmentBoosts.get(dept) || 0) > 0
@@ -600,13 +609,10 @@ export async function hybridRecommendations(
                             
                             if (prereqCheck.hasPrereqs && prereqCheck.hasCoreqs) {
                                 finalScore *= 1.3
-                                reason += '\n✓ You have the prerequisites and corequisites'
                             } else if (prereqCheck.hasPrereqs) {
                                 finalScore *= 1.2
-                                reason += '\n✓ You have the prerequisites'
                             } else if (prereqCheck.hasCoreqs) {
                                 finalScore *= 1.1
-                                reason += '\n✓ You have the corequisites'
                             } else if (prereqCheck.missingPrereqs.length > 0) {
                                 const totalRequired = (r.class.prerequisites ? extractCourseNumbers(r.class.prerequisites).length : 0)
                                 if (totalRequired > 0 && prereqCheck.missingPrereqs.length < totalRequired) {

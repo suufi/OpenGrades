@@ -8,12 +8,13 @@ const TERM_METADATA = {
 type TermSuffix = keyof typeof TERM_METADATA
 
 export const MIT_TERM_CODE_REGEX = /^\d{4}(FA|JA|SP|SU)$/i
-const GRADE_REPORT_TERM_HEADER_PATTERN = '(Fall Term|Spring Term|January Term|Summer Term) \\d{4}-\\d{4}'
+const GRADE_REPORT_TERM_HEADER_PATTERN =
+  '(?:(?:Fall|Spring|January) Term \\d{4}-\\d{4}|Summer Term(?: \\d{4}-\\d{4}| \\d{4}))'
 
 export const TERM_SELECT_OPTIONS: { value: string; label: string }[] = [
-  { value: 'FA', label: '🍁 Fall' },
-  { value: 'SP', label: '🌸 Spring' },
-  { value: 'JA', label: '❄️ IAP' },
+  { value: 'FA', label: 'Fall' },
+  { value: 'SP', label: 'Spring' },
+  { value: 'JA', label: 'IAP' },
 ]
 
 function normalizeTermSuffix(term?: string | null): string {
@@ -110,17 +111,75 @@ export function buildTermCode(academicYear: number | string, suffix: string): st
   return `${Number(academicYear)}${normalizeTermSuffix(suffix)}`
 }
 
+const HARVARD_SEMESTER_REGEX = /^(Fall|Spring|Summer|IAP|January)\s+(\d{4})$/i
+
+/** ("Fall 2026", 2027) -> "2027FA" */
+export function harvardSemesterToMitTerm(semester: string, academicYear: number): string {
+  const trimmed = semester.trim()
+  const match = trimmed.match(HARVARD_SEMESTER_REGEX)
+  if (!match || !Number.isFinite(academicYear) || academicYear <= 0) {
+    return trimmed
+  }
+
+  const season = match[1].toLowerCase()
+  let suffix: TermSuffix | null = null
+  switch (season) {
+    case 'fall':
+      suffix = 'FA'
+      break
+    case 'spring':
+      suffix = 'SP'
+      break
+    case 'summer':
+      suffix = 'SU'
+      break
+    case 'iap':
+    case 'january':
+      suffix = 'JA'
+      break
+    default:
+      break
+  }
+
+  if (!suffix) return trimmed
+  return buildTermCode(academicYear, suffix)
+}
+
 export function createGradeReportTermHeaderRegex(): RegExp {
   return new RegExp(GRADE_REPORT_TERM_HEADER_PATTERN, 'g')
 }
 
 export function getAcademicYearFromGradeReportHeader(termHeader: string): number | null {
-  const match = termHeader.match(/(\d{4})-(\d{4})/)
-  return match ? parseInt(match[1], 10) + 1 : null
+  return parseGradeReportTermHeader(termHeader)?.academicYear ?? null
 }
 
 export function getTermSuffixFromGradeReportHeader(termHeader: string): string | null {
   const metadataEntries = Object.entries(TERM_METADATA) as [TermSuffix, (typeof TERM_METADATA)[TermSuffix]][]
   const match = metadataEntries.find(([, metadata]) => termHeader.includes(metadata.gradeReportHeader))
   return match?.[0] ?? null
+}
+
+export function parseGradeReportTermHeader(termHeader: string): { academicYear: number; termSuffix: TermSuffix } | null {
+  const termSuffix = getTermSuffixFromGradeReportHeader(termHeader) as TermSuffix | null
+  if (!termSuffix) return null
+
+  const rangeMatch = termHeader.match(/(\d{4})-(\d{4})/)
+  if (rangeMatch) {
+    return {
+      academicYear: parseInt(rangeMatch[1], 10) + 1,
+      termSuffix,
+    }
+  }
+
+  if (termSuffix === 'SU') {
+    const singleYearMatch = termHeader.match(/\b(\d{4})\b/)
+    if (singleYearMatch) {
+      return {
+        academicYear: parseInt(singleYearMatch[1], 10),
+        termSuffix: 'SU',
+      }
+    }
+  }
+
+  return null
 }

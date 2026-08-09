@@ -10,6 +10,7 @@ import {
 } from '@/utils/recommendations'
 import User from '@/models/User'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
+import { userCanIncludeHarvardCourses } from '@/utils/userHarvardPreference'
 import { IClass } from '@/types'
 
 /**
@@ -42,6 +43,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         }
 
         const userId = user._id.toString()
+        const includeHarvard = userCanIncludeHarvardCourses(user)
 
         const type = req.query.type as string || 'all'
         const limit = parseInt(req.query.limit as string) || 5
@@ -123,7 +125,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                                     cls._id.toString(),
                                     25,
                                     0.8,
-                                    user.classesTaken as IClass[] || []
+                                    user.classesTaken as IClass[] || [],
+                                    { includeHarvard }
                                 )
                                 console.log(`  ✓ Got ${recs.length} recommendations for ${cls.subjectNumber || cls._id}`)
                                 return recs
@@ -137,14 +140,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
                 // Import prerequisite checking
                 const { extractCourseNumbers } = await import('@/utils/prerequisiteGraph')
-                
+
                 const checkPrerequisitesMet = (course: any) => {
                     const prereqNumbers = extractCourseNumbers(course.prerequisites || '')
                     const coreqNumbers = extractCourseNumbers(course.corequisites || '')
-                    
+
                     const hasPrereqs = prereqNumbers.length === 0 || prereqNumbers.every(num => userSubjectNumbers.has(num))
                     const hasCoreqs = coreqNumbers.length === 0 || coreqNumbers.some(num => userSubjectNumbers.has(num))
-                    
+
                     return { hasPrereqs, hasCoreqs, prereqCount: prereqNumbers.length, coreqCount: coreqNumbers.length }
                 }
 
@@ -152,6 +155,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 allRecs.flat().forEach(rec => {
                     const classId = rec.class._id.toString()
                     const subjectNumber = rec.class.subjectNumber
+
+                    if (rec.class.institution === 'harvard' && !includeHarvard) {
+                        filteredCount++
+                        return
+                    }
 
                     if (userSubjectNumbers.has(subjectNumber)) {
                         filteredCount++
@@ -171,19 +179,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                     const prereqCheck = checkPrerequisitesMet(rec.class)
                     let finalScore = rec.score
                     let finalReason = rec.reason
-                    
+
                     const hasPrereqInfo = /you have the (prerequisites|corequisites)/i.test(finalReason)
 
                     if (!hasPrereqInfo) {
                         if (prereqCheck.hasPrereqs && prereqCheck.hasCoreqs) {
                             finalScore *= 1.3
-                            finalReason += '\n✓ You have the prerequisites and corequisites'
                         } else if (prereqCheck.hasPrereqs) {
                             finalScore *= 1.2
-                            finalReason += '\n✓ You have the prerequisites'
                         } else if (prereqCheck.hasCoreqs) {
                             finalScore *= 1.1
-                            finalReason += '\n✓ You have the corequisites'
                         }
                     }
 
@@ -205,6 +210,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
                 const items = Array.from(embeddingRecs.values())
                     .sort((a, b) => b.score - a.score)
+                    .reduce<Array<{ class: IClass; score: number; reason: string }>>((acc, rec) => {
+                        const normalizedTitle = (rec.class.subjectTitle || '').trim().toLowerCase()
+                        const hasDuplicateTitle = acc.some(existing =>
+                            (existing.class.subjectTitle || '').trim().toLowerCase() === normalizedTitle
+                        )
+
+                        if (!hasDuplicateTitle) {
+                            acc.push(rec)
+                        }
+
+                        return acc
+                    }, [])
                     .slice(0, limit)
 
                 console.log(`Total embedding recommendations: ${items.length} (filtered out ${filteredCount} already-taken classes)`)

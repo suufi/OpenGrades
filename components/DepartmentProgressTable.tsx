@@ -105,7 +105,7 @@ export function DepartmentProgressTable() {
                 allowDeselect={false}
                 data={groupedData.map(data => ({ value: data.term, label: data.term }))}
                 value={activeTerm}
-                onChange={setActiveTerm}
+                onChange={(val) => setActiveTerm(val || '')}
                 placeholder="Select a term"
                 label="Term"
             />

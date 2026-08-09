@@ -1,6 +1,9 @@
-import { createContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext } from 'react'
 import { useSession } from 'next-auth/react'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@opengrades/api-client'
 import { IUser } from '../types'
+import { useMe } from '@/lib/query'
 
 interface IUserContext {
   userProfile: IUser | Record<string, never>
@@ -14,30 +17,26 @@ export const UserContext = createContext<IUserContext>({
 })
 
 export function UserContextProvider ({ children }: { children: React.ReactNode }) {
-  const [userProfile, setUserProfile] = useState<IUser | Record<string, never>>({})
   const { status } = useSession()
-  const value = {
-    userProfile, setUserProfile
-  }
+  const queryClient = useQueryClient()
+  const { data: meData } = useMe(status === 'authenticated')
 
-  useEffect(() => {
-    if (status !== 'authenticated') return
-    let cancelled = false
-    fetch('/api/me')
-      .then(async (res) => {
-        const body = await res.json()
-        if (cancelled) return
-        if (res.ok && body.data?.user) {
-          setUserProfile(body.data.user)
-        } else {
-          console.error(body.message ?? 'Failed to load user profile')
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) console.error(err)
-      })
-    return () => { cancelled = true }
-  }, [status])
+  const userProfile = (meData ?? {}) as IUser | Record<string, never>
 
-  return <UserContext.Provider value={value}> {children} </UserContext.Provider>
+  const setUserProfile = useCallback<React.Dispatch<React.SetStateAction<IUser | Record<string, never>>>>((updater) => {
+    queryClient.setQueryData(queryKeys.me, (old: IUser | undefined) => {
+      const current = (old ?? {}) as IUser | Record<string, never>
+      return typeof updater === 'function' ? updater(current) : updater
+    })
+  }, [queryClient])
+
+  return (
+    <UserContext.Provider value={{ userProfile, setUserProfile }}>
+      {children}
+    </UserContext.Provider>
+  )
+}
+
+export function useUserContext() {
+  return useContext(UserContext)
 }

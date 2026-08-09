@@ -8,7 +8,6 @@ import {
     Container,
     Grid,
     Group,
-    Space,
     Stack,
     Text,
     Title,
@@ -20,15 +19,16 @@ import {
     List,
     Button
 } from '@mantine/core'
-import { IconFlame, IconStars, IconTrendingUp, IconDiamond, IconAlertTriangle, IconUpload, IconPencil, IconEye } from '@tabler/icons'
+import { IconFlame, IconStars, IconTrendingUp, IconDiamond, IconAlertTriangle, IconUpload, IconPencil, IconEye } from '@tabler/icons-react'
 import { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next'
-import { getServerSession, Session } from 'next-auth'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import authOptions from '@/pages/api/auth/[...nextauth]'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { auth } from '@/utils/auth'
+import { useDiscover } from '@/lib/query'
+import ui from '@/styles/Interface.module.css'
+import styles from '@/styles/Discover.module.css'
 
 interface EligibilityStatus {
     eligible: boolean
@@ -49,61 +49,49 @@ interface DiscoverData {
     popular?: Array<IClass & { pageviews: number; subjectNumber: string; linkToAggregate?: boolean }>
 }
 
-const ClassCard = ({ classData, badge, onNavigate }: { classData: IClass, badge: React.ReactNode, onNavigate: (classData: { _id: string; subjectNumber?: string; linkToAggregate?: boolean }) => void }) => {
+const ClassCard = ({
+    classData,
+    badge,
+    meta,
+    onNavigate,
+}: {
+    classData: IClass
+    badge: React.ReactNode
+    meta?: string
+    onNavigate: (classData: { _id: string; subjectNumber?: string; linkToAggregate?: boolean }) => void
+}) => {
     return (
         <UnstyledButton
             onClick={() => onNavigate({ _id: classData._id, subjectNumber: classData.subjectNumber, linkToAggregate: false })}
-            style={{ width: '100%' }}
+            className={styles.classCardButton}
         >
-            <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
-                <Group justify="space-between" mb="xs">
-                    <Text fw={600} size="lg">
+            <Card radius="md" padding="md" withBorder className={styles.classCard}>
+                <Group justify="space-between" align="flex-start" gap="sm" mb="xs" wrap="nowrap">
+                    <Text fw={700} size="md" className={styles.classNumber}>
                         {classData.subjectNumber}
                     </Text>
                     {badge}
                 </Group>
-                <Text size="sm" fw={500} lineClamp={2} mb="xs">
+                <Text size="sm" fw={600} lineClamp={2} mb={6}>
                     {classData.subjectTitle}
                 </Text>
                 <Text size="xs" c="dimmed" lineClamp={1}>
                     {classData.instructors?.join(', ') || 'No instructor listed'}
                 </Text>
-                <Text size="xs" c="dimmed">
-                    {classData.units} • {classData.department}
+                <Text size="xs" c="dimmed" mt={4}>
+                    {[classData.units, classData.department].filter(Boolean).join(' · ')}
+                    {meta ? ` · ${meta}` : ''}
                 </Text>
             </Card>
         </UnstyledButton>
     )
 }
 
-const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ session, eligibility }) => {
+const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ eligibility }) => {
     const router = useRouter()
-    const [data, setData] = useState<DiscoverData | null>(null)
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        // Only fetch if eligible
-        if (!eligibility.eligible) {
-            setLoading(false)
-            return
-        }
-
-        const fetchData = async () => {
-            try {
-                const response = await fetch('/api/discover')
-                const result = await response.json()
-                if (result.success) {
-                    setData(result.data)
-                }
-            } catch (error) {
-                console.error('Error fetching discover data:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchData()
-    }, [eligibility.eligible])
+    const [activeTab, setActiveTab] = useState<string | null>('hidden-gems')
+    const { data, isLoading: loading } = useDiscover(eligibility.eligible)
+    const discoverData = data as DiscoverData | null
 
     const handleNavigate = (classData: { _id: string; subjectNumber?: string; linkToAggregate?: boolean }) => {
         if (classData.linkToAggregate && classData.subjectNumber) {
@@ -115,31 +103,28 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
 
     if (!eligibility.eligible) {
         return (
-            <Container size="xl" style={{ padding: 'var(--mantine-spacing-lg)' }}>
+            <Container size="lg" px="md" className={ui.page}>
                 <Head>
                     <title>Discover - MIT OpenGrades</title>
                     <meta name="description" content="Discover hidden gems, trending classes, and more" />
                     <link rel="icon" href="/static/images/favicon.ico" />
                 </Head>
 
-                <Title order={1}>
-                    ✨ Discover Classes
-                </Title>
-                <Text c="dimmed" size="lg" mb="xl">
-                    Find your next favorite class
+                <Title order={1} className={ui.heroTitle}>Discover</Title>
+                <Text c="dimmed" mt="xs" mb="lg">
+                    Find high-rated, trending, and newly offered classes.
                 </Text>
 
                 <Alert
-                    icon={<IconAlertTriangle size={24} />}
-                    title="Access Requirements Not Met"
+                    icon={<IconAlertTriangle size={20} />}
+                    title="Access requirements not met"
                     color="orange"
                     variant="light"
-                    mb="xl"
                 >
-                    <Text mb="md">
+                    <Text mb="md" size="sm">
                         To use Discover, you need to meet the following requirements:
                     </Text>
-                    <List spacing="sm" mb="lg">
+                    <List spacing="sm" mb="lg" size="sm">
                         <List.Item
                             icon={
                                 eligibility.hasRecentGradeReport
@@ -182,9 +167,9 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
                                 href="/"
                                 leftSection={<IconUpload size={16} />}
                                 variant="filled"
-                                color="blue"
+                                color="brick"
                             >
-                                Upload Grade Report
+                                Upload grade report
                             </Button>
                         )}
                         {!eligibility.hasEnoughReviews && (
@@ -194,7 +179,7 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
                                 leftSection={<IconPencil size={16} />}
                                 variant="light"
                             >
-                                Write Reviews
+                                Write reviews
                             </Button>
                         )}
                     </Stack>
@@ -205,8 +190,8 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
 
     if (loading) {
         return (
-            <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
-                <Center style={{ minHeight: '400px' }}>
+            <Container size="lg" px="md" className={ui.page}>
+                <Center style={{ minHeight: '320px' }}>
                     <Loader size="lg" />
                 </Center>
             </Container>
@@ -214,142 +199,128 @@ const DiscoverPage: NextPage<InferGetServerSidePropsType<typeof getServerSidePro
     }
 
     return (
-        <Container size="xl" style={{ padding: 'var(--mantine-spacing-lg)' }}>
+        <Container size="lg" px="md" className={ui.page}>
             <Head>
                 <title>Discover - MIT OpenGrades</title>
                 <meta name="description" content="Discover hidden gems, trending classes, and more" />
                 <link rel="icon" href="/static/images/favicon.ico" />
             </Head>
 
-            <Title order={1}>
-                ✨ Discover Classes
-            </Title>
-            <Text c="dimmed" size="lg" mb="xl">
-                Find your next favorite class
+            <Title order={1} className={ui.heroTitle}>Discover</Title>
+            <Text c="dimmed" mt="xs" mb="lg">
+                Find high-rated, trending, and newly offered classes.
             </Text>
 
-            <Tabs defaultValue="hidden-gems">
+            <Tabs value={activeTab} onChange={setActiveTab} keepMounted={false}>
                 <Tabs.List>
                     <Tabs.Tab value="hidden-gems" leftSection={<IconDiamond size={16} />}>
-                        Hidden Gems
+                        Hidden gems
                     </Tabs.Tab>
                     <Tabs.Tab value="trending" leftSection={<IconFlame size={16} />}>
-                        Trending Now
+                        Trending
                     </Tabs.Tab>
                     <Tabs.Tab value="new" leftSection={<IconStars size={16} />}>
-                        New Classes
+                        New
                     </Tabs.Tab>
                     <Tabs.Tab value="improvement" leftSection={<IconTrendingUp size={16} />}>
-                        Rising Stars
+                        Rising
                     </Tabs.Tab>
                     <Tabs.Tab value="popular" leftSection={<IconEye size={16} />}>
-                        Most Viewed
+                        Most viewed
                     </Tabs.Tab>
                 </Tabs.List>
 
-                <Tabs.Panel value="hidden-gems">
-                    <Space h="md" />
-                    <Text c="dimmed" mb="lg">
-                        High-rated classes that haven't gotten much attention yet
+                <Tabs.Panel value="hidden-gems" pt="md">
+                    <Text c="dimmed" size="sm" mb="md">
+                        High-rated classes that haven&apos;t gotten much attention yet
                     </Text>
                     <Grid>
-                        {data?.hiddenGems.map((cls) => (
-                            <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
-                                <ClassCard
-                                    classData={cls}
-                                    badge={
-                                        <Badge color="yellow" variant="light">
-                                            ⭐ {cls.avgRating.toFixed(1)}
-                                        </Badge>
-                                    }
-                                    onNavigate={handleNavigate}
-                                />
-                            </Grid.Col>
-                        )) || <Text c="dimmed">No hidden gems found</Text>}
+                        {discoverData?.hiddenGems?.length
+                            ? discoverData.hiddenGems.map((cls) => (
+                                <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
+                                    <ClassCard
+                                        classData={cls}
+                                        badge={<Badge color="yellow" variant="light">{cls.avgRating.toFixed(1)}</Badge>}
+                                        meta={`${cls.reviewCount} reviews`}
+                                        onNavigate={handleNavigate}
+                                    />
+                                </Grid.Col>
+                            ))
+                            : <Text c="dimmed">No hidden gems found</Text>}
                     </Grid>
                 </Tabs.Panel>
 
-                <Tabs.Panel value="trending">
-                    <Space h="md" />
-                    <Text c="dimmed" mb="lg">
+                <Tabs.Panel value="trending" pt="md">
+                    <Text c="dimmed" size="sm" mb="md">
                         Classes with the most recent activity and interest
                     </Text>
                     <Grid>
-                        {data?.trending.map((cls) => (
-                            <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
-                                <ClassCard
-                                    classData={cls}
-                                    badge={
-                                        <Badge color="red" variant="light">
-                                            🔥 {cls.recentReviews + cls.recentAdds} recent
-                                        </Badge>
-                                    }
-                                    onNavigate={handleNavigate}
-                                />
-                            </Grid.Col>
-                        )) || <Text c="dimmed">No trending classes found</Text>}
+                        {discoverData?.trending?.length
+                            ? discoverData.trending.map((cls) => (
+                                <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
+                                    <ClassCard
+                                        classData={cls}
+                                        badge={<Badge color="red" variant="light">{cls.recentReviews + cls.recentAdds} recent</Badge>}
+                                        onNavigate={handleNavigate}
+                                    />
+                                </Grid.Col>
+                            ))
+                            : <Text c="dimmed">No trending classes found</Text>}
                     </Grid>
                 </Tabs.Panel>
 
-                <Tabs.Panel value="new">
-                    <Space h="md" />
-                    <Text c="dimmed" mb="lg">
+                <Tabs.Panel value="new" pt="md">
+                    <Text c="dimmed" size="sm" mb="md">
                         Classes offered for the first time recently
                     </Text>
                     <Grid>
-                        {data?.newClasses.map((cls) => (
-                            <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
-                                <ClassCard
-                                    classData={cls}
-                                    badge={
-                                        <Badge color="blue" variant="light">
-                                            ✨ New {cls.firstOffered}
-                                        </Badge>
-                                    }
-                                    onNavigate={handleNavigate}
-                                />
-                            </Grid.Col>
-                        )) || <Text c="dimmed">No new classes found</Text>}
+                        {discoverData?.newClasses?.length
+                            ? discoverData.newClasses.map((cls) => (
+                                <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
+                                    <ClassCard
+                                        classData={cls}
+                                        badge={<Badge color="blue" variant="light">New {cls.firstOffered}</Badge>}
+                                        onNavigate={handleNavigate}
+                                    />
+                                </Grid.Col>
+                            ))
+                            : <Text c="dimmed">No new classes found</Text>}
                     </Grid>
                 </Tabs.Panel>
 
-                <Tabs.Panel value="improvement">
-                    <Space h="md" />
-                    <Text c="dimmed" mb="lg">
+                <Tabs.Panel value="improvement" pt="md">
+                    <Text c="dimmed" size="sm" mb="md">
                         Classes that have significantly improved from previous years
                     </Text>
                     <Grid>
-                        {data?.highestImprovement.map((cls) => (
-                            <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
-                                <ClassCard
-                                    classData={cls}
-                                    badge={
-                                        <Badge color="green" variant="light">
-                                            📈 +{cls.improvement.toFixed(1)}
-                                        </Badge>
-                                    }
-                                    onNavigate={handleNavigate}
-                                />
-                            </Grid.Col>
-                        )) || <Text c="dimmed">No improvement data available</Text>}
+                        {discoverData?.highestImprovement?.length
+                            ? discoverData.highestImprovement.map((cls) => (
+                                <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
+                                    <ClassCard
+                                        classData={cls}
+                                        badge={<Badge color="green" variant="light">+{(cls.improvement ?? 0).toFixed(1)}</Badge>}
+                                        meta={`${(cls.previousRating ?? 0).toFixed(1)} → ${(cls.currentRating ?? 0).toFixed(1)}`}
+                                        onNavigate={handleNavigate}
+                                    />
+                                </Grid.Col>
+                            ))
+                            : <Text c="dimmed">No improvement data available</Text>}
                     </Grid>
                 </Tabs.Panel>
 
-                <Tabs.Panel value="popular">
-                    <Space h="md" />
-                    <Text c="dimmed" mb="lg">
+                <Tabs.Panel value="popular" pt="md">
+                    <Text c="dimmed" size="sm" mb="md">
                         Most viewed class pages in the last 30 days
                     </Text>
                     <Grid>
-                        {(data?.popular && data.popular.length > 0)
-                            ? data.popular.map((cls) => (
+                        {discoverData?.popular?.length
+                            ? discoverData.popular.map((cls) => (
                                 <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={cls._id}>
                                     <ClassCard
                                         classData={cls}
                                         badge={
-                                            <Badge color="violet" variant="light">
-                                                <IconEye size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-                                                {cls.pageviews?.toLocaleString() ?? 0} views
+                                            <Badge color="violet" variant="light" leftSection={<IconEye size={12} />}>
+                                                {(cls.pageviews ?? 0).toLocaleString()}
                                             </Badge>
                                         }
                                         onNavigate={handleNavigate}
@@ -390,7 +361,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
 
     const hasRecent = hasRecentGradeReport(user.lastGradeReportUpload)
-
     const reviewCheck = await hasEnoughReviewsForAI(user._id.toString())
 
     const eligibility: EligibilityStatus = {

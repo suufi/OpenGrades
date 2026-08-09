@@ -1,0 +1,21 @@
+.classCardButton {
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+
+.classCard {
+  height: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.classCardButton:hover .classCard {
+  border-color: rgba(var(--app-accent-rgb), 0.28);
+  box-shadow: var(--app-shadow-sm);
+  transform: translateY(-1px);
+}
+
+.classNumber {
+  color: var(--app-text);
+  min-width: 0;
+}

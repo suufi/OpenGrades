@@ -2,6 +2,7 @@ import Class from '@/models/Class'
 import mongoConnection from '@/utils/mongoConnection'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
+import { sortDepartmentCodes } from '@/utils/departments'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 type Data = {
@@ -30,13 +31,26 @@ async function handler(
     try {
 
         const distinctYears = await Class.distinct('academicYear')
-        const departments = await Class.distinct('department')
+        const mitDepartments = sortDepartmentCodes(
+            (await Class.distinct('department', {
+                institution: { $ne: 'harvard' }
+            })).filter((dept): dept is string => typeof dept === 'string' && dept.length > 0)
+        )
+        const harvardDepartments = (
+            await Class.distinct('department', {
+                institution: 'harvard'
+            })
+        )
+            .filter((dept): dept is string => typeof dept === 'string' && dept.length > 0)
+            .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 
         return res.status(200).json({
             success: true,
             data: {
-                years: distinctYears,
-                departments
+                years: distinctYears.sort((a: number, b: number) => b - a),
+                departments: mitDepartments,
+                mitDepartments,
+                harvardDepartments
             }
         })
     } catch (error) {

@@ -6,8 +6,7 @@ import mongoConnection from '@/utils/mongoConnection'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import {
     createGradeReportTermHeaderRegex,
-    getAcademicYearFromGradeReportHeader,
-    getTermSuffixFromGradeReportHeader,
+    parseGradeReportTermHeader,
 } from '@/utils/formatTerm'
 import { isMitGradeReportSubjectNumber, matchMitGradeReportSubjectLinePrefix } from '@/utils/courseNumbers'
 import formidable from 'formidable'
@@ -35,10 +34,10 @@ const parseGradeReport = (gradeReport) => {
         const section = gradeReport.slice(startIndex, endIndex).trim()
         const lines = section.split('\n')
 
-        const currentYear = getAcademicYearFromGradeReportHeader(termHeader)
-        const currentTermSuffix = getTermSuffixFromGradeReportHeader(termHeader)
+        const termInfo = parseGradeReportTermHeader(termHeader)
+        if (!termInfo) continue
 
-        if (currentTermSuffix === 'SU' || !currentYear || !currentTermSuffix) continue
+        const { academicYear: currentYear, termSuffix: currentTermSuffix } = termInfo
 
         // Check if it's freshman year
         const isYear1 = section.includes('Year: 1 R')

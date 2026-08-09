@@ -1,0 +1,62 @@
+.panel {
+    border-radius: 18px;
+}
+
+.accordion {
+    margin-inline: 0;
+}
+
+.accordion :global(.mantine-Accordion-control),
+.accordion :global(.mantine-Accordion-panel) {
+    padding-inline: 0.25rem;
+}
+
+.groupDescription {
+    margin-bottom: 0.55rem;
+}
+
+.recommendationButton {
+    width: 100%;
+}
+
+.recommendationRow {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.55rem;
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
+}
+
+.recommendationRow:hover {
+    background: var(--app-accent-soft);
+}
+
+.recommendationNumber {
+    color: var(--app-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    padding-top: 0.05rem;
+}
+
+.recommendationBody {
+    min-width: 0;
+}
+
+.recommendationTitle {
+    color: var(--app-text);
+    line-height: 1.35;
+}
+
+.recommendationDetail {
+    margin-top: 0.1rem;
+    color: var(--app-text-subtle);
+    line-height: 1.35;
+}
+
+.recommendationBadge {
+    margin-top: 0.1rem;
+}

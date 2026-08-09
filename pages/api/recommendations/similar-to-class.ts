@@ -2,10 +2,11 @@ import mongoConnection from '@/utils/mongoConnection'
 import { withApiLogger } from '@/utils/apiLogger'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getUserFromRequest } from '@/utils/authMiddleware'
-import { hybridRecommendations } from '@/utils/recommendations'
 import Class from '@/models/Class'
 import User from '@/models/User'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
+import { findSimilarCoursesByEmbedding } from '@/utils/courseSimilarity'
+import { userCanIncludeHarvardCourses } from '@/utils/userHarvardPreference'
 
 /**
  * Similar classes API endpoint using hybrid recommendations
@@ -35,7 +36,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
         const classId = req.query.classId as string
         const limit = parseInt(req.query.limit as string) || 10
-        const semanticWeight = parseFloat(req.query.semanticWeight as string) || 0.6
 
         if (!classId) {
             return res.status(400).json({ success: false, message: 'classId is required' })
@@ -47,7 +47,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ success: false, message: 'Class not found' })
         }
 
-        const recommendations = await hybridRecommendations(classId, limit, semanticWeight)
+        const includeHarvard = userCanIncludeHarvardCourses(user)
+        const similar = await findSimilarCoursesByEmbedding(classId, {
+            limit,
+            includeHarvard,
+            scope: 'public'
+        })
+
+        const recommendations = similar.map(s => ({
+            class: s.class,
+            score: s.score,
+            reason: s.institution === 'harvard'
+                ? 'Similar Harvard course (catalog description)'
+                : 'Similar course based on catalog description'
+        }))
 
         return res.status(200).json({
             success: true,
@@ -55,9 +68,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 classId,
                 className: `${classExists.subjectNumber}: ${classExists.subjectTitle}`,
                 recommendations,
-                method: 'hybrid',
-                semanticWeight,
-                structuralWeight: 1 - semanticWeight
+                method: 'embedding',
+                includeHarvard
             }
         })
 

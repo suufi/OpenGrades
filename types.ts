@@ -1,6 +1,9 @@
 import { type DefaultSession } from "next-auth"
 import { ParsedUrlQuery } from 'querystring'
 import { Types } from 'mongoose'
+import type { IHarvardCourse } from './types/harvardCourse'
+
+export type { IHarvardCourse, IHarvardInstructor, IHarvardMeetingPattern } from './types/harvardCourse'
 
 declare module 'next-auth' {
     interface Session {
@@ -30,6 +33,11 @@ declare global {
             MIT_API_CLIENT_SECRET: string
             AUTH_TRUST_HOST: boolean
             ELASTIC_SEARCH_URI: string
+            ELASTICSEARCH_PUBLIC_EMBEDDINGS_INDEX?: string
+            ELASTICSEARCH_PRIVATE_EMBEDDINGS_INDEX?: string
+            OPENAI_API_KEY?: string
+            OPENAI_PUBLIC_EMBEDDING_MODEL?: string
+            OPENAI_PUBLIC_EMBEDDING_DIMENSIONS?: string
         }
     }
 }
@@ -89,6 +97,9 @@ export interface IClass {
     classTags?: string[]
     reviewable: boolean
     offered: boolean
+    institution?: 'mit' | 'harvard'
+    harvardCatalogId?: string
+    harvardSource?: IHarvardCourse
     createdAt?: Date
     updatedAt?: Date
 }
@@ -125,11 +136,47 @@ export interface IUser {
     }>,
     aiEmbeddingOptOut?: boolean,
     qaEmailOptOut?: boolean,
+    includeHarvardCourses?: boolean,
     creditedSubjects?: string[],
     favoriteClasses?: string[],
     karmaDisplayKerb?: boolean,
+    notificationPreferences?: INotificationPreferences,
     createdAt: Date,
     updatedAt: Date,
+}
+
+export type NotificationCategory = 'feature_updates' | 'catalog_updates' | 'pe_updates' | 'academic_calendar'
+
+export interface INotificationPreferences {
+    feature_updates: boolean
+    catalog_updates: boolean
+    pe_updates: boolean
+    academic_calendar: boolean
+}
+
+export interface IPushToken {
+    _id?: string
+    user: Ref<IUser>
+    token: string
+    platform: 'ios' | 'android'
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface IScheduledNotification {
+    _id?: string
+    title: string
+    body: string
+    data?: Record<string, unknown>
+    category: NotificationCategory
+    scheduledAt: Date | null
+    sentAt: Date | null
+    status: 'pending' | 'sent' | 'failed' | 'cancelled'
+    createdBy: Ref<IUser>
+    recipientCount: number
+    errorMessage?: string
+    createdAt: Date
+    updatedAt: Date
 }
 
 export interface IClassReview {
@@ -234,6 +281,40 @@ export interface IKarma {
     updatedAt: Date
 }
 
+export interface IClassQuestion {
+    _id?: string
+    subjectNumber: string
+    author: IUser
+    body: string
+    solvedAt?: Date
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface IClassQuestionAnswer {
+    _id?: string
+    question: IClassQuestion | string
+    author: IUser
+    body: string
+    termTaken?: string
+    upvotes?: number
+    downvotes?: number
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface IQaBlast {
+    _id?: string
+    subjectNumber: string
+    author: IUser | string
+    body: string
+    karmaSpent: number
+    recipientCount: number
+    question?: IClassQuestion | string
+    createdAt: Date
+    updatedAt: Date
+}
+
 export interface IReport {
     _id?: string
     reporter: Ref<IUser>
@@ -290,4 +371,95 @@ export interface IReviewVote {
     karmaGranted?: boolean,
     createdAt: Date,
     updatedAt: Date
+}
+
+export type EmbeddingScope = 'public' | 'private'
+export type EmbeddingSourceKind = 'class_catalog' | 'class_review' | 'content_submission'
+export type EmbeddingProvider = 'openai' | 'ollama'
+
+export interface RagRecommendationValidationResult {
+    isValid: boolean
+    failures: string[]
+    selectedCourseIds: string[]
+}
+
+export interface RagEvalCase {
+    id: string
+    query: string
+    studentProfile: {
+        totalTaken: number
+        takenSubjectNumbers: string[]
+        takenByDepartment?: Record<string, number>
+    }
+    weakLabels?: {
+        preferredSubjectNumbers?: string[]
+        discouragedSubjectNumbers?: string[]
+        topicalTerms?: string[]
+    }
+}
+
+export interface RagEvalResult {
+    caseId: string
+    query: string
+    variant: string
+    selectedCourseIds: string[]
+    metrics: {
+        parseSuccess: number
+        validity: number
+        relevance: number
+        progression: number
+        diversity: number
+        combined: number
+    }
+    scopeMetrics?: {
+        publicCandidates: number
+        privateEvidenceAttached: number
+        privateOutsidePublic: number
+    }
+    failures: string[]
+}
+
+export interface EmbeddingHealthReport {
+    generatedAt: string
+    modelDistribution: Record<string, number>
+    scopeDistribution?: Record<string, number>
+    dimensionConsistency: {
+        byRecordedDimensions: Record<string, number>
+        byActualVectorLength: Record<string, number>
+        mismatchCount: number
+    }
+    missingDescriptionEmbeddings: {
+        offeredClasses: number
+        missingCount: number
+        sampleSubjectNumbers: string[]
+    }
+    staleDescriptionEmbeddings: {
+        staleCount: number
+        sampleSubjectNumbers: string[]
+    }
+    mongoEsCoverage: {
+        mongoCount: number
+        esCount: number
+        difference: number
+        sampleMissingInEs: string[]
+    }
+    scopeCoverage?: {
+        public: {
+            mongoCount: number
+            esCount: number
+            difference: number
+            sampleMissingInEs: string[]
+        }
+        private: {
+            mongoCount: number
+            esCount: number
+            difference: number
+            sampleMissingInEs: string[]
+        }
+    }
+    criticalAliasChecks: Array<{
+        subjectNumber: string
+        aliases: string[]
+        hasDescriptionEmbedding: boolean
+    }>
 }

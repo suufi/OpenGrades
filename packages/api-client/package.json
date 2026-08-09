@@ -1,0 +1,33 @@
+{
+  "name": "@opengrades/api-client",
+  "version": "0.1.0",
+  "description": "Shared OpenGrades API client and TanStack Query definitions for web and mobile",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suufi/OpenGrades.git",
+    "directory": "packages/api-client"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.51.0",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,157 @@
+.page {
+  padding-block: clamp(1.25rem, 2vw, 2rem) 3rem;
+}
+
+.hero {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.heroSubtitle {
+  max-width: 48rem;
+  margin: 0.45rem 0 0;
+  color: var(--app-text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.heroTitle {
+  margin: 0;
+  color: var(--app-text);
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  line-height: 1.12;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--app-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.sectionBlock {
+  padding: 1.25rem 0 0;
+  border-top: 1px solid var(--app-border);
+}
+
+.statGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.statCard {
+  min-height: 100%;
+  padding: 1.25rem;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.statLabel {
+  margin: 0;
+  color: var(--app-text-subtle);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.statValue {
+  margin: 0.55rem 0 0;
+  color: var(--app-text);
+  font-family: var(--app-display-font);
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+  line-height: 1;
+}
+
+.statNote {
+  margin: 0.5rem 0 0;
+  color: var(--app-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.sectionCard {
+  padding: clamp(1.2rem, 2vw, 1.6rem);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-surface);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sectionHeaderCompact {
+  margin-bottom: 0.85rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.sectionDescription {
+  margin: 0.4rem 0 0;
+  color: var(--app-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.mutedText {
+  color: var(--app-text-muted);
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.notePanel {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.14);
+  border-radius: 14px;
+  background: var(--app-accent-soft);
+}
+
+.noticePanel {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-bg-strong);
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 62rem) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+}

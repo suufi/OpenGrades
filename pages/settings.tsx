@@ -18,9 +18,10 @@ import { openConfirmModal } from '@mantine/modals'
 import { getServerSession } from 'next-auth'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
-import { EyeOff, Pencil, Search } from 'tabler-icons-react'
+import { IconEyeOff, IconPencil, IconSearch } from '@tabler/icons-react'
 // import { ClassManagementTable } from '../components/ClassManagementTable'
 import { EmbeddingManagement } from '@/components/EmbeddingManagement'
+import { NotificationManagement } from '@/components/NotificationManagement'
 import { DepartmentProgressTable } from '@/components/DepartmentProgressTable'
 import authOptions from '@/pages/api/auth/[...nextauth]'
 import { MIT_DEPARTMENT_OPTIONS as departments } from '@/utils/departments'
@@ -481,7 +482,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
   }
 
   const allColumns = [
-    { accessor: 'display', title: '', width: 48, render: (r: IClass) => (!r.display ? <EyeOff size={16} color="var(--mantine-color-red-6)" /> : null) },
+    { accessor: 'display', title: '', width: 48, render: (r: IClass) => (!r.display ? <IconEyeOff size={16} color="var(--mantine-color-red-6)" /> : null) },
     { accessor: 'term', title: 'Term' },
     { accessor: 'subjectNumber', title: 'Subject', sortable: true },
     { accessor: 'aliases', title: 'Aliases', sortable: true, render: (r: IClass) => r.aliases?.map(alias => <Badge key={alias} size="sm" variant="light"> {alias} </Badge>) },
@@ -492,7 +493,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
     {
       accessor: 'actions', title: '', width: 56, render: (r: IClass) => (
         <ActionIcon size="sm" variant="subtle" onClick={(e) => { e.stopPropagation(); setEditingClass(r); }} aria-label="Edit class">
-          <Pencil size={16} />
+          <IconPencil size={16} />
         </ActionIcon>
       )
     }
@@ -510,7 +511,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
             <Button variant='filled' color='red' disabled={selectedClasses.length === 0} loading={loadingButton} onClick={openDeleteModal}> Delete Selected Classes </Button>
             <Button variant='filled' color='violet' disabled={selectedClasses.length === 0} loading={loadingButton} onClick={openHideModal}> Hide Selected Classes </Button>
           </Group>
-          <Grid gutter={6} align={'flex-end'} justify='space-between'>
+          <Grid gap={6} align={'flex-end'} justify='space-between'>
             <Grid.Col span={{ md: 3, xs: 4 }}>
               <TextInput label="Term" placeholder="2024FA" value={term} onChange={(event) => setTerm(event.target.value)} />
             </Grid.Col>
@@ -563,7 +564,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
       <>
         <Stack gap="sm">
           <Title order={3}> Class Management </Title>
-          <TextInput value={globalFilterValue} leftSection={<Search size={20} />} onChange={onGlobalFilterChange} placeholder="Keyword search (all fields)" />
+          <TextInput value={globalFilterValue} leftSection={<IconSearch size={20} />} onChange={onGlobalFilterChange} placeholder="Keyword search (all fields)" />
           <Grid>
             <Grid.Col span={{ base: 12, xs: 4 }}>
               <TextInput
@@ -714,6 +715,8 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
         <DepartmentProgressTable />
 
         <EmbeddingManagement />
+
+        <NotificationManagement />
       </Stack>
     </Container>
   )

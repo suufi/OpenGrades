@@ -6,6 +6,7 @@ import User from '@/models/User'
 import AuditLog from '@/models/AuditLog'
 import CourseEmbedding from '@/models/CourseEmbedding'
 import ClassReview from '@/models/ClassReview'
+import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 
 /**
  * Privacy settings endpoint
@@ -29,13 +30,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ success: false, message: 'User not found' })
         }
 
-        const { aiEmbeddingOptOut, qaEmailOptOut } = req.body
+        const { aiEmbeddingOptOut, qaEmailOptOut, includeHarvardCourses } = req.body
 
         // Validate inputs
-        if (typeof aiEmbeddingOptOut !== 'boolean' && typeof qaEmailOptOut !== 'boolean') {
+        if (
+            typeof aiEmbeddingOptOut !== 'boolean' &&
+            typeof qaEmailOptOut !== 'boolean' &&
+            typeof includeHarvardCourses !== 'boolean'
+        ) {
             return res.status(400).json({
                 success: false,
                 message: 'At least one privacy setting must be provided'
+            })
+        }
+
+        if (typeof includeHarvardCourses === 'boolean' && includeHarvardCourses && !hasRecentGradeReport(user.lastGradeReportUpload)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Including Harvard courses in recommendations requires a grade report upload within the last 4 months'
             })
         }
 
@@ -43,7 +55,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         const changes = []
         const oldValues = {
             aiEmbeddingOptOut: user.aiEmbeddingOptOut || false,
-            qaEmailOptOut: user.qaEmailOptOut || false
+            qaEmailOptOut: user.qaEmailOptOut || false,
+            includeHarvardCourses: user.includeHarvardCourses || false
         }
 
         // Update user
@@ -59,6 +72,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 changes.push(`Q&A Emails: ${user.qaEmailOptOut ? 'opted-out' : 'opted-in'} → ${qaEmailOptOut ? 'opted-out' : 'opted-in'}`)
             }
             user.qaEmailOptOut = qaEmailOptOut
+        }
+
+        if (typeof includeHarvardCourses === 'boolean') {
+            if (user.includeHarvardCourses !== includeHarvardCourses) {
+                changes.push(`Harvard recommendations: ${user.includeHarvardCourses ? 'on' : 'off'} → ${includeHarvardCourses ? 'on' : 'off'}`)
+            }
+            user.includeHarvardCourses = includeHarvardCourses
         }
 
         await user.save()

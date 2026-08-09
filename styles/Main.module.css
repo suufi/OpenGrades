@@ -1,19 +1,27 @@
-.mainLink {
-  color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-1));
-  display: block;
-  width: 100%;
-  padding: var(--mantine-spacing-xs);
-  border-radius: var(--mantine-radius-sm);
-  &:hover {
-    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
-    /* color: 'red'; */
-  }
-}
-
-.mainLinkText {
-  color: light-dark(var(--mantine-color-dark-5), var(--mantine-color-white));
-}
-
 .mainContainer {
-  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+  min-height: calc(100vh - 70px);
+  position: relative;
+  z-index: 1;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+.shellHeader {
+  background: var(--app-surface-strong) !important;
+  background-color: var(--app-surface-strong) !important;
+  background-image: none;
+  border-bottom: 1px solid var(--app-border);
+  backdrop-filter: none;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.shellNavbar {
+  background: var(--app-surface-strong) !important;
+  background-color: var(--app-surface-strong) !important;
+  background-image: none;
+  border-right: 1px solid var(--app-border);
+  backdrop-filter: none;
+  box-shadow: none;
+  opacity: 1;
 }
