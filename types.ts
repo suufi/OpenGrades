@@ -28,7 +28,7 @@ declare global {
             MIT_OIDC_CLIENT_SECRET: string
             MIT_OIDC_AUTHORIZATION_ENDPOINT: string
             MIT_OIDC_ISSUER: string
-            NEXTAUTH_SECRET: string
+            NEXTAUTH_SECRET?: string
             MIT_API_CLIENT_ID: string
             MIT_API_CLIENT_SECRET: string
             AUTH_TRUST_HOST: boolean
