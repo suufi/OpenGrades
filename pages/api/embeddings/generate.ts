@@ -6,23 +6,90 @@ import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import ContentSubmission from '@/models/ContentSubmission'
 import CourseEmbedding from '@/models/CourseEmbedding'
-import { Ollama } from 'ollama'
-import { IClass, IClassReview, IUser } from '@/types'
+import { generateEmbeddingsBatch, OLLAMA_EMBEDDING_DIMENSIONS, OLLAMA_EMBEDDING_MODEL } from '@/utils/ollama'
+import {
+    generateOpenAIEmbedding,
+    generateOpenAIEmbeddingsBatch,
+    OPENAI_PUBLIC_EMBEDDING_DIMENSIONS,
+    OPENAI_PUBLIC_EMBEDDING_MODEL
+} from '@/utils/openaiEmbeddings'
+import { buildPublicDescriptionText } from '@/utils/embeddingText'
 
-const EMBEDDING_MODEL = 'qwen3-embedding:4b'
-const EMBEDDING_DIMENSIONS = 2560
+type EmbeddingScope = 'public' | 'private' | 'all'
+type EmbeddingType = 'all' | 'descriptions' | 'reviews' | 'content'
 
-function getOllamaClient() {
-    return new Ollama({
-        host: process.env.OLLAMA_BASE_URL || 'https://llms-dev-1.mit.edu',
-        headers: process.env.OLLAMA_API_KEY ? { Authorization: `Bearer ${process.env.OLLAMA_API_KEY}` } : {},
+function buildPrivateReviewText(cls: any, reviews: any[]): string {
+    const lines: string[] = []
+    lines.push('[PRIVATE_REVIEW]')
+    lines.push(`Course: ${cls.subjectNumber} — ${cls.subjectTitle || ''}`.trim())
+    lines.push(`Review count: ${reviews.length}`)
+
+    reviews.slice(0, 8).forEach((review, idx) => {
+        const tags: string[] = []
+        if (review.firstYear) tags.push('first_year')
+        if (review.retaking) tags.push('retaking')
+        if (review.droppedClass) tags.push('dropped')
+        if (review.recommendationLevel) tags.push(`recommendation:${review.recommendationLevel}/5`)
+        if (review.overallRating) tags.push(`overall:${review.overallRating}/7`)
+        if (review.hoursPerWeek) tags.push(`hours:${review.hoursPerWeek}`)
+
+        lines.push(`[review] #${idx + 1} ${tags.join(', ')}`.trim())
+        if (review.classComments) lines.push(review.classComments)
+        if (review.backgroundComments) lines.push(`Background: ${review.backgroundComments}`)
     })
+
+    return lines.join('\n').substring(0, 8000)
 }
 
-async function generateEmbedding(text: string): Promise<number[]> {
-    const ollama = getOllamaClient()
-    const response = await ollama.embeddings({ model: EMBEDDING_MODEL, prompt: text })
-    return response.embedding
+function chunkTextForEmbedding(text: string, maxLength = 5000, maxChunks = 3): string[] {
+    const clean = (text || '').replace(/\s+/g, ' ').trim()
+    if (!clean) return []
+    if (clean.length <= maxLength) return [clean]
+
+    const chunks: string[] = []
+    let cursor = 0
+    while (cursor < clean.length && chunks.length < maxChunks) {
+        let end = Math.min(clean.length, cursor + maxLength)
+        if (end < clean.length) {
+            const breakpoint = clean.lastIndexOf(' ', end)
+            if (breakpoint > cursor + Math.floor(maxLength * 0.65)) {
+                end = breakpoint
+            }
+        }
+        chunks.push(clean.slice(cursor, end).trim())
+        cursor = end
+    }
+    return chunks.filter(Boolean)
+}
+
+function buildPrivateContentTexts(content: any): string[] {
+    const raw = content.contentSummary || content.extractedText || ''
+    if (!raw) return []
+    const metadata = `[PRIVATE_CONTENT]\nCourse: ${content.classData?.subjectNumber || content.class || ''}\nContent: ${content.contentTitle || 'Untitled'} (${content.type || 'Unknown'})`
+    const chunks = chunkTextForEmbedding(raw, 5000, 3)
+    return chunks.map((chunk, idx) => `${metadata}\n[content] part ${idx + 1}\n${chunk}`.substring(0, 8000))
+}
+
+async function embedPublicTextsWithFallback(texts: string[]): Promise<{ embeddings: number[][]; errors: number }> {
+    if (texts.length === 0) return { embeddings: [], errors: 0 }
+
+    try {
+        const embeddings = await generateOpenAIEmbeddingsBatch(texts, { batchSize: 32, retries: 3 })
+        return { embeddings, errors: 0 }
+    } catch (batchError) {
+        const embeddings: number[][] = []
+        let errors = 0
+        for (const text of texts) {
+            try {
+                embeddings.push(await generateOpenAIEmbedding(text))
+            } catch (error) {
+                console.error('OpenAI single embedding fallback failed:', error)
+                embeddings.push([])
+                errors += 1
+            }
+        }
+        return { embeddings, errors }
+    }
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -42,138 +109,153 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             return res.status(403).json({ success: false, message: 'Insufficient permissions' })
         }
 
-        const { type = 'all', force = false, limit = 200 } = req.body
+        const {
+            type = 'all',
+            scope = 'all',
+            force = false,
+            limit = 200,
+            institution = 'all'
+        }: {
+            type?: EmbeddingType
+            scope?: EmbeddingScope
+            force?: boolean
+            limit?: number
+            institution?: 'all' | 'mit' | 'harvard'
+        } = req.body
 
-        let stats = {
-            descriptions: 0,
-            reviews: 0,
-            content: 0,
+        const shouldRunPublicDescriptions =
+            (scope === 'all' || scope === 'public') &&
+            (type === 'all' || type === 'descriptions')
+
+        const shouldRunPrivateReviews =
+            (scope === 'all' || scope === 'private') &&
+            (type === 'all' || type === 'reviews')
+
+        const shouldRunPrivateContent =
+            (scope === 'all' || scope === 'private') &&
+            (type === 'all' || type === 'content')
+
+        const stats = {
+            public: {
+                descriptions: 0,
+                candidates: 0
+            },
+            private: {
+                reviews: 0,
+                content: 0,
+                reviewCandidates: 0,
+                contentCandidates: 0
+            },
             skipped: 0,
             errors: 0
         }
 
-        if (type === 'all' || type === 'descriptions') {
-            console.log(`Generating descriptions. Limit: ${limit}. Force: ${force}`)
-
-            let matchStage: any = {}
-
-            if (!force) {
-                matchStage = {
-                    $or: [
-                        { embedding: { $size: 0 } },
-                        { 'embedding.embeddingModel': { $ne: EMBEDDING_MODEL } },
-                        { $expr: { $gt: ['$updatedAt', { $arrayElemAt: ['$embedding.lastUpdated', 0] }] } }
-                    ]
-                }
-            }
+        if (shouldRunPublicDescriptions) {
+            const institutionMatch =
+                institution === 'harvard'
+                    ? { institution: 'harvard' }
+                    : institution === 'mit'
+                        ? { $or: [{ institution: { $exists: false } }, { institution: 'mit' }] }
+                        : {}
 
             const courses = await Class.aggregate([
-                { $match: { offered: true, description: { $exists: true, $ne: '' } } },
+                {
+                    $match: {
+                        offered: true,
+                        ...institutionMatch,
+                        $or: [
+                            { description: { $exists: true, $ne: '' } },
+                            { institution: 'harvard', harvardSource: { $exists: true } }
+                        ]
+                    }
+                },
                 {
                     $lookup: {
                         from: 'courseembeddings',
                         let: { classId: '$_id' },
                         pipeline: [
-                            { $match: { $expr: { $and: [{ $eq: ['$class', '$$classId'] }, { $eq: ['$embeddingType', 'description'] }] } } }
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ['$class', '$$classId'] },
+                                            { $eq: ['$embeddingType', 'description'] },
+                                            { $eq: ['$scope', 'public'] }
+                                        ]
+                                    }
+                                }
+                            },
+                            { $sort: { lastUpdated: -1 } },
+                            { $limit: 1 }
                         ],
                         as: 'embedding'
                     }
                 },
-                ...(force ? [] : [{ $match: matchStage }]),
+                ...(force ? [] : [{
+                    $match: {
+                        $or: [
+                            { embedding: { $size: 0 } },
+                            { 'embedding.model': { $ne: OPENAI_PUBLIC_EMBEDDING_MODEL } },
+                            { $expr: { $gt: ['$updatedAt', { $arrayElemAt: ['$embedding.lastUpdated', 0] }] } }
+                        ]
+                    }
+                }]),
                 { $limit: limit }
             ])
 
-            console.log(`Found ${courses.length} courses that need embedding`)
+            stats.public.candidates = courses.length
 
-            if (courses.length === 0) {
-                console.log('No courses need embedding - all up to date')
-            }
+            const publicTexts = courses.map((course: any) => buildPublicDescriptionText(course))
+            const { embeddings, errors } = await embedPublicTextsWithFallback(publicTexts)
+            stats.errors += errors
 
-            const bulkOps: any[] = []
-
-            for (const course of courses as IClass[]) {
-                try {
-                    const parts: string[] = []
-                    parts.push(`${course.subjectNumber}: ${course.subjectTitle}`)
-                    if (course.aliases?.length > 0) {
-                        parts.push(`Also listed as: ${course.aliases.join(', ')}`)
-                    }
-                    if (course.department) parts.push(`Department: ${course.department}`)
-                    if (course.crossListedDepartments?.length > 0) {
-                        parts.push(`Cross-listed: ${course.crossListedDepartments.join(', ')}`)
-                    }
-                    if (course.prerequisites) parts.push(`Prerequisites: ${course.prerequisites}`)
-                    if (course.corequisites) parts.push(`Corequisites: ${course.corequisites}`)
-                    if (course.girAttribute?.length > 0) {
-                        parts.push(`GIR: ${course.girAttribute.join(', ')}`)
-                    }
-                    if (course.hassAttribute) parts.push(`HASS: ${course.hassAttribute}`)
-                    if (course.communicationRequirement) {
-                        parts.push(`Communication: ${course.communicationRequirement}`)
-                    }
-                    parts.push(course.description || 'No description available')
-
-                    const text = parts.join(' ').substring(0, 8000)
-
-                    const embedding = await generateEmbedding(text)
-
-                    bulkOps.push({
-                        updateOne: {
-                            filter: { class: course._id, embeddingType: 'description' },
-                            update: {
-                                $set: {
-                                    class: course._id,
-                                    embeddingType: 'description',
-                                    embedding,
-                                    embeddingModel: EMBEDDING_MODEL,
-                                    embeddingDimensions: EMBEDDING_DIMENSIONS,
-                                    sourceText: text.substring(0, 5000),
-                                    text: text.substring(0, 5000),
-                                    lastUpdated: new Date()
-                                }
-                            },
-                            upsert: true
-                        }
-                    })
-
-                    stats.descriptions++
-
-                    if (bulkOps.length >= 200) {
-                        await CourseEmbedding.bulkWrite(bulkOps)
-                        bulkOps.length = 0
-                        console.log(`Progress: ${stats.descriptions} descriptions processed`)
-                    }
-                } catch (error: any) {
-                    console.error(`Error embedding ${course.subjectNumber}:`, error.message)
-                    stats.errors++
+            const ops: any[] = []
+            courses.forEach((course: any, idx: number) => {
+                const embedding = embeddings[idx]
+                if (!embedding || embedding.length === 0) {
+                    stats.errors += 1
+                    return
                 }
+
+                const text = publicTexts[idx]
+                ops.push({
+                    updateOne: {
+                        filter: { class: course._id, embeddingType: 'description', scope: 'public' },
+                        update: {
+                            $set: {
+                                class: course._id,
+                                embeddingType: 'description',
+                                scope: 'public',
+                                sourceKind: 'class_catalog',
+                                provider: 'openai',
+                                model: OPENAI_PUBLIC_EMBEDDING_MODEL,
+                                dimension: OPENAI_PUBLIC_EMBEDDING_DIMENSIONS,
+                                embedding,
+                                embeddingModel: OPENAI_PUBLIC_EMBEDDING_MODEL,
+                                embeddingDimensions: OPENAI_PUBLIC_EMBEDDING_DIMENSIONS,
+                                sourceText: text.substring(0, 5000),
+                                text: text.substring(0, 5000),
+                                lastUpdated: new Date()
+                            }
+                        },
+                        upsert: true
+                    }
+                })
+            })
+
+            if (ops.length > 0) {
+                await CourseEmbedding.bulkWrite(ops)
             }
 
-            if (bulkOps.length > 0) {
-                await CourseEmbedding.bulkWrite(bulkOps)
-            }
-
-            console.log(`Completed: ${stats.descriptions} descriptions, ${stats.errors} errors`)
+            stats.public.descriptions += ops.length
+            stats.skipped += Math.max(0, courses.length - ops.length)
         }
 
-        if (type === 'all' || type === 'reviews') {
-            console.log(`Generating reviews. Limit: ${limit}. Force: ${force}`)
-
+        if (shouldRunPrivateReviews) {
             const classesWithReviews = await ClassReview.distinct('class', {
                 classComments: { $exists: true, $ne: '' },
                 display: true
             })
-
-            let matchStage: any = {}
-
-            if (!force) {
-                matchStage = {
-                    $or: [
-                        { embedding: { $size: 0 } },
-                        { 'embedding.embeddingModel': { $ne: EMBEDDING_MODEL } }
-                    ]
-                }
-            }
 
             const classes = await Class.aggregate([
                 { $match: { offered: true, _id: { $in: classesWithReviews } } },
@@ -182,122 +264,107 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                         from: 'courseembeddings',
                         let: { classId: '$_id' },
                         pipeline: [
-                            { $match: { $expr: { $and: [{ $eq: ['$class', '$$classId'] }, { $eq: ['$embeddingType', 'reviews'] }] } } }
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ['$class', '$$classId'] },
+                                            { $eq: ['$embeddingType', 'reviews'] },
+                                            { $eq: ['$scope', 'private'] }
+                                        ]
+                                    }
+                                }
+                            },
+                            { $sort: { lastUpdated: -1 } },
+                            { $limit: 1 }
                         ],
                         as: 'embedding'
                     }
                 },
-                ...(force ? [] : [{ $match: matchStage }]),
+                ...(force ? [] : [{
+                    $match: {
+                        $or: [
+                            { embedding: { $size: 0 } },
+                            { 'embedding.model': { $ne: OLLAMA_EMBEDDING_MODEL } }
+                        ]
+                    }
+                }]),
                 { $limit: limit }
             ])
 
-            console.log(`Found ${classes.length} classes that need review embedding`)
+            stats.private.reviewCandidates = classes.length
 
-            if (classes.length === 0) {
-                console.log('No reviews need embedding - all up to date')
-            }
+            const reviewPayload: Array<{ cls: any; text: string }> = []
+            for (const cls of classes as any[]) {
+                const reviews = await ClassReview.find({
+                    class: cls._id,
+                    classComments: { $exists: true, $ne: '' },
+                    display: true
+                }).populate('author', 'aiEmbeddingOptOut').lean()
 
-            const bulkOps: any[] = []
+                const allowedReviews = reviews.filter((review: any) => {
+                    const author = review.author as any
+                    return !author || !author.aiEmbeddingOptOut
+                })
 
-            for (const cls of classes as IClass[]) {
-                try {
-                    const reviews = await ClassReview.find({
-                        class: cls._id,
-                        classComments: { $exists: true, $ne: '' },
-                        display: true
-                    }).populate('author', 'aiEmbeddingOptOut').lean()
-
-                    if (reviews.length === 0) continue
-
-                    const allowedReviews = reviews.filter((r: IClassReview) => {
-                        const author = r.author as IUser
-                        return !author || !author.aiEmbeddingOptOut
-                    })
-
-                    if (allowedReviews.length === 0) {
-                        console.log(`Skipping ${cls.subjectNumber} - all reviews opted out`)
-                        continue
-                    }
-
-                    const reviewText = allowedReviews.map((r: IClassReview) => {
-                        const tags = []
-                        if (r.firstYear) tags.push('[First Year]')
-                        if (r.retaking) tags.push('[Retaking]')
-                        if (r.droppedClass) tags.push('[Dropped]')
-
-                        let content = tags.join(' ')
-                        if (r.classComments) content += ` ${r.classComments}`
-                        if (r.backgroundComments) content += ` (Background: ${r.backgroundComments})`
-
-                        return content.trim()
-                    }).filter(t => t.length > 0).join(' | ')
-
-                    const text = `Student reviews for ${cls.subjectNumber}: ${reviewText}`.substring(0, 8000)
-
-                    const embedding = await generateEmbedding(text)
-
-                    bulkOps.push({
-                        updateOne: {
-                            filter: { class: cls._id, embeddingType: 'reviews' },
-                            update: {
-                                $set: {
-                                    class: cls._id,
-                                    embeddingType: 'reviews',
-                                    embedding,
-                                    embeddingModel: EMBEDDING_MODEL,
-                                    embeddingDimensions: EMBEDDING_DIMENSIONS,
-                                    sourceText: text.substring(0, 5000),
-                                    lastUpdated: new Date()
-                                }
-                            },
-                            upsert: true
-                        }
-                    })
-
-                    stats.reviews++
-
-                    if (bulkOps.length >= 100) {
-                        await CourseEmbedding.bulkWrite(bulkOps)
-                        bulkOps.length = 0
-                        console.log(`Progress: ${stats.reviews} reviews processed`)
-                    }
-                } catch (error: any) {
-                    console.error(`Error embedding reviews for ${cls.subjectNumber}:`, error.message)
-                    stats.errors++
+                if (allowedReviews.length === 0) {
+                    stats.skipped += 1
+                    continue
                 }
+
+                reviewPayload.push({
+                    cls,
+                    text: buildPrivateReviewText(cls, allowedReviews)
+                })
             }
 
-            if (bulkOps.length > 0) {
-                await CourseEmbedding.bulkWrite(bulkOps)
+            const reviewEmbeddings = await generateEmbeddingsBatch(
+                reviewPayload.map(payload => payload.text),
+                6
+            )
+
+            const ops: any[] = []
+            reviewPayload.forEach((payload, idx) => {
+                const embedding = reviewEmbeddings[idx]
+                if (!embedding || embedding.length === 0) {
+                    stats.errors += 1
+                    return
+                }
+
+                ops.push({
+                    updateOne: {
+                        filter: { class: payload.cls._id, embeddingType: 'reviews', scope: 'private' },
+                        update: {
+                            $set: {
+                                class: payload.cls._id,
+                                embeddingType: 'reviews',
+                                scope: 'private',
+                                sourceKind: 'class_review',
+                                provider: 'ollama',
+                                model: OLLAMA_EMBEDDING_MODEL,
+                                dimension: OLLAMA_EMBEDDING_DIMENSIONS,
+                                embedding,
+                                embeddingModel: OLLAMA_EMBEDDING_MODEL,
+                                embeddingDimensions: OLLAMA_EMBEDDING_DIMENSIONS,
+                                sourceText: payload.text.substring(0, 5000),
+                                lastUpdated: new Date()
+                            }
+                        },
+                        upsert: true
+                    }
+                })
+            })
+
+            if (ops.length > 0) {
+                await CourseEmbedding.bulkWrite(ops)
             }
 
-            console.log(`Completed: ${stats.reviews} reviews, ${stats.errors} errors`)
+            stats.private.reviews += ops.length
+            stats.skipped += Math.max(0, reviewPayload.length - ops.length)
         }
 
-        if (type === 'all' || type === 'content') {
-            console.log(`Generating content. Limit: ${limit}. Force: ${force}`)
-
-            let matchStage: any = {}
-
-            if (!force) {
-                matchStage = {
-                    $or: [
-                        { embedding: { $size: 0 } },
-                        { 'embedding.embeddingModel': { $ne: EMBEDDING_MODEL } }
-                    ]
-                }
-            }
-
-            type AggregatedContentSubmission = {
-                _id: string
-                class?: any
-                display?: boolean
-                contentSummary?: string
-                extractedText?: string
-                classData?: { _id?: any }
-            }
-
-            const contentSubmissions: AggregatedContentSubmission[] = await ContentSubmission.aggregate([
+        if (shouldRunPrivateContent) {
+            const contentSubmissions = await ContentSubmission.aggregate([
                 {
                     $match: {
                         display: true,
@@ -310,17 +377,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 },
                 {
                     $lookup: {
-                        from: 'courseembeddings',
-                        let: { sourceId: '$_id' },
-                        pipeline: [
-                            { $match: { $expr: { $and: [{ $eq: ['$sourceId', '$$sourceId'] }, { $eq: ['$embeddingType', 'content'] }] } } }
-                        ],
-                        as: 'embedding'
-                    }
-                },
-                ...(force ? [] : [{ $match: matchStage }]),
-                {
-                    $lookup: {
                         from: 'classes',
                         localField: 'class',
                         foreignField: '_id',
@@ -328,78 +384,108 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                     }
                 },
                 { $unwind: { path: '$classData', preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: 'courseembeddings',
+                        let: { sourceId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ['$sourceId', '$$sourceId'] },
+                                            { $eq: ['$embeddingType', 'content'] },
+                                            { $eq: ['$scope', 'private'] },
+                                            { $eq: ['$model', OLLAMA_EMBEDDING_MODEL] }
+                                        ]
+                                    }
+                                }
+                            },
+                            { $limit: 1 }
+                        ],
+                        as: 'embedding'
+                    }
+                },
+                ...(force ? [] : [{ $match: { embedding: { $size: 0 } } }]),
                 { $limit: limit }
             ])
 
-            console.log(`Found ${contentSubmissions.length} content that need embedding`)
+            stats.private.contentCandidates = contentSubmissions.length
 
-            if (contentSubmissions.length === 0) {
-                console.log('No content needs embedding - all up to date')
-            }
+            for (const content of contentSubmissions as any[]) {
+                const texts = buildPrivateContentTexts(content)
+                if (texts.length === 0) {
+                    stats.skipped += 1
+                    continue
+                }
 
-            const bulkOps: any[] = []
-
-            for (const content of contentSubmissions) {
                 try {
-                    const classId = content.classData?._id || content.class
-                    if (!classId) continue
+                    const embeddings = await generateEmbeddingsBatch(texts, 4)
 
-                    const text = content.contentSummary || content.extractedText || ''
-                    if (!text) continue
-
-                    const embedding = await generateEmbedding(text.substring(0, 8000))
-
-                    bulkOps.push({
-                        updateOne: {
-                            filter: { sourceId: content._id, embeddingType: 'content' },
-                            update: {
-                                $set: {
-                                    class: classId,
-                                    embeddingType: 'content',
-                                    embedding,
-                                    embeddingModel: EMBEDDING_MODEL,
-                                    embeddingDimensions: EMBEDDING_DIMENSIONS,
-                                    sourceText: text.substring(0, 5000),
-                                    sourceId: content._id,
-                                    lastUpdated: new Date()
-                                }
-                            },
-                            upsert: true
-                        }
+                    await CourseEmbedding.deleteMany({
+                        sourceId: content._id,
+                        embeddingType: 'content',
+                        scope: 'private'
                     })
 
-                    stats.content++
+                    const docs = embeddings.map((embedding: number[], idx: number) => ({
+                        class: content.classData?._id || content.class,
+                        embeddingType: 'content',
+                        scope: 'private',
+                        sourceKind: 'content_submission',
+                        provider: 'ollama',
+                        model: OLLAMA_EMBEDDING_MODEL,
+                        dimension: OLLAMA_EMBEDDING_DIMENSIONS,
+                        embedding,
+                        embeddingModel: OLLAMA_EMBEDDING_MODEL,
+                        embeddingDimensions: OLLAMA_EMBEDDING_DIMENSIONS,
+                        sourceText: texts[idx].substring(0, 5000),
+                        sourceId: content._id,
+                        chunkIndex: idx,
+                        totalChunks: texts.length,
+                        lastUpdated: new Date()
+                    }))
 
-                    if (bulkOps.length >= 100) {
-                        await CourseEmbedding.bulkWrite(bulkOps)
-                        bulkOps.length = 0
-                        console.log(`Progress: ${stats.content} content processed`)
+                    if (docs.length > 0) {
+                        await CourseEmbedding.insertMany(docs)
                     }
-                } catch (error: any) {
-                    console.error(`Error embedding content ${content._id}:`, error.message)
-                    stats.errors++
+
+                    stats.private.content += docs.length
+                } catch (error) {
+                    console.error(`Content embedding failed for ${content._id}:`, error)
+                    stats.errors += 1
                 }
             }
-
-            if (bulkOps.length > 0) {
-                await CourseEmbedding.bulkWrite(bulkOps)
-            }
-
-            console.log(`Completed: ${stats.content} content, ${stats.errors} errors`)
         }
+
+        const processedTotal =
+            stats.public.descriptions +
+            stats.private.reviews +
+            stats.private.content
 
         return res.status(200).json({
             success: true,
             message: 'Embedding generation complete',
+            modelConfig: {
+                public: {
+                    provider: 'openai',
+                    model: OPENAI_PUBLIC_EMBEDDING_MODEL,
+                    dimensions: OPENAI_PUBLIC_EMBEDDING_DIMENSIONS
+                },
+                private: {
+                    provider: 'ollama',
+                    model: OLLAMA_EMBEDDING_MODEL,
+                    dimensions: OLLAMA_EMBEDDING_DIMENSIONS
+                }
+            },
             stats,
             processed: {
-                descriptions: stats.descriptions,
-                reviews: stats.reviews,
-                content: stats.content,
-                total: stats.descriptions + stats.reviews + stats.content
+                descriptions: stats.public.descriptions,
+                reviews: stats.private.reviews,
+                content: stats.private.content,
+                total: processedTotal
             }
         })
-
     } catch (error: any) {
         console.error('Embedding generation error:', error)
         return res.status(500).json({

@@ -1,12 +1,28 @@
 import { Button, Card, Group, Progress, Stack, Text, Title, Grid, Badge, ActionIcon, Tooltip, Switch } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconRefresh, IconDatabase, IconFileText, IconMessageCircle, IconFiles } from '@tabler/icons'
+import { IconRefresh, IconDatabase, IconFileText, IconMessageCircle, IconFiles } from '@tabler/icons-react'
 import { useState, useEffect } from 'react'
 
 interface EmbeddingStats {
     descriptions: { total: number; embedded: number; pending: number }
     reviews: { total: number; embedded: number; pending: number }
     content: { total: number; embedded: number; pending: number }
+    public?: {
+        descriptions: { total: number; embedded: number; pending: number; missing?: number; stale?: number }
+        model: string
+        dimensions: number
+        provider: string
+        index: string
+    }
+    private?: {
+        reviews: { total: number; embedded: number; pending: number }
+        content: { total: number; embedded: number; pending: number }
+        model: string
+        dimensions: number
+        provider: string
+        index: string
+    }
+    overall?: { total: number; embedded: number; pending: number }
     skipped: number
 }
 
@@ -62,30 +78,38 @@ export function EmbeddingManagement() {
         return `${perMin}/min`
     }
 
-    const generateEmbeddings = async (type: 'all' | 'descriptions' | 'reviews' | 'content') => {
-        setGenerating(type)
-        setStartTime(Date.now())
+    const generateEmbeddings = async (
+        scope: 'all' | 'public' | 'private',
+        type: 'all' | 'descriptions' | 'reviews' | 'content'
+    ) => {
+        const jobKey = `${scope}:${type}`
+        setGenerating(jobKey)
+        const jobStartTime = Date.now()
+        setStartTime(jobStartTime)
         setProcessedCount(0)
         setTotalProcessed(0)
+        let cumulativeProcessed = 0
+        let previousPendingCount: number | null = null
+        let consecutiveZeroBatches = 0
         
         notifications.show({
             title: 'Generating Embeddings',
-            message: `Started generating ${type} embeddings. This process runs in batches...`,
+            message: `Started generating ${scope} / ${type} embeddings. This process runs in batches...`,
             loading: true,
             autoClose: false,
             id: 'generating-embeddings'
         })
 
         const timerInterval = setInterval(() => {
-            if (startTime && totalProcessed > 0) {
-                const elapsed = (Date.now() - startTime) / 1000
-                const rate = formatRate(totalProcessed, elapsed)
+            if (cumulativeProcessed > 0) {
+                const elapsed = (Date.now() - jobStartTime) / 1000
+                const rate = formatRate(cumulativeProcessed, elapsed)
                 const timeStr = formatTime(elapsed)
                 
                 notifications.update({
                     id: 'generating-embeddings',
                     title: 'Generating...',
-                    message: `Processed ${totalProcessed} items in ${timeStr} (${rate})`,
+                    message: `Processed ${cumulativeProcessed} items in ${timeStr} (${rate})`,
                     loading: true,
                     autoClose: false
                 })
@@ -100,16 +124,21 @@ export function EmbeddingManagement() {
                 const res = await fetch('/api/embeddings/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type, force, limit: 500 })
+                    body: JSON.stringify({ scope, type, force, limit: 500 })
                 })
                 const data = await res.json()
 
                 if (!data.success) throw new Error(data.message)
 
-                if (data.processed) {
-                    const batchProcessed = data.processed.total || 0
-                    setProcessedCount(prev => prev + batchProcessed)
-                    setTotalProcessed(prev => prev + batchProcessed)
+                const batchProcessed = data.processed?.total || 0
+                cumulativeProcessed += batchProcessed
+                setProcessedCount(cumulativeProcessed)
+                setTotalProcessed(cumulativeProcessed)
+
+                if (batchProcessed === 0) {
+                    consecutiveZeroBatches += 1
+                } else {
+                    consecutiveZeroBatches = 0
                 }
 
                 await fetchStats()
@@ -123,26 +152,53 @@ export function EmbeddingManagement() {
                     let pendingCount = 0
 
                     if (type === 'all') {
-                        pendingCount = currentStats.descriptions.pending + currentStats.reviews.pending + currentStats.content.pending
+                        pendingCount = currentStats.overall?.pending || (
+                            currentStats.descriptions.pending + currentStats.reviews.pending + currentStats.content.pending
+                        )
+                    } else if (scope === 'public') {
+                        pendingCount = currentStats.public?.descriptions?.pending ?? currentStats.descriptions.pending
+                    } else if (scope === 'private') {
+                        pendingCount = type === 'reviews'
+                            ? (currentStats.private?.reviews?.pending ?? currentStats.reviews.pending)
+                            : (currentStats.private?.content?.pending ?? currentStats.content.pending)
                     } else {
                         pendingCount = currentStats[type].pending
                     }
 
-                    const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0
-                    const rate = totalProcessed > 0 ? formatRate(totalProcessed, elapsed) : '0/min'
+                    const elapsed = (Date.now() - jobStartTime) / 1000
+                    const rate = cumulativeProcessed > 0 ? formatRate(cumulativeProcessed, elapsed) : '0/min'
                     const timeStr = formatTime(elapsed)
+                    const batchDetail = batchProcessed > 0
+                        ? `+${batchProcessed} this batch`
+                            : data.stats?.errors
+                                ? '0 this batch (embedding errors)'
+                                : (data.stats?.public?.candidates || data.stats?.private?.reviewCandidates || data.stats?.private?.contentCandidates)
+                                    ? '0 this batch (candidates failed or skipped)'
+                                    : '0 this batch (nothing matched)'
 
                     notifications.update({
                         id: 'generating-embeddings',
                         title: 'Generating...',
-                        message: `Batch ${batchCount}: Processed ${totalProcessed} items in ${timeStr} (${rate}). ${pendingCount} remaining...`,
+                        message: `Batch ${batchCount}: ${cumulativeProcessed} total (${batchDetail}) in ${timeStr} (${rate}). ${pendingCount} remaining...`,
                         loading: true,
                         autoClose: false
                     })
 
                     if (pendingCount <= 0) {
                         pending = false
+                    } else if (
+                        batchProcessed === 0 &&
+                        previousPendingCount !== null &&
+                        pendingCount >= previousPendingCount
+                    ) {
+                        if (consecutiveZeroBatches >= 3) {
+                            const errorHint = data.stats?.errors
+                                ? `${data.stats.errors} embedding error(s) in the last batch.`
+                                : 'No embeddable items matched the current filters (try Force Regenerate).'
+                            throw new Error(`Stalled after ${batchCount} batches with ${pendingCount} still pending. ${errorHint}`)
+                        }
                     }
+                    previousPendingCount = pendingCount
                 } else {
                     throw new Error('Failed to check status')
                 }
@@ -152,14 +208,14 @@ export function EmbeddingManagement() {
                 }
             }
 
-            const finalElapsed = startTime ? (Date.now() - startTime) / 1000 : 0
-            const finalRate = totalProcessed > 0 ? formatRate(totalProcessed, finalElapsed) : '0/min'
+            const finalElapsed = (Date.now() - jobStartTime) / 1000
+            const finalRate = cumulativeProcessed > 0 ? formatRate(cumulativeProcessed, finalElapsed) : '0/min'
             const finalTimeStr = formatTime(finalElapsed)
 
             notifications.update({
                 id: 'generating-embeddings',
                 title: 'Generation Complete',
-                message: `Successfully processed ${totalProcessed} ${type} embeddings in ${finalTimeStr} (${finalRate}).`,
+                message: `Successfully processed ${cumulativeProcessed} ${type} embeddings in ${finalTimeStr} (${finalRate}).`,
                 color: 'green',
                 loading: false,
                 autoClose: 10000
@@ -167,9 +223,6 @@ export function EmbeddingManagement() {
 
         } catch (error) {
             console.error('Generation error:', error)
-            const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0
-            const timeStr = formatTime(elapsed)
-            
             notifications.update({
                 id: 'generating-embeddings',
                 title: 'Error',
@@ -209,15 +262,15 @@ export function EmbeddingManagement() {
 
                 <Progress value={progress} mb="md" size="sm" color={progress === 100 ? 'green' : 'blue'} animated={generating === type || generating === 'all'} />
 
-                <Button
-                    variant="light"
-                    fullWidth
-                    size="xs"
-                    onClick={() => generateEmbeddings(type)}
-                    loading={generating === type || generating === 'all'}
-                    disabled={!!generating}
-                >
-                    Generate {title}
+                    <Button
+                        variant="light"
+                        fullWidth
+                        size="xs"
+                        onClick={() => generateEmbeddings(type === 'descriptions' ? 'public' : 'private', type as any)}
+                        loading={generating === `${type === 'descriptions' ? 'public' : 'private'}:${type}` || generating === 'all:all'}
+                        disabled={!!generating}
+                    >
+                        Generate {title}
                 </Button>
             </Card>
         )
@@ -273,6 +326,36 @@ export function EmbeddingManagement() {
                 </Grid>
             )}
 
+            {stats?.public && (
+                <Card withBorder padding="md" radius="md">
+                    <Group justify="space-between">
+                        <Text fw={600}>Public Embeddings</Text>
+                        <Badge color="blue" variant="light">{stats.public.provider}</Badge>
+                    </Group>
+                    <Text size="sm" c="dimmed">Model: {stats.public.model} ({stats.public.dimensions} dims)</Text>
+                    <Text size="sm" c="dimmed">Index: {stats.public.index}</Text>
+                    <Text size="sm" c="dimmed">
+                        Pending: {stats.public.descriptions.pending}
+                        {typeof stats.public.descriptions.missing === 'number' ? ` | Missing: ${stats.public.descriptions.missing}` : ''}
+                        {typeof stats.public.descriptions.stale === 'number' ? ` | Stale: ${stats.public.descriptions.stale}` : ''}
+                    </Text>
+                </Card>
+            )}
+
+            {stats?.private && (
+                <Card withBorder padding="md" radius="md">
+                    <Group justify="space-between">
+                        <Text fw={600}>Private Embeddings</Text>
+                        <Badge color="grape" variant="light">{stats.private.provider}</Badge>
+                    </Group>
+                    <Text size="sm" c="dimmed">Model: {stats.private.model} ({stats.private.dimensions} dims)</Text>
+                    <Text size="sm" c="dimmed">Index: {stats.private.index}</Text>
+                    <Text size="sm" c="dimmed">
+                        Pending reviews: {stats.private.reviews.pending} | Pending content: {stats.private.content.pending}
+                    </Text>
+                </Card>
+            )}
+
             <Group justify="space-between" align="center">
                 <Switch
                     label="Force Regenerate (Overwrite existing)"
@@ -283,8 +366,8 @@ export function EmbeddingManagement() {
                 <Button
                     color="violet"
                     leftSection={<IconDatabase size={16} />}
-                    onClick={() => generateEmbeddings('all')}
-                    loading={generating === 'all'}
+                    onClick={() => generateEmbeddings('all', 'all')}
+                    loading={generating === 'all:all'}
                     disabled={!!generating}
                 >
                     Generate All Embeddings

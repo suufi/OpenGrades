@@ -4,14 +4,14 @@ import { google } from '@ai-sdk/google'
 
 /**
  * LLM Provider Configuration
- * 
+ *
  * Current setup:
  * - Chat: Configurable via LLM_CHAT_PROVIDER env var ('ollama' or 'gemini')
  *   - Ollama: Uses base ollama package (MIT server doesn't support AI SDK v2)
  *   - Gemini: Uses AI SDK (supports v2, much faster)
  * - Embeddings: ALWAYS uses qwen3-embedding:4b via Ollama (2560 dimensions)
  *   - Best MRR (0.626) in evaluation, runs locally on MIT infrastructure
- * 
+ *
  * To switch chat to Gemini, set:
  *   LLM_CHAT_PROVIDER=gemini
  *   GOOGLE_GENERATIVE_AI_API_KEY=<your-key>
@@ -247,4 +247,192 @@ export async function checkOllamaHealth(): Promise<boolean> {
         console.error('Ollama health check failed:', error)
         return false
     }
+}
+
+const PARLEY_BASE_URL = process.env.PARLEY_BASE_URL || 'https://parley.api.mit.edu'
+const PARLEY_DEFAULT_MODEL = 'claude-sonnet-5'
+const PARLEY_ANTHROPIC_VERSION = '2023-06-01'
+const PARLEY_MAX_TOKENS = Number(process.env.PARLEY_MAX_TOKENS || 4096)
+
+type ChatMessage = {
+    role: 'system' | 'user' | 'assistant'
+    content: string
+}
+
+interface ParleyMessagesResponse {
+    content?: Array<{
+        type?: string
+        text?: string
+    }> | string
+    usage?: {
+        input_tokens?: number
+        output_tokens?: number
+    }
+}
+
+function getParleyMessagesUrl(): string {
+    const baseUrl = PARLEY_BASE_URL.replace(/\/+$/, '')
+    return baseUrl.endsWith('/v1') ? `${baseUrl}/messages` : `${baseUrl}/v1/messages`
+}
+
+function toAnthropicMessages(messages: ChatMessage[]): {
+    system?: string
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>
+} {
+    const system = messages
+        .filter(message => message.role === 'system')
+        .map(message => message.content)
+        .filter(Boolean)
+        .join('\n\n')
+
+    const conversation = messages
+        .filter((message): message is ChatMessage & { role: 'user' | 'assistant' } => message.role !== 'system')
+        .map(message => ({ role: message.role, content: message.content }))
+
+    if (conversation.length === 0) {
+        throw new Error('Parley Messages API requires at least one user or assistant message')
+    }
+
+    return {
+        ...(system ? { system } : {}),
+        messages: conversation
+    }
+}
+
+function extractParleyMessageText(data: ParleyMessagesResponse): string {
+    if (typeof data.content === 'string') return data.content
+    if (!Array.isArray(data.content)) return ''
+
+    return data.content
+        .filter(block => block?.type === 'text' && typeof block.text === 'string')
+        .map(block => block.text)
+        .join('')
+}
+
+function parseParleyJsonResponse(raw: string, contentType: string): any {
+    const trimmed = raw.trim()
+    if (
+        !contentType.includes('application/json') ||
+        trimmed.startsWith('<!DOCTYPE') ||
+        trimmed.startsWith('<html')
+    ) {
+        throw new Error(
+            'Parley returned an HTML page instead of an API response. Check your API key at platform.parley.mit.edu and ensure OpenGrades is using the current Parley API endpoint.'
+        )
+    }
+
+    try {
+        return JSON.parse(trimmed)
+    } catch {
+        throw new Error(`Parley returned invalid JSON: ${trimmed.slice(0, 180)}`)
+    }
+}
+
+export const PARLEY_MODELS = [
+    { value: 'llama-4-maverick', label: 'Llama 4 Maverick', group: 'Free', inputRate: '$0', outputRate: '$0' },
+    { value: 'gpt-5.4-nano', label: 'GPT-5.4 nano', group: 'Budget', inputRate: '$0.20', outputRate: '$1.25' },
+    { value: 'gemini-3.0-flash', label: 'Gemini 3.0 Flash', group: 'Budget', inputRate: '$0.50', outputRate: '$3' },
+    { value: 'gpt-5.4-mini', label: 'GPT-5.4 mini', group: 'Budget', inputRate: '$0.75', outputRate: '$4.50' },
+    { value: 'claude-haiku-4.5', label: 'Claude Haiku 4.5', group: 'Budget', inputRate: '$1', outputRate: '$5' },
+    { value: 'claude-sonnet-5', label: 'Claude Sonnet 5 (Recommended)', group: 'Recommended', inputRate: '$2', outputRate: '$10' },
+    { value: 'gpt-5.4', label: 'GPT-5.4', group: 'Standard', inputRate: '$2.50', outputRate: '$15' },
+    { value: 'claude-sonnet-4.6', label: 'Claude Sonnet 4.6', group: 'Standard', inputRate: '$3', outputRate: '$15' },
+    { value: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', group: 'Standard', inputRate: '$4', outputRate: '$18' },
+] as const
+
+export type ParleyModelId = typeof PARLEY_MODELS[number]['value']
+
+export interface ParleyChatResult {
+    text: string
+    usage?: {
+        prompt_tokens?: number
+        completion_tokens?: number
+        total_tokens?: number
+    }
+}
+
+export async function parleyChatCompletion(
+    messages: ChatMessage[],
+    apiKey: string,
+    model?: string
+): Promise<ParleyChatResult> {
+    const selectedModel = model || PARLEY_DEFAULT_MODEL
+    const anthropicRequest = toAnthropicMessages(messages)
+
+    const response = await fetch(getParleyMessagesUrl(), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': PARLEY_ANTHROPIC_VERSION
+        },
+        body: JSON.stringify({
+            model: selectedModel,
+            max_tokens: Number.isFinite(PARLEY_MAX_TOKENS) && PARLEY_MAX_TOKENS > 0
+                ? PARLEY_MAX_TOKENS
+                : 4096,
+            ...anthropicRequest,
+            stream: false
+        })
+    })
+
+    if (!response.ok) {
+        const errorBody = await response.text().catch(() => '')
+        if (response.status === 401 || response.status === 403) {
+            throw new Error('Invalid or expired Parley API key. Please check your key at https://platform.parley.mit.edu')
+        }
+        if (response.status === 429) {
+            throw new Error('Parley rate limit exceeded. Please wait a moment and try again.')
+        }
+        let errorMessage = errorBody || response.statusText
+        try {
+            const parsedError = JSON.parse(errorBody)
+            errorMessage = parsedError?.error?.message || parsedError?.message || errorMessage
+        } catch {
+        }
+        throw new Error(`Parley API error (${response.status}): ${errorMessage}`)
+    }
+
+    const raw = await response.text()
+    const data = parseParleyJsonResponse(raw, response.headers.get('content-type') || '') as ParleyMessagesResponse
+    const text = extractParleyMessageText(data)
+    const usage = data?.usage
+
+    if (!text) {
+        throw new Error('Parley Messages API returned no text content')
+    }
+
+    return {
+        text,
+        usage: usage ? {
+            prompt_tokens: usage.input_tokens,
+            completion_tokens: usage.output_tokens,
+            total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0)
+        } : undefined
+    }
+}
+
+export async function chatCompletionWithProvider(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    options: {
+        useParley?: boolean
+        parleyApiKey?: string
+        parleyModel?: string
+        onParleyFallback?: (error: Error) => void
+    } = {}
+): Promise<ParleyChatResult & { providerUsed: 'parley' | 'default' }> {
+    if (options.useParley && options.parleyApiKey) {
+        try {
+            const result = await parleyChatCompletion(messages, options.parleyApiKey, options.parleyModel)
+            return { ...result, providerUsed: 'parley' }
+        } catch (error) {
+            const parleyError = error instanceof Error ? error : new Error(String(error))
+            options.onParleyFallback?.(parleyError)
+            const text = await chatCompletion(messages)
+            return { text, providerUsed: 'default' }
+        }
+    }
+
+    const text = await chatCompletion(messages)
+    return { text, providerUsed: 'default' }
 }

@@ -1,7 +1,8 @@
-import { getESClient, ES_EMBEDDINGS_INDEX } from './esClient'
+import { getESClient, getEmbeddingsIndex } from './esClient'
+import type { EmbeddingScope } from './esClient'
 import Class from '@/models/Class'
 import { IClass } from '@/types'
-import { SearchHit } from '@elastic/elasticsearch/lib/api/types'
+import { estypes } from '@elastic/elasticsearch'
 
 export interface SearchResult {
     class: IClass
@@ -19,19 +20,29 @@ export interface SearchResult {
 export async function vectorSearchES(
     queryVector: number[],
     limit: number = 10,
-    embeddingType?: 'description' | 'reviews' | 'content'
+    embeddingType?: 'description' | 'reviews' | 'content',
+    options?: {
+        scope?: EmbeddingScope
+        classIds?: string[]
+    }
 ): Promise<SearchResult[]> {
     const esClient = getESClient()
+    const scope = options?.scope || 'private'
+    const index = getEmbeddingsIndex(scope)
     try {
         // Build filter if embeddingType is specified
-        const filter = embeddingType ? [{ term: { embeddingType } }] : []
+        const filter: any[] = []
+        if (embeddingType) filter.push({ term: { embeddingType } })
+        if (options?.classIds && options.classIds.length > 0) {
+            filter.push({ terms: { class: options.classIds } })
+        }
 
         // Ensure num_candidates >= k to avoid ES error
         const kValue = limit * 2
         const numCandidates = Math.max(100, kValue)
 
         const response = await esClient.search({
-            index: ES_EMBEDDINGS_INDEX,
+            index,
             knn: {
                 field: 'embedding',
                 query_vector: queryVector,
@@ -56,7 +67,7 @@ export async function vectorSearchES(
 
         // Build results
         const results: SearchResult[] = []
-        for (const hit of hits as SearchHit<{ class: string, embeddingType: string, text: string, sourceText: string }>[]) {
+        for (const hit of hits as estypes.SearchHit<{ class: string, embeddingType: string, text: string, sourceText: string }>[]) {
             const classId = hit._source?.class
             const classData = classMap.get(classId)
 
@@ -80,33 +91,35 @@ export async function vectorSearchES(
 }
 
 /**
- * Hybrid search combining vector similarity + BM25 keyword matching
- * Uses Reciprocal Rank Fusion (RRF) to combine results
- * 
- * @param queryVector - The embedding vector to search with (2560 dimensions for qwen3-embedding:4b)
- * @param queryText - The text query for BM25 matching
- * @param limit - Maximum number of results to return
- * @param embeddingType - Type of embedding to search
- * @param departmentBoosts - Optional map of department prefixes to boost scores
+ * No longer hybrid: BM25 was dropped, so this is k-NN plus department boosting.
+ * queryText is kept only so existing callers don't have to change.
  */
 export async function hybridSearchES(
     queryVector: number[],
-    queryText: string,
+    _queryText: string,
     limit: number = 10,
     embeddingType?: 'description' | 'reviews' | 'content',
-    departmentBoosts?: Map<string, number>
+    departmentBoosts?: Map<string, number>,
+    options?: {
+        scope?: EmbeddingScope
+        classIds?: string[]
+    }
 ): Promise<SearchResult[]> {
     try {
         const esClient = getESClient()
-        const RRF_K = 60 // RRF constant, common default
-        const filter = embeddingType ? [{ term: { embeddingType } }] : []
+        const scope = options?.scope || 'private'
+        const index = getEmbeddingsIndex(scope)
+        const filter: any[] = []
+        if (embeddingType) filter.push({ term: { embeddingType } })
+        if (options?.classIds && options.classIds.length > 0) {
+            filter.push({ terms: { class: options.classIds } })
+        }
 
-        // 1. Get vector (kNN) results
         // Ensure num_candidates >= k to avoid ES error
         const kValue = limit * 3
         const numCandidates = Math.max(100, kValue)
         const knnResponse = await esClient.search({
-            index: ES_EMBEDDINGS_INDEX,
+            index,
             size: kValue,
             knn: {
                 field: 'embedding',
@@ -118,57 +131,11 @@ export async function hybridSearchES(
             _source: ['class', 'embeddingType', 'text', 'sourceText']
         })
 
-        // 2. Get BM25 (text) results
-        const bm25Response = await esClient.search({
-            index: ES_EMBEDDINGS_INDEX,
-            size: limit * 3,
-            query: {
-                bool: {
-                    must: [
-                        {
-                            multi_match: {
-                                query: queryText,
-                                fields: ['sourceText^3', 'text^2'], // Increased sourceText boost
-                                fuzziness: 'AUTO',
-                                type: 'best_fields'
-                            }
-                        }
-                    ],
-                    filter: embeddingType ? [{ term: { embeddingType } }] : []
-                }
-            },
-            _source: ['class', 'embeddingType', 'text', 'sourceText']
-        })
-
-        // Calculate RRF scores with weighted fusion
-        const KNN_WEIGHT = 3.0
-        const BM25_WEIGHT = 0.25
-        const rrfScores = new Map<string, { score: number; hit: any }>()
-
-        // Add kNN rankings
-        knnResponse.hits.hits.forEach((hit: any, rank: number) => {
-            const docId = hit._id
-            const current = rrfScores.get(docId) || { score: 0, hit }
-            current.score += KNN_WEIGHT * (1 / (RRF_K + rank + 1))
-            rrfScores.set(docId, current)
-        })
-
-        // Add BM25 rankings only for documents already in kNN results
-        bm25Response.hits.hits.forEach((hit: any, rank: number) => {
-            const docId = hit._id
-            if (rrfScores.has(docId)) {
-                const current = rrfScores.get(docId)!
-                current.score += BM25_WEIGHT * (1 / (RRF_K + rank + 1))
-            }
-        })
-
-        // Sort by RRF score
-        const sortedDocs = Array.from(rrfScores.entries())
-            .sort((a, b) => b[1].score - a[1].score)
+        const sortedDocs = knnResponse.hits.hits
             .slice(0, limit * 2)
 
         // Fetch class data
-        const classIds = sortedDocs.map(([_, data]) => data.hit._source?.class).filter(Boolean)
+        const classIds = sortedDocs.map((hit: any) => hit._source?.class).filter(Boolean)
         const classes = await Class.find({
             _id: { $in: classIds },
             offered: true
@@ -178,12 +145,12 @@ export async function hybridSearchES(
 
         // Build results with department boosting
         const results: SearchResult[] = []
-        for (const [_, data] of sortedDocs) {
-            const classId = data.hit._source?.class
+        for (const hit of sortedDocs as any[]) {
+            const classId = hit._source?.class
             const classData = classMap.get(classId) as IClass | undefined
 
             if (classData) {
-                let finalScore = data.score
+                let finalScore = hit._score || 0
 
                 if (departmentBoosts) {
                     const dept = classData.subjectNumber?.split('.')[0] || ''
@@ -194,8 +161,8 @@ export async function hybridSearchES(
                 results.push({
                     class: classData,
                     score: finalScore,
-                    embeddingType: data.hit._source?.embeddingType || 'description',
-                    snippet: (data.hit._source?.text || data.hit._source?.sourceText || '').substring(0, 200) + '...'
+                    embeddingType: hit._source?.embeddingType || 'description',
+                    snippet: (hit._source?.text || hit._source?.sourceText || '').substring(0, 200) + '...'
                 })
             }
 
@@ -215,11 +182,11 @@ export async function hybridSearchES(
         }
 
         if (error.message?.includes('index_not_found') || error.message?.includes('no such index')) {
-            console.error(`⚠️  Elasticsearch index "${ES_EMBEDDINGS_INDEX}" not found. Have embeddings been indexed?`)
+            console.error(`⚠️  Elasticsearch embeddings index for scope "${options?.scope || 'private'}" not found. Have embeddings been indexed?`)
         }
 
         try {
-            return await vectorSearchES(queryVector, limit, embeddingType)
+            return await vectorSearchES(queryVector, limit, embeddingType, options)
         } catch (fallbackError: any) {
             console.error('❌ Fallback vectorSearchES also failed:', fallbackError.message)
             return []

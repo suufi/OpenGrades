@@ -4,6 +4,11 @@ export interface ICourseEmbedding {
     _id?: mongoose.Types.ObjectId
     class: mongoose.Types.ObjectId
     embeddingType: 'description' | 'reviews' | 'content'
+    scope?: 'public' | 'private'
+    sourceKind?: 'class_catalog' | 'class_review' | 'content_submission'
+    provider?: 'openai' | 'ollama'
+    model?: string
+    dimension?: number
     embedding: number[]
     embeddingModel: string           // e.g., 'qwen3-embedding:4b'
     embeddingDimensions: number      // e.g., 2560, 768
@@ -27,6 +32,29 @@ const CourseEmbeddingSchema = new mongoose.Schema<ICourseEmbedding>({
         type: String,
         enum: ['description', 'reviews', 'content'],
         required: true,
+        index: true
+    },
+    scope: {
+        type: String,
+        enum: ['public', 'private'],
+        index: true
+    },
+    sourceKind: {
+        type: String,
+        enum: ['class_catalog', 'class_review', 'content_submission'],
+        index: true
+    },
+    provider: {
+        type: String,
+        enum: ['openai', 'ollama'],
+        index: true
+    },
+    model: {
+        type: String,
+        index: true
+    },
+    dimension: {
+        type: Number,
         index: true
     },
     embedding: {
@@ -65,5 +93,6 @@ const CourseEmbeddingSchema = new mongoose.Schema<ICourseEmbedding>({
 })
 
 CourseEmbeddingSchema.index({ class: 1, embeddingType: 1 })
+CourseEmbeddingSchema.index({ scope: 1, embeddingType: 1, class: 1 })
 
 export default (mongoose.models.CourseEmbedding as Model<ICourseEmbedding> || mongoose.model<ICourseEmbedding>('CourseEmbedding', CourseEmbeddingSchema))

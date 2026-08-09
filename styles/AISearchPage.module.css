@@ -1,0 +1,74 @@
+.pageStack {
+  gap: 1.25rem;
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.pageTitle {
+  margin: 0;
+  color: var(--app-text);
+  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+  line-height: 1.15;
+}
+
+.pageSub {
+  max-width: 40rem;
+  margin: 0.35rem 0 0;
+  color: var(--app-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.pageActions {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.searchShell {
+  overflow: hidden;
+  padding: 0;
+}
+
+.requirementsPanel {
+  padding: 1.35rem;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.requirementList {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.requirementItem {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-bg-strong);
+}
+
+.statusMark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.statusDone {
+  color: var(--mantine-color-green-7);
+}
+
+.statusPending {
+  color: var(--app-text-subtle);
+}
