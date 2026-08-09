@@ -12,6 +12,7 @@ import {
   applyInstitutionToMongoQuery,
   parseInstitutionFiltersFromRequest,
 } from '@/utils/institutionFilters'
+import { interleaveBySubjectNumber } from '@/utils/interleaveBySubjectNumber'
 import { resolveClassSearchIds } from '@/utils/resolveClassSearch'
 
 import AuditLog from '@/models/AuditLog'
@@ -236,6 +237,7 @@ async function handler(
           } else {
             if (!search) {
               sortQuery.userCount = -1
+              sortQuery._id = 1
             }
           }
         }
@@ -358,6 +360,12 @@ async function handler(
             success: true,
             data: classes,
           })
+        }
+
+        // Empty-search Relevance browse: spread same subjectNumbers across the grid
+        const searchTrimmed = typeof search === 'string' ? search.trim() : ''
+        if (!searchTrimmed && sortField === 'relevance') {
+          classes = interleaveBySubjectNumber(classes)
         }
 
         const pageNumber = parseInt(page as string, 10)
