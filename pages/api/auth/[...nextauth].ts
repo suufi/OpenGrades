@@ -88,11 +88,11 @@ export default handlers
 //             console.log("profile", profile)
 //             await mongoConnection()
 
-//             console.log("process.env.MIT_API_CLIENT_ID", process.env.MIT_API_CLIENT_ID)
+//             console.log("process.env.MIT_PEOPLE_API_CLIENT_ID", process.env.MIT_PEOPLE_API_CLIENT_ID)
 
 //             const requestHeaders = new Headers()
-//             requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
-//             requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
+//             requestHeaders.set('client_id', process.env.MIT_PEOPLE_API_CLIENT_ID)
+//             requestHeaders.set('client_secret', process.env.MIT_PEOPLE_API_CLIENT_SECRET)
 //             let apiFetch
 
 //             try {

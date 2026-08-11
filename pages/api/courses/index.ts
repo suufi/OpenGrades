@@ -1,6 +1,7 @@
 import CourseOption from '@/models/CourseOption'
 import { withApiLogger } from '@/utils/apiLogger'
 import { getUserFromRequest } from '@/utils/authMiddleware'
+import { getMitCoursesBaseUrl, mitApiFetch } from '@/utils/mitApi'
 import mongoConnection from '@/utils/mongoConnection'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -50,16 +51,11 @@ async function handler (
                     return res.status(400).json({ success: false, message: 'Missing term' })
                 }
 
-                const requestHeaders = new Headers()
-                requestHeaders.append('Content-Type', 'application/json')
-                requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
-                requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
-
-                const apiFetch = await fetch(`https://mit-courses-v1.cloudhub.io/courses/v1/courses?termCode=${body.term}`, {
-                    headers: requestHeaders
-                }).then(async (response) => {
+                const apiFetch = await mitApiFetch(
+                    `${getMitCoursesBaseUrl()}courses?termCode=${encodeURIComponent(body.term)}`
+                ).then(async (response) => {
                     if (!response.ok) {
-                        throw new Error('Failed to fetch courses')
+                        throw new Error(`Failed to fetch courses (${response.status})`)
                     }
 
                     return response.json()

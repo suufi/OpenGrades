@@ -35,8 +35,8 @@ RUN \
     --mount=type=secret,id=MIT_OIDC_CLIENT_SECRET \
     --mount=type=secret,id=MIT_OIDC_AUTHORIZATION_ENDPOINT \
     --mount=type=secret,id=MIT_OIDC_ISSUER \
-    --mount=type=secret,id=MIT_API_CLIENT_ID \
-    --mount=type=secret,id=MIT_API_CLIENT_SECRET \
+    --mount=type=secret,id=MIT_PEOPLE_API_CLIENT_ID \
+    --mount=type=secret,id=MIT_PEOPLE_API_CLIENT_SECRET \
     --mount=type=secret,id=NEXTAUTH_SECRET \
     --mount=type=secret,id=NEXTAUTH_URL \
     --mount=type=secret,id=AUTH_TRUST_HOST \
@@ -62,8 +62,8 @@ RUN \
     export MIT_OIDC_CLIENT_SECRET=$(cat /run/secrets/MIT_OIDC_CLIENT_SECRET) && \
     export MIT_OIDC_AUTHORIZATION_ENDPOINT=$(cat /run/secrets/MIT_OIDC_AUTHORIZATION_ENDPOINT) && \
     export MIT_OIDC_ISSUER=$(cat /run/secrets/MIT_OIDC_ISSUER) && \
-    export MIT_API_CLIENT_ID=$(cat /run/secrets/MIT_API_CLIENT_ID) && \
-    export MIT_API_CLIENT_SECRET=$(cat /run/secrets/MIT_API_CLIENT_SECRET) && \
+    export MIT_PEOPLE_API_CLIENT_ID=$(cat /run/secrets/MIT_PEOPLE_API_CLIENT_ID) && \
+    export MIT_PEOPLE_API_CLIENT_SECRET=$(cat /run/secrets/MIT_PEOPLE_API_CLIENT_SECRET) && \
     export NEXTAUTH_SECRET=$(cat /run/secrets/NEXTAUTH_SECRET) && \
     export NEXTAUTH_URL=$(cat /run/secrets/NEXTAUTH_URL) && \
     export AUTH_TRUST_HOST=$(cat /run/secrets/AUTH_TRUST_HOST) && \

@@ -34,8 +34,8 @@ async function handler (
         }
 
         const requestHeaders = new Headers()
-        requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
-        requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
+        requestHeaders.set('client_id', process.env.MIT_PEOPLE_API_CLIENT_ID)
+        requestHeaders.set('client_secret', process.env.MIT_PEOPLE_API_CLIENT_SECRET)
 
         const apiResponse = await fetch(`https://mit-people-v3.cloudhub.io/people/v3/people/${kerb}`, {
             headers: requestHeaders

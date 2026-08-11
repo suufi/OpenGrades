@@ -13,6 +13,7 @@ import {
   parseInstitutionFiltersFromRequest,
 } from '@/utils/institutionFilters'
 import { interleaveBySubjectNumber } from '@/utils/interleaveBySubjectNumber'
+import { getMitCourseCatalogBaseUrl, mitApiFetch } from '@/utils/mitApi'
 import { resolveClassSearchIds } from '@/utils/resolveClassSearch'
 
 import AuditLog from '@/models/AuditLog'
@@ -504,10 +505,6 @@ async function handler(
           description: `Fetched ${body.selectedDepartments.join(', ')} departments for ${body.term} that are ${body.reviewable ? 'reviewable' : 'not reviewable'}.`
         })
 
-        const requestHeaders = new Headers()
-        requestHeaders.set('client_id', process.env.MIT_API_CLIENT_ID)
-        requestHeaders.set('client_secret', process.env.MIT_API_CLIENT_SECRET)
-
         const fetchDescription = async (description: string): Promise<string> => {
           if (!description.includes("See description under subject")) {
             return description
@@ -535,9 +532,9 @@ async function handler(
             return existingClass.description
           }
 
-          const apiFetch = await fetch(`https://mit-course-catalog-v2.cloudhub.io/coursecatalog/v2/terms/${body.term}/subjects/${subjectNumber}`, {
-            headers: requestHeaders
-          }).then(async (response) => {
+          const apiFetch = await mitApiFetch(
+            `${getMitCourseCatalogBaseUrl()}terms/${encodeURIComponent(body.term)}/subjects/${encodeURIComponent(subjectNumber)}`
+          ).then(async (response) => {
             const res = await response.json()
             if (response.ok) {
               return res
@@ -558,9 +555,9 @@ async function handler(
 
         const fetchDepartment = async (department: string, index: number) => {
           try {
-            const apiFetch = await fetch(`https://mit-course-catalog-v2.cloudhub.io/coursecatalog/v2/terms/${body.term}/subjects?dept=${department}`, {
-              headers: requestHeaders
-            }).then(async (response) => {
+            const apiFetch = await mitApiFetch(
+              `${getMitCourseCatalogBaseUrl()}terms/${encodeURIComponent(body.term)}/subjects?dept=${encodeURIComponent(department)}`
+            ).then(async (response) => {
               const res = await response.json()
               if (response.ok) return res
               throw new Error(res.errorDescription || 'Failed to fetch department')

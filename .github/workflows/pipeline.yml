@@ -41,8 +41,8 @@ jobs:
             MIT_OIDC_CLIENT_SECRET=${{ secrets.MIT_OIDC_CLIENT_SECRET }}
             MIT_OIDC_AUTHORIZATION_ENDPOINT=${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}
             MIT_OIDC_ISSUER=${{ secrets.MIT_OIDC_ISSUER }}
-            MIT_API_CLIENT_ID=${{ secrets.MIT_API_CLIENT_ID }}
-            MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }}
+            MIT_PEOPLE_API_CLIENT_ID=${{ secrets.MIT_PEOPLE_API_CLIENT_ID }}
+            MIT_PEOPLE_API_CLIENT_SECRET=${{ secrets.MIT_PEOPLE_API_CLIENT_SECRET }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
             AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}
@@ -86,8 +86,13 @@ jobs:
           echo "MIT_OIDC_CLIENT_SECRET=${{ secrets.MIT_OIDC_CLIENT_SECRET }}" >> .env
           echo "MIT_OIDC_AUTHORIZATION_ENDPOINT=${{ secrets.MIT_OIDC_AUTHORIZATION_ENDPOINT }}" >> .env
           echo "MIT_OIDC_ISSUER=${{ secrets.MIT_OIDC_ISSUER }}" >> .env
+          echo "MIT_API_ENV=PROD" >> .env
           echo "MIT_API_CLIENT_ID=${{ secrets.MIT_API_CLIENT_ID }}" >> .env
-          echo "MIT_API_CLIENT_SECRET=${{ secrets.MIT_API_CLIENT_SECRET }}" >> .env
+          echo "MIT_COURSES_API_BASE_URL_PROD=https://global.api.mit.edu/mit-courses/v1/" >> .env
+          echo "MIT_COURSE_CATALOG_API_BASE_URL_PROD=https://global.api.mit.edu/mit-course-catalog/v1/" >> .env
+          echo "MIT_COURSES_API_CLIENT_SECRET_PROD=${{ secrets.MIT_COURSES_API_CLIENT_SECRET_PROD }}" >> .env
+          echo "MIT_PEOPLE_API_CLIENT_ID=${{ secrets.MIT_PEOPLE_API_CLIENT_ID }}" >> .env
+          echo "MIT_PEOPLE_API_CLIENT_SECRET=${{ secrets.MIT_PEOPLE_API_CLIENT_SECRET }}" >> .env
           echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
           echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env
           echo "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}" >> .env

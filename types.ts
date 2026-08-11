@@ -29,8 +29,19 @@ declare global {
             MIT_OIDC_AUTHORIZATION_ENDPOINT: string
             MIT_OIDC_ISSUER: string
             NEXTAUTH_SECRET?: string
-            MIT_API_CLIENT_ID: string
-            MIT_API_CLIENT_SECRET: string
+            MIT_PEOPLE_API_CLIENT_ID: string
+            MIT_PEOPLE_API_CLIENT_SECRET: string
+            MIT_API_ENV?: 'DEV' | 'TEST' | 'PROD'
+            MIT_API_CLIENT_ID?: string
+            MIT_COURSES_API_BASE_URL_DEV?: string
+            MIT_COURSES_API_BASE_URL_TEST?: string
+            MIT_COURSES_API_BASE_URL_PROD?: string
+            MIT_COURSE_CATALOG_API_BASE_URL_DEV?: string
+            MIT_COURSE_CATALOG_API_BASE_URL_TEST?: string
+            MIT_COURSE_CATALOG_API_BASE_URL_PROD?: string
+            MIT_COURSES_API_CLIENT_SECRET_DEV?: string
+            MIT_COURSES_API_CLIENT_SECRET_TEST?: string
+            MIT_COURSES_API_CLIENT_SECRET_PROD?: string
             AUTH_TRUST_HOST: boolean
             ELASTIC_SEARCH_URI: string
             ELASTICSEARCH_PUBLIC_EMBEDDINGS_INDEX?: string
