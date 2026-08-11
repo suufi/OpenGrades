@@ -18,16 +18,6 @@ import { auth } from "@/utils/auth"
 
 ChartJS.register(...registerables)
 
-const sortedGrades = [
-    "A",
-    "B",
-    "C",
-    "P",
-    "D",
-    "F",
-    "DR"
-]
-
 const brewerRdYlGn5 = [
     "rgba(215, 48, 39, 0.7)",
     "rgba(252, 141, 89, 0.7)",
@@ -283,8 +273,6 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
     const recBarData = generateBarData(r => r.recommendationLevel, brewerRdYlGn5)
     const ratingBarData = generateBarData(r => r.overallRating, brewerRdYlGn7)
-    const gradeBarData = generateBarData(r => r.letterGrade, brewerRdYlGn7, (a, b) => sortedGrades.indexOf(a) - sortedGrades.indexOf(b))
-
 
     const recBarOptions = {
         responsive: true,
@@ -317,31 +305,6 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
         }
     }
 
-    const gradeBarOptions = {
-        responsive: true,
-        scales: {
-            x: { stacked: true, ticks: { display: true, autoSkip: false }, title: { display: true, text: "Department" } },
-            y: {
-                stacked: true,
-                max: 100,
-                title: { display: true, text: "Percentage" }
-            }
-        },
-        plugins: {
-            title: { display: true, text: "Letter Grades by Department" },
-        }
-    }
-
-    const recBarDataWithGrades = {
-        ...recBarData,
-        datasets: recBarData.datasets.map((dataset, index) => ({
-            ...dataset,
-            label: `${dataset.label} (${gradeBarData.datasets[index].label})`,
-            backgroundColor: dataset.backgroundColor
-        }))
-    }
-
-
     return (
         <Container style={{
             padding: 'var(--mantine-spacing-lg)',
@@ -360,7 +323,6 @@ const StatisticsPage: NextPage<InferGetServerSidePropsType<typeof getServerSideP
 
             <Bar data={recBarData} options={recBarOptions} />
             <Bar data={ratingBarData} options={ratingBarOptions} />
-            <Bar data={gradeBarData} options={gradeBarOptions} />
 
         </Container >
     )
@@ -376,7 +338,6 @@ interface ServerSideProps {
         class: { department: string, subjectNumber: string, crossListedDepartments: string[], aliases: string[] },
         overallRating: number,
         recommendationLevel: number,
-        letterGrade: string,
         createdAt: Date,
     }[],
     access: boolean
@@ -418,7 +379,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
 
         let classReviews = await ClassReview.find(
             {},
-            { class: 1, overallRating: 1, recommendationLevel: 1, letterGrade: 1, createdAt: 1, _id: 0 }
+            { class: 1, overallRating: 1, recommendationLevel: 1, createdAt: 1, _id: 0 }
         ).populate('class', 'department crossListedDepartments subjectNumber aliases').lean()
 
         return {
