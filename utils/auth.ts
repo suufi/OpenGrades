@@ -80,6 +80,8 @@ export const config = {
         async redirect({ url, baseUrl }) {
             // Allow mobile app deep link callback
             if (url.startsWith('opengrades://')) return url
+            // Same-origin relative paths (e.g. /api/mobile-callback)
+            if (url.startsWith('/')) return `${baseUrl}${url}`
             if (url.startsWith(baseUrl)) return url
             return baseUrl
         }
