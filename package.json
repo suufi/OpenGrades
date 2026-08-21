@@ -11,11 +11,12 @@
     "build": "yarn workspace @opengrades/api-client build && next build",
     "release:api-client": "yarn workspace @opengrades/api-client pack:release",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint",
     "test": "node --test \"utils/**/*.test.ts\"",
     "populate-changelog": "NODE_OPTIONS='--no-warnings=MODULE_TYPELESS_PACKAGE_JSON' npx ts-node --project scripts/tsconfig.json scripts/populate-changelog-from-git.ts",
     "import-harvard": "npx tsx scripts/import-harvard-courses.ts",
-    "postinstall": "yarn workspace @opengrades/api-client build"
+    "postinstall": "yarn workspace @opengrades/api-client build && (git config core.hooksPath .githooks 2>/dev/null || true)",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.44",

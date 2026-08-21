@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/opengrades-push-check.XXXXXX")"
+cleanup() {
+  git worktree remove --force "$TMP" >/dev/null 2>&1 || true
+  rm -rf "$TMP" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+echo "pre-push: checking out HEAD into a temporary worktree..."
+git worktree add --detach "$TMP" HEAD >/dev/null 2>&1
+
+ln -s "$ROOT/node_modules" "$TMP/node_modules"
+[ -d "$ROOT/packages/api-client/dist" ] && ln -s "$ROOT/packages/api-client/dist" "$TMP/packages/api-client/dist"
+[ -d "$ROOT/packages/api-client/node_modules" ] && ln -s "$ROOT/packages/api-client/node_modules" "$TMP/packages/api-client/node_modules"
+[ -f "$ROOT/next-env.d.ts" ] && cp "$ROOT/next-env.d.ts" "$TMP/next-env.d.ts"
+
+echo "pre-push: typechecking HEAD (this can take a few minutes)..."
+(cd "$TMP" && "$ROOT/node_modules/.bin/tsc" --noEmit -p tsconfig.json)
+
+echo "pre-push: running unit tests..."
+(cd "$ROOT" && yarn --silent test >/dev/null)
+
+echo "pre-push: all checks passed"
