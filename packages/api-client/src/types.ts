@@ -26,6 +26,35 @@ export interface OpenGradesClass {
   highlight?: Record<string, string[]>
   score?: number
   institution?: 'mit' | 'harvard'
+  // MIT Data Warehouse enrichment
+  level?: 'U' | 'G' | null
+  unitsBreakdown?: {
+    lecture: number
+    lab: number
+    design: number
+    preparation: number
+    isVariable: boolean
+  } | null
+  gradeRule?: string | null
+  gradeType?: string | null
+  termDuration?: string | null
+  quarterInformation?: string | null
+  seasonsOffered?: {
+    fall: boolean
+    iap: boolean
+    spring: boolean
+    summer: boolean
+  } | null
+  notOfferedYear?: string | null
+  jointSubjects?: string[]
+  equivalentSubjects?: string[]
+  meetsWithSubjects?: string[]
+  oldSubjectNumber?: string | null
+  schedule?: string | null
+  responsibleFaculty?: { name: string } | null
+  enrollment?: number | null
+  catalogUrl?: string | null
+  warehouseSyncedAt?: string | Date | null
 }
 
 export interface OpenGradesUser {
@@ -70,6 +99,9 @@ export interface ClassesParams {
   communicationRequirements?: string
   girAttributes?: string
   hassAttributes?: string
+  levels?: string
+  seasons?: string
+  halfTerm?: string | boolean
   sortField?: string
   sortOrder?: string
   all?: string | boolean
@@ -92,6 +124,8 @@ export interface ClassesResponse {
 export interface FiltersResponse {
   years: number[]
   departments: string[]
+  mitDepartments?: string[]
+  harvardDepartments?: string[]
 }
 
 export interface ClassReview {
@@ -104,12 +138,31 @@ export interface ClassReview {
     kerb?: string
   }
   letterGrade?: string
+  numericGrade?: number | null
+  methodOfGradeCalculation?: string | null
+  overallRating?: number
+  recommendationLevel?: number
+  hoursPerWeek?: string
+  classComments?: string
+  backgroundComments?: string
+  firstYear?: boolean
+  retaking?: boolean
+  droppedClass?: boolean
+  display?: boolean
   createdAt?: string
   upvotes?: number
   downvotes?: number
   userVote?: number | null
   isOwnReview?: boolean
   [key: string]: unknown
+}
+
+export interface DiscoverResponse {
+  hiddenGems?: unknown[]
+  trending?: unknown[]
+  newClasses?: unknown[]
+  highestImprovement?: unknown[]
+  popular?: unknown[]
 }
 
 export interface ClassDependencyData {
@@ -124,6 +177,7 @@ export interface ContentSubmissionData {
   _id: string
   contentTitle: string
   type: string
+  contentURL?: string
   createdAt?: string
   [key: string]: unknown
 }

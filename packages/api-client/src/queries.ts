@@ -1,8 +1,8 @@
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
+import { infiniteQueryOptions, keepPreviousData, queryOptions } from '@tanstack/react-query'
 import type { OpenGradesApi } from './api'
 import { ApiError } from './client'
 import { queryKeys } from './query-keys'
-import type { ClassesParams, ClassesResponse } from './types'
+import type { ClassesParams, ClassesResponse, OpenGradesClass } from './types'
 
 const retryUnlessClientError = (failureCount: number, error: unknown) => {
   if (error instanceof ApiError && error.status >= 400 && error.status < 500) return false
@@ -49,7 +49,9 @@ export function createOpenGradesQueries(api: OpenGradesApi) {
           const user = await api.getMe()
           const taken = user.classesTaken
           if (!Array.isArray(taken)) return []
-          return taken.filter((c): c is NonNullable<typeof c> => typeof c === 'object' && c !== null)
+          return taken.filter(
+            (c): c is OpenGradesClass => typeof c === 'object' && c !== null
+          )
         },
       }),
 
@@ -110,6 +112,7 @@ export function createOpenGradesQueries(api: OpenGradesApi) {
           const { currentPage, totalPages } = lastPage.meta
           return currentPage < totalPages ? currentPage + 1 : undefined
         },
+        placeholderData: keepPreviousData,
       }),
 
     questions: (subjectNumber: string) =>

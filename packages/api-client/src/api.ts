@@ -5,6 +5,7 @@ import type {
   ClassDependencyData,
   ClassReview,
   ContentSubmissionData,
+  DiscoverResponse,
   FiltersResponse,
   GradeReportUploadResult,
   OpenGradesClass,
@@ -165,14 +166,14 @@ export function createOpenGradesApi(client: ApiClient) {
       return res.data ?? []
     },
 
-    async getRecommendations(limit = 5): Promise<unknown> {
+    async getRecommendations(limit = 5): Promise<unknown[]> {
       const res = await requestJson<unknown>(`/api/recommendations/for-user?limit=${limit}`)
-      return res.data
+      return Array.isArray(res.data) ? res.data : []
     },
 
-    async getDiscover(): Promise<unknown> {
-      const res = await requestJson<unknown>('/api/discover')
-      return res.data ?? res
+    async getDiscover(): Promise<DiscoverResponse> {
+      const res = await requestJson<DiscoverResponse>('/api/discover')
+      return res.data ?? {}
     },
 
     async getFavorites(): Promise<string[]> {

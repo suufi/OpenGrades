@@ -1,6 +1,6 @@
 {
   "name": "@opengrades/api-client",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Shared OpenGrades API client and TanStack Query definitions for web and mobile",
   "license": "MIT",
   "repository": {
@@ -21,7 +21,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "pack:release": "mkdir -p ../../release-artifacts/api-client && npm pack --pack-destination ../../release-artifacts/api-client"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0"
