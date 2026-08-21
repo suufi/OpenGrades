@@ -95,7 +95,7 @@ export function buildScheduleString(rows: WarehouseOfferedRow[]): {
       continue
     }
 
-    const meetTime = row.MEET_TIME.replace(':', '.')
+    const meetTime = row.MEET_TIME.replace(/:/g, '.')
     if (TBA_PATTERNS.some((p) => meetTime.match(p))) {
       dest.push('TBA')
       continue
@@ -103,6 +103,7 @@ export function buildScheduleString(rows: WarehouseOfferedRow[]): {
 
     for (let time of meetTime.split(',')) {
       time = time.trim()
+      if (!time) continue
 
       const quarterMatch = time.match(SCHEDULE_QUARTER_INFO_REGEX)
       if (quarterMatch) quarterInfoDates = quarterMatch[2].toLowerCase()

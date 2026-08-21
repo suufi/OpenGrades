@@ -2,6 +2,13 @@
  * Utility functions for parsing MIT course data from API responses
  */
 
+import { decode } from 'html-entities'
+
+export function decodeHtmlEntities(text: string | null | undefined): string {
+    if (!text) return ''
+    return decode(text).replace(/\u00a0/g, " ")
+}
+
 export interface ParsedUnits {
     unitHours: string | null
     communicationRequirement: string | null
@@ -101,25 +108,44 @@ export function parseInstructors(
     instructorDetails?: Array<{ name: string; kerbId: string; instrType: string }>
 ): InstructorDetail[] {
     if (instructorDetails && instructorDetails.length > 0) {
-        return instructorDetails
+        const normalized = instructorDetails
             .filter(detail => detail && detail.name)
             .map(detail => ({
-                name: detail.name?.trim() || '',
+                name: decodeHtmlEntities(detail.name).trim(),
                 kerbId: detail.kerbId ? detail.kerbId.toUpperCase().trim() : '',
                 instrType: detail.instrType ? detail.instrType.toLowerCase().trim() : 'primary'
             }))
+        const byPerson = new Map<string, InstructorDetail>()
+        for (const detail of normalized) {
+            const key = detail.kerbId || detail.name.toLowerCase()
+            const existing = byPerson.get(key)
+            if (!existing) {
+                byPerson.set(key, detail)
+            } else if (existing.instrType !== 'primary' && detail.instrType === 'primary') {
+                byPerson.set(key, { ...existing, instrType: 'primary' })
+            }
+        }
+        return [...byPerson.values()]
     }
 
     if (!instructorString || instructorString.trim() === '') {
         return []
     }
 
-    const names = instructorString.split(',').map(name => name.trim()).filter(Boolean)
-    return names.map(name => ({
-        name,
-        kerbId: '',
-        instrType: 'primary'
-    }))
+    const names = decodeHtmlEntities(instructorString).split(',').map(name => name.trim()).filter(Boolean)
+    const seen = new Set<string>()
+    return names
+        .filter(name => {
+            const key = name.toLowerCase()
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+        })
+        .map(name => ({
+            name,
+            kerbId: '',
+            instrType: 'primary'
+        }))
 }
 
 /**

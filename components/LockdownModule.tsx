@@ -15,7 +15,7 @@ import { IClass, ICourseOption, IdentityFlags, IUser } from '../types'
 import ClassSearch from './ClassSearch'
 import DegreeTermsModal from './DegreeTermsModal'
 import { buildUndergradProgramSelectData } from '@/utils/courseOptions'
-import { buildTermCode, formatAcademicYear, formatTermDisplay, formatTermSeasonYear } from '@/utils/formatTerm'
+import { buildTermCode, formatAcademicYear, formatTermDisplay } from '@/utils/formatTerm'
 
 type State = {
   data: string
@@ -550,11 +550,11 @@ function LockdownModule({ academicYears }: { academicYears: string[] }) {
                           return (
                             <React.Fragment key={year}>
                               <Divider h={'sm'} />
-                              <Title order={3}>{formatTermSeasonYear(fallTerm, { withEmoji: true })}</Title>
+                              <Title order={3}>{formatTermDisplay(fallTerm, { withEmoji: true })}</Title>
                               <ClassSearch term={fallTerm} display={formatTermDisplay(fallTerm)} form={form} />
-                              <Title order={3}>{formatTermSeasonYear(iapTerm, { withEmoji: true })}</Title>
+                              <Title order={3}>{formatTermDisplay(iapTerm, { withEmoji: true })}</Title>
                               <ClassSearch term={iapTerm} display={formatTermDisplay(iapTerm)} form={form} />
-                              <Title order={3}>{formatTermSeasonYear(springTerm, { withEmoji: true })}</Title>
+                              <Title order={3}>{formatTermDisplay(springTerm, { withEmoji: true })}</Title>
                               <ClassSearch term={springTerm} display={formatTermDisplay(springTerm)} form={form} />
                             </React.Fragment>
                           )

@@ -1,7 +1,7 @@
 import { Badge, Button, Group, Modal, Select, Stack, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
-import { formatTermSeasonYear } from '@/utils/formatTerm'
+import { formatTermDisplay } from '@/utils/formatTerm'
 
 interface CourseOption {
     _id: string
@@ -204,7 +204,7 @@ export default function DegreeTermsModal({ opened, onClose, onSave, embedded, in
                     {termAssignments.map(({ term, level }) => {
                         return (
                             <Group key={term} justify="space-between" p="xs" style={{ borderRadius: 4, border: '1px solid #e0e0e0' }}>
-                                <Text fw={500}>{formatTermSeasonYear(term, { withEmoji: true })}</Text>
+                                <Text fw={500}>{formatTermDisplay(term, { withEmoji: true })}</Text>
                                 <Group gap="xs" style={{ flex: 1, justifyContent: 'flex-end' }}>
                                     {level && (
                                         <Badge color={level === 'U' ? 'blue' : 'grape'} variant="light">

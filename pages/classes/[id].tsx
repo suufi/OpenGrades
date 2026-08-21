@@ -27,7 +27,7 @@ import User from '../../models/User'
 import CourseEmbedding from '../../models/CourseEmbedding'
 
 import { IClass, IClassReview, IContentSubmission, IParams, IReport, IUser, LetterGrade, TimeRange } from '../../types'
-import { formatTermDisplay, formatTermSeasonYear } from '@/utils/formatTerm'
+import { formatTermDisplay } from '@/utils/formatTerm'
 import type { IHarvardMeetingPattern } from '@/types/harvardCourse'
 
 import GradeChart from '../../components/GradeChart'
@@ -1249,8 +1249,8 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
         <link rel="icon" href="/static/images/favicon.ico" />
       </Head>
 
-      <Group justify="space-between" align="center">
-        <Title>
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Title style={{ flex: 1, minWidth: 0 }}>
           ({classProp.subjectNumber}) {classProp.subjectTitle}
         </Title>
         <Tooltip label={isFavorite ? 'Remove from favorites' : 'Add to favorites'} withArrow>
@@ -1259,6 +1259,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
             color={isFavorite ? 'yellow' : 'gray'}
             onClick={toggleFavorite}
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            mt={6}
           >
             <IconStar size={18} />
           </ActionIcon>
@@ -1390,7 +1391,7 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
             </Text>
             {scheduleLines.length > 0 && (
               <Stack mt="md" gap="xs">
-                <Text size="sm" fw={500}>Meeting times · {formatTermSeasonYear(classProp.term)}</Text>
+                <Text size="sm" fw={500}>Meeting times · {formatTermDisplay(classProp.term)}</Text>
                 {scheduleLines.map(({ type, meetings }) => (
                   <Text key={type} size="sm" c="dimmed">
                     {type}: {meetings.join(' · ')}

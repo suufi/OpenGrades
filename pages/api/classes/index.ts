@@ -20,9 +20,8 @@ import { parseSearchQuery } from '@opengrades/api-client'
 import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
 import { getESClient } from '@/utils/esClient'
-import { decode } from 'html-entities'
 import mongoose, { PipelineStage } from 'mongoose'
-import { parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
+import { decodeHtmlEntities, parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
 import eecsRenumbering from '@/utils/eecs-renumbering.json'
 
 const client = getESClient()
@@ -545,7 +544,8 @@ async function handler(
           description: `Fetched ${body.selectedDepartments.join(', ')} departments for ${body.term} that are ${body.reviewable ? 'reviewable' : 'not reviewable'}.`
         })
 
-        const fetchDescription = async (description: string): Promise<string> => {
+        const fetchDescription = async (rawDescription: string): Promise<string> => {
+          const description = decodeHtmlEntities(rawDescription)
           if (!description.includes("See description under subject")) {
             return description
           }
@@ -568,8 +568,8 @@ async function handler(
           // attempt to look up the class description for this same term if we already have it
           const existingClass = await Class.findOne({ subjectNumber, term: body.term }).lean()
 
-          if (existingClass) {
-            return existingClass.description
+          if (existingClass?.description) {
+            return decodeHtmlEntities(existingClass.description)
           }
 
           const apiFetch = await mitApiFetch(
@@ -581,8 +581,9 @@ async function handler(
             }
           })
 
-          descriptionCache[cacheKey] = apiFetch?.item?.description
-          return apiFetch?.item?.description || description
+          const fetchedDescription = decodeHtmlEntities(apiFetch?.item?.description)
+          descriptionCache[cacheKey] = fetchedDescription
+          return fetchedDescription || description
         }
 
         const allClasses: IClass[] = []
@@ -659,7 +660,7 @@ async function handler(
 
               const instructorNames = instructorDetails.length > 0
                 ? instructorDetails.map(i => i.name)
-                : decode(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
+                : decodeHtmlEntities(apiClassEntry.instructors).split(',').map((name: string) => name.trim())
 
               const parsedPrereqs = parsePrerequisites(apiClassEntry.prerequisites || '')
 
@@ -667,9 +668,10 @@ async function handler(
                 term: apiClassEntry.termCode,
                 subjectNumber: apiClassEntry.subjectId,
                 aliases,
-                subjectTitle: apiClassEntry.title,
+                subjectTitle: decodeHtmlEntities(apiClassEntry.title),
                 academicYear: parseInt(apiClassEntry.academicYear),
                 department: department,
+                institution: 'mit',
                 crossListedDepartments: aliases.map(parseDepartment).filter(aliasDep => aliasDep !== department),
                 units: apiClassEntry.units,
                 unitHours: parsedUnits.unitHours,
