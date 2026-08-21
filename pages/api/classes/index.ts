@@ -21,7 +21,8 @@ import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
 import { getESClient } from '@/utils/esClient'
 import mongoose, { PipelineStage } from 'mongoose'
-import { decodeHtmlEntities, parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
+import { parseUnitsField, parseInstructors, determineHasFinal, parsePrerequisites } from '@/utils/courseParser'
+import { decodeHtmlEntities } from '@/utils/htmlEntities'
 import eecsRenumbering from '@/utils/eecs-renumbering.json'
 
 const client = getESClient()
