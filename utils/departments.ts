@@ -32,6 +32,7 @@ export const MIT_DEPARTMENT_CATALOG: Array<{ code: string; name: string }> = [
     { code: '22', name: 'Nuclear Science and Engineering' },
     { code: '24', name: 'Linguistics and Philosophy' },
     { code: 'CC', name: 'Concourse Program' },
+    { code: 'CG', name: 'Common Ground for Computing Education' },
     { code: 'CSB', name: 'Computational and Systems Biology' },
     { code: 'CSE', name: 'Center for Computational Science and Engineering' },
     { code: 'EC', name: 'Edgerton Center' },
@@ -39,6 +40,7 @@ export const MIT_DEPARTMENT_CATALOG: Array<{ code: string; name: string }> = [
     { code: 'ES', name: 'Experimental Study Group' },
     { code: 'HST', name: 'Health Sciences and Technology' },
     { code: 'IDS', name: 'Institute for Data, Systems and Society' },
+    { code: 'MAD', name: 'Making and Design' },
     { code: 'MAS', name: 'Media Arts and Sciences' },
     { code: 'SCM', name: 'Supply Chain Management' },
     { code: 'AS', name: 'Aerospace Studies' },
@@ -53,7 +55,7 @@ export const MIT_DEPARTMENT_ORDER: string[] = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '14', '15', '16', '17', '18', '20',
     '21', '21A', '21E', 'CMS', '21W', '21G', '21H', '21L', '21M', '21S', '21T', 'WGS',
     '22', '24',
-    'CC', 'CSB', 'CSE', 'EC', 'EM', 'ES', 'HST', 'IDS', 'MAS', 'OR', 'RED', 'SCM', 'AS', 'MS', 'NS', 'STS', 'SWE', 'SP',
+    'CC', 'CG', 'CSB', 'CSE', 'EC', 'EM', 'ES', 'HST', 'IDS', 'MAD', 'MAS', 'OR', 'RED', 'SCM', 'AS', 'MS', 'NS', 'STS', 'SWE', 'SP',
     'UND', 'NONE',
 ]
 
@@ -99,6 +101,7 @@ export const departmentColors: Record<string, string> = {
     '22': '#ff5722',  // Nuclear Science and Engineering - Orange Red
     '24': '#795548',  // Linguistics and Philosophy - Brown
     'CC': '#607d8b',  // Concourse Program - Blue Gray
+    'CG': '#03a9f4',  // Common Ground for Computing Education - Light Blue
     'CMS': '#607d8b', // Comparative Media Studies
     'CSB': '#4caf50', // Computational and Systems Biology - Green
     'CSE': '#2196f3', // Center for Computational Science and Engineering - Blue
@@ -107,6 +110,7 @@ export const departmentColors: Record<string, string> = {
     'ES': '#00bcd4',  // Experimental Study Group - Cyan
     'HST': '#f44336', // Health Sciences and Technology - Red
     'IDS': '#3f51b5', // Institute for Data, Systems and Society - Indigo
+    'MAD': '#8bc34a', // Making and Design - Light Green
     'MAS': '#009688', // Media Arts and Sciences - Teal
     'SCM': '#ffc107', // Supply Chain Management - Amber
     'AS': '#673ab7',  // Aerospace Studies - Deep Purple
