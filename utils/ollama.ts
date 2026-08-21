@@ -19,10 +19,23 @@ import { google } from '@ai-sdk/google'
 
 const CHAT_PROVIDER = process.env.LLM_CHAT_PROVIDER || 'ollama'
 
-const ollama = new Ollama({
-    host: process.env.OLLAMA_BASE_URL || 'https://llms-dev-1.mit.edu',
-    headers: {},
-})
+const OLLAMA_HOST = process.env.OLLAMA_BASE_URL || 'https://llms-dev-1.mit.edu'
+
+const HEALTH_TIMEOUT_MS = 5_000
+const EMBEDDING_TIMEOUT_MS = 30_000
+const CHAT_TIMEOUT_MS = Number(process.env.OLLAMA_CHAT_TIMEOUT_MS || 120_000)
+
+function makeOllama(timeoutMs: number, withAuth: boolean = true): Ollama {
+    const apiKey = process.env.OLLAMA_API_KEY
+    return new Ollama({
+        host: OLLAMA_HOST,
+        headers: withAuth && apiKey ? { Authorization: 'Bearer ' + apiKey } : {},
+        fetch: (input: any, init?: any) =>
+            fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(timeoutMs) }),
+    })
+}
+
+const ollama = makeOllama(HEALTH_TIMEOUT_MS, false)
 
 const OLLAMA_CHAT_MODEL = process.env.OLLAMA_CHAT_MODEL || 'gpt-oss:20b'
 const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-2.0-flash'
@@ -43,10 +56,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
         throw new Error('OLLAMA_API_KEY environment variable is not set. Please set it in your .env file.')
     }
 
-    const ollamaWithAuth = new Ollama({
-        host: process.env.OLLAMA_BASE_URL || 'https://llms-dev-1.mit.edu',
-        headers: { Authorization: 'Bearer ' + apiKey },
-    })
+    const ollamaWithAuth = makeOllama(EMBEDDING_TIMEOUT_MS)
 
     try {
         const response = await ollamaWithAuth.embeddings({
@@ -171,9 +181,9 @@ export async function* streamChatCompletion(
 
     const apiKey = process.env.OLLAMA_API_KEY
     const ollamaWithAuth = apiKey ? new Ollama({
-        host: process.env.OLLAMA_BASE_URL || 'https://llms-dev-1.mit.edu',
+        host: OLLAMA_HOST,
         headers: { Authorization: 'Bearer ' + apiKey },
-    }) : ollama
+    }) : new Ollama({ host: OLLAMA_HOST, headers: {} })
 
     try {
         const response = await ollamaWithAuth.chat({
@@ -198,7 +208,8 @@ export async function* streamChatCompletion(
  * Returns the full response text
  */
 export async function chatCompletion(
-    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    timeoutMs: number = CHAT_TIMEOUT_MS
 ): Promise<string> {
     if (CHAT_PROVIDER === 'gemini' && process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
         console.log(`Using gemini (${GEMINI_CHAT_MODEL}) for chat completion`)
@@ -216,11 +227,7 @@ export async function chatCompletion(
 
     console.log(`Using ollama (${OLLAMA_CHAT_MODEL}) for chat completion`)
 
-    const apiKey = process.env.OLLAMA_API_KEY
-    const ollamaWithAuth = apiKey ? new Ollama({
-        host: process.env.OLLAMA_BASE_URL || 'https://llms-dev-1.mit.edu',
-        headers: { Authorization: 'Bearer ' + apiKey },
-    }) : ollama
+    const ollamaWithAuth = makeOllama(timeoutMs)
 
     try {
         const response = await ollamaWithAuth.chat({

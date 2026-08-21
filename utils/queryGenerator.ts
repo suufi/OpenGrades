@@ -24,7 +24,7 @@ Return ONLY the optimized query, no explanation.`
         const optimizedQuery = await chatCompletion([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `User query: "${userQuery}"\n\nOptimized search query:` }
-        ])
+        ], 8_000)
 
         const cleaned = (optimizedQuery || '')
             .replace(/<think>[\s\S]*?<\/think>/gi, '')
