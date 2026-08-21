@@ -171,3 +171,5 @@ dist
 
 .vscode/*
 scripts/
+# MIT Data Warehouse extract dumps
+.warehouse/

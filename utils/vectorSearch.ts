@@ -725,6 +725,7 @@ export async function getRelevantContext(
         studentProfile?: StudentRetrievalProfile
         includeHarvard?: boolean
         institution?: 'mit' | 'harvard'
+        constraintClassIds?: string[]
     }
 ): Promise<{
     classes: Array<IClass & {
@@ -771,7 +772,7 @@ export async function getRelevantContext(
         descriptionLimit,
         'description',
         combinedDepartmentBoosts.size > 0 ? combinedDepartmentBoosts : undefined,
-        { scope: 'public' }
+        { scope: 'public', classIds: options?.constraintClassIds }
     )
 
     if (subjectMentions.exactMatches.length > 0) {
@@ -809,7 +810,7 @@ export async function getRelevantContext(
                         descriptionLimit,
                         'description',
                         combinedDepartmentBoosts.size > 0 ? combinedDepartmentBoosts : undefined,
-                        { scope: 'public' }
+                        { scope: 'public', classIds: options?.constraintClassIds }
                     )
                     descriptionResults = [...subjectMentions.exactMatches, ...descriptionResults, ...optimizedDescriptionResults]
                     if (weakRetrieval) {

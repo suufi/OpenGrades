@@ -146,6 +146,86 @@ const ClassSchema = new mongoose.Schema<IClass>({
   harvardSource: {
     type: HarvardSourceSchema,
     default: undefined
+  },
+  // MIT Data Warehouse enrichment (scripts/sync-warehouse.ts)
+  level: {
+    type: String,
+    enum: ['U', 'G', null],
+    default: null
+  },
+  unitsBreakdown: {
+    type: new mongoose.Schema({
+      lecture: { type: Number, required: true },
+      lab: { type: Number, required: true },
+      design: { type: Number, required: true },
+      preparation: { type: Number, required: true },
+      isVariable: { type: Boolean, required: true }
+    }, { _id: false }),
+    default: undefined
+  },
+  gradeRule: {
+    type: String,
+    default: null
+  },
+  gradeType: {
+    type: String,
+    default: null
+  },
+  termDuration: {
+    type: String,
+    default: null
+  },
+  quarterInformation: {
+    type: String,
+    default: null
+  },
+  seasonsOffered: {
+    type: new mongoose.Schema({
+      fall: { type: Boolean, required: true },
+      iap: { type: Boolean, required: true },
+      spring: { type: Boolean, required: true },
+      summer: { type: Boolean, required: true }
+    }, { _id: false }),
+    default: undefined
+  },
+  notOfferedYear: {
+    type: String,
+    default: null
+  },
+  jointSubjects: [{
+    type: String
+  }],
+  equivalentSubjects: [{
+    type: String
+  }],
+  meetsWithSubjects: [{
+    type: String
+  }],
+  oldSubjectNumber: {
+    type: String,
+    default: null
+  },
+  schedule: {
+    type: String,
+    default: null
+  },
+  responsibleFaculty: {
+    type: new mongoose.Schema({
+      name: { type: String, required: true }
+    }, { _id: false }),
+    default: undefined
+  },
+  enrollment: {
+    type: Number,
+    default: null
+  },
+  catalogUrl: {
+    type: String,
+    default: null
+  },
+  warehouseSyncedAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true })
 

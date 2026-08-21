@@ -11,6 +11,14 @@ import { hasRecentGradeReport, hasEnoughReviewsForAI } from '@/utils/hasRecentGr
 import { userCanIncludeHarvardCourses } from '@/utils/userHarvardPreference'
 import { resolveThinkingParts, stripThinkingTags } from '@/utils/llmThinking'
 import { normalizeCourseNumber } from '@/utils/courseNumbers'
+import {
+    extractSearchConstraints,
+    hasConstraints,
+    constraintsToMongoFilter,
+    describeConstraints,
+} from '@/utils/searchConstraints'
+import { termDurationLabel } from '@/utils/warehouse'
+import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import AISearchConversation, { type AISearchCourseReference } from '@/models/AISearchConversation'
 import { Types } from 'mongoose'
@@ -248,11 +256,39 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         }
 
         res.write(`data: ${JSON.stringify({ type: 'thinking', content: 'Searching courses...' })}\n\n`)
+        let constraintClassIds: string[] | undefined
+        let appliedConstraintNote = ''
+        if (!resolvedIntent.harvardOnly) {
+            const constraints = extractSearchConstraints(resolvedIntent.searchQuery)
+            const constraintFilter = hasConstraints(constraints) ? constraintsToMongoFilter(constraints) : null
+            if (constraintFilter) {
+                const constraintDescription = describeConstraints(constraints)
+                try {
+                    const matching = await Class.find({
+                        institution: { $ne: 'harvard' },
+                        offered: true,
+                        warehouseSyncedAt: { $ne: null },
+                        ...constraintFilter,
+                    }).select('_id').lean()
+                    const ids = matching.map((doc) => doc._id.toString())
+                    if (ids.length >= 5) {
+                        constraintClassIds = ids
+                        appliedConstraintNote = constraintDescription
+                        res.write(`data: ${JSON.stringify({ type: 'debug', content: `Applied structured filters (${ids.length} matching classes): ${constraintDescription}` })}\n\n`)
+                    } else {
+                        res.write(`data: ${JSON.stringify({ type: 'debug', content: `Structured filters matched only ${ids.length} classes, ignoring them: ${constraintDescription}` })}\n\n`)
+                    }
+                } catch (error) {
+                    console.error('Constraint pre-filter failed, continuing without it:', error)
+                }
+            }
+        }
 
         const context = await getRelevantContext(searchQuery, 30, {
             departmentBoosts,
             includeHarvard,
             institution: resolvedIntent.harvardOnly ? 'harvard' : undefined,
+            constraintClassIds,
             studentProfile: {
                 totalTaken: userTakenClasses.length,
                 takenByDepartment: deptCounts,
@@ -370,7 +406,10 @@ Do NOT assume the student has taken a class just because it appears in reviews.
 8. Format responses in markdown with clear headings
 9. At most 2 out of 5 recommended courses should be Harvard courses, unless the student explicitly asks for Harvard courses.${harvardRulesBlock}
 
-=== CANDIDATE COURSES (FOR RELEVANCE JUDGMENT) ===
+${appliedConstraintNote ? `=== STRUCTURED FILTERS ALREADY APPLIED TO CANDIDATES ===
+Every candidate below already satisfies: ${appliedConstraintNote}. Do not second-guess these attributes; use the remaining criteria (topic fit, trajectory) to choose.
+
+` : ''}=== CANDIDATE COURSES (FOR RELEVANCE JUDGMENT) ===
 ${selectionContextString || 'No courses found in the available data.'}
 
 === ALLOWED COURSES (AUTHORITATIVE IDS) ===
@@ -1038,6 +1077,38 @@ function buildQueryAlignedSnippet(description: string, query: string): string {
 
     return truncate(candidate, 280)
 }
+function buildLogisticsLine(course: any): string {
+    if (course.institution === 'harvard') return ''
+    const ub = course.unitsBreakdown
+    const unitsText = ub
+        ? (ub.isVariable
+            ? 'variable units'
+            : `${ub.lecture + ub.lab + ub.design + ub.preparation} units (${ub.lecture}-${ub.lab + ub.design}-${ub.preparation})`)
+        : null
+    const seasons = course.seasonsOffered
+        ? [
+            course.seasonsOffered.fall ? 'Fall' : null,
+            course.seasonsOffered.iap ? 'IAP' : null,
+            course.seasonsOffered.spring ? 'Spring' : null,
+            course.seasonsOffered.summer ? 'Summer' : null,
+        ].filter(Boolean)
+        : []
+    const enrollment = typeof course.enrollment === 'number' && course.enrollment > 0
+        ? course.enrollment
+        : null
+    const sizeLabel = enrollment === null
+        ? null
+        : enrollment <= 30 ? 'small class' : enrollment >= 100 ? 'large class' : null
+
+    return [
+        course.level === 'U' ? 'Undergraduate' : course.level === 'G' ? 'Graduate' : null,
+        unitsText,
+        course.gradeType || null,
+        seasons.length ? `offered ${seasons.join(' & ')}` : null,
+        termDurationLabel(course.termDuration),
+        enrollment !== null ? `~${enrollment} students${sizeLabel ? ` (${sizeLabel})` : ''}` : null,
+    ].filter(Boolean).join(' · ')
+}
 
 function buildSelectionContext(classes: Array<any>, query: string): string {
     if (!classes || classes.length === 0) return ''
@@ -1066,6 +1137,8 @@ function buildSelectionContext(classes: Array<any>, query: string): string {
         lines.push(`${idx + 1}. ${course.institution === 'harvard' ? '[HARVARD] ' : ''}${course.subjectNumber}: ${course.subjectTitle}`)
         lines.push(`   id: ${id}`)
         if (course.institution === 'harvard') lines.push(`   institution: HARVARD (cross-registration)`)
+        const logistics = buildLogisticsLine(course)
+        if (logistics) lines.push(`   logistics: ${logistics}`)
         if (course.girAttribute?.length) lines.push(`   gir: ${course.girAttribute.join(', ')}`)
         if (snippet) lines.push(`   query_snippet: ${snippet}`)
         if (course.prerequisites) lines.push(`   prerequisites: ${course.prerequisites}`)

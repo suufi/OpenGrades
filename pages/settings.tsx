@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import InferNextPropsType from 'infer-next-props-type'
 import Head from 'next/head'
 
-import { ActionIcon, Badge, Button, Center, Checkbox, Container, Grid, Group, List, Modal, MultiSelect, Stack, Switch, Text, Textarea, TextInput, Title } from '@mantine/core'
+import { ActionIcon, Badge, Button, Center, Checkbox, Container, Grid, Group, List, Modal, MultiSelect, Select, Stack, Switch, Text, Textarea, TextInput, Title } from '@mantine/core'
 import { notifications, showNotification } from '@mantine/notifications'
 import { DataTable } from 'mantine-datatable'
 import 'mantine-datatable/styles.css'
@@ -89,6 +89,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
       subjectNumber: { value: '', matchMode: 'contains' },
       subjectTitle: { value: '', matchMode: 'contains' },
       term: { value: '', matchMode: 'contains' },
+      warehouseSynced: { value: '', matchMode: 'equals' },
     },
     globalFilter: ''
   })
@@ -181,7 +182,7 @@ const Settings = ({ totalUsers, summaryByClassYear, summaryByLevel, activeUsers 
     setLazyState(prev => ({
       ...prev,
       globalFilter: '',
-      filters: { subjectNumber: { value: '', matchMode: 'contains' }, subjectTitle: { value: '', matchMode: 'contains' }, term: { value: '', matchMode: 'contains' } },
+      filters: { subjectNumber: { value: '', matchMode: 'contains' }, subjectTitle: { value: '', matchMode: 'contains' }, term: { value: '', matchMode: 'contains' }, warehouseSynced: { value: '', matchMode: 'equals' } },
       page: 1,
       first: 0
     }))

@@ -15,6 +15,7 @@ import {
 import { interleaveBySubjectNumber } from '@/utils/interleaveBySubjectNumber'
 import { getMitCourseCatalogBaseUrl, mitApiFetch } from '@/utils/mitApi'
 import { resolveClassSearchIds } from '@/utils/resolveClassSearch'
+import { parseSearchQuery } from '@opengrades/api-client'
 
 import AuditLog from '@/models/AuditLog'
 import ContentSubmission from '@/models/ContentSubmission'
@@ -93,6 +94,10 @@ async function handler(
           communicationRequirements = '', // CI-H, CI-HW
           girAttributes = '', // REST, LAB, etc.
           hassAttributes = '', // HASS-A, HASS-E, HASS-H, HASS-S
+          levels = '', // U, G 
+          seasons = '', // fall, iap, spring, summer 
+          halfTerm = 'false', // half/partial-term subjects only
+          warehouseSynced = '', // 'true' | 'false'
           institutions,
           favoritesOnly = 'false',
         } = req.query
@@ -216,11 +221,47 @@ async function handler(
           query.hassAttribute = { $in: hassValues }
         }
 
+        if (levels) {
+          const levelValues = (levels as string).split(',').filter((l) => ['U', 'G'].includes(l))
+          if (levelValues.length > 0) {
+            query.level = { $in: levelValues }
+          }
+        }
+
+        if (seasons) {
+          const seasonValues = (seasons as string)
+            .split(',')
+            .filter((s) => ['fall', 'iap', 'spring', 'summer'].includes(s))
+          if (seasonValues.length > 0) {
+            query.$and = [
+              ...(query.$and || []),
+              { $or: seasonValues.map((s) => ({ [`seasonsOffered.${s}`]: true })) },
+            ]
+          }
+        }
+
+        if (halfTerm === 'true') {
+          query.termDuration = {
+            $in: ['First Half Term Subject', 'Second Half Term Subject', 'Partial Term Subject'],
+          }
+        }
+
+        if (warehouseSynced === 'true') {
+          query.warehouseSyncedAt = { $ne: null }
+        } else if (warehouseSynced === 'false') {
+          query.$and = [
+            ...(query.$and || []),
+            { $or: [{ warehouseSyncedAt: null }, { warehouseSyncedAt: { $exists: false } }] },
+          ]
+        }
+
         if (favoriteSubjectFilter) {
           query.subjectNumber = { $in: favoriteSubjectFilter }
         }
 
-        const tokens = (search as string).split(/\s+/).filter(Boolean)
+        const parsedSearch = parseSearchQuery(search as string)
+        const hasSearchCriteria =
+          parsedSearch.fieldTerms.length > 0 || parsedSearch.freeTextTokens.length > 0
 
         // Prepare for sorting
         let sortQuery: Record<string, 1 | -1> = {}
@@ -236,7 +277,7 @@ async function handler(
               sortQuery[sortField as string] = sortOrder === 'asc' ? 1 : -1
             }
           } else {
-            if (!search) {
+            if (!hasSearchCriteria) {
               sortQuery.userCount = -1
               sortQuery._id = 1
             }
@@ -246,13 +287,12 @@ async function handler(
         let highlights = {}
         let scores = {}
 
-        if (search) {
+        if (hasSearchCriteria) {
           try {
             const searchMatch = await resolveClassSearchIds(
               client,
               Class,
-              search as string,
-              tokens,
+              parsedSearch,
               selectedInstitutions,
               query.offered === true
             )
@@ -709,15 +749,19 @@ async function handler(
             }
           })
         }
+        const buildUpsertFilter = (classEntry: { term: string, subjectNumber: string, aliases?: string[] }) => ({
+          term: classEntry.term,
+          $or: [
+            { subjectNumber: classEntry.subjectNumber },
+            { aliases: classEntry.subjectNumber },
+            ...(classEntry.aliases?.length ? [{ subjectNumber: { $in: classEntry.aliases } }] : [])
+          ]
+        })
 
         const bulkAddResult = await Class.bulkWrite(
           allClasses.map((classEntry) => ({
             updateOne: {
-              filter: {
-                term: classEntry.term,
-                $or: [{ subjectNumber: classEntry.subjectNumber },
-                { aliases: classEntry.subjectNumber }]
-              },
+              filter: buildUpsertFilter(classEntry),
               update: {
                 $setOnInsert: classEntry
               },
@@ -729,11 +773,7 @@ async function handler(
         const bulkWriteUpdate = await Class.bulkWrite(
           allClasses.map((classEntry) => ({
             updateOne: {
-              filter: {
-                term: classEntry.term,
-                $or: [{ subjectNumber: classEntry.subjectNumber },
-                { aliases: classEntry.subjectNumber }]
-              },
+              filter: buildUpsertFilter(classEntry),
               update: {
                 $set: {
                   description: classEntry.description,

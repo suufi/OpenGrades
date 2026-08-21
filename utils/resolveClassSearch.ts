@@ -2,10 +2,26 @@ import mongoose from 'mongoose'
 import type { Client } from '@elastic/elasticsearch'
 import type { Model } from 'mongoose'
 import type { IClass } from '@/types'
+import type { ParsedSearchQuery, SearchField } from '@opengrades/api-client'
 import { getInstitutionScope, type Institution } from './institutionFilters'
 import { findClassIdsByTokenSearch } from './classTokenSearch'
 
 const CLASSES_INDEX = 'opengrades_prod.classes'
+
+const ALL_SEARCH_FIELDS = [
+  'subjectNumber^3',
+  'subjectTitle^3',
+  'aliases^3',
+  'instructors',
+  'description',
+]
+
+/** Which index fields a `field:value` term is allowed to match. */
+const FIELD_TARGETS: Record<SearchField, string[]> = {
+  instructor: ['instructors'],
+  title: ['subjectTitle'],
+  number: ['subjectNumber', 'aliases'],
+}
 
 export type ClassSearchResult = {
   classIds: mongoose.Types.ObjectId[]
@@ -13,45 +29,41 @@ export type ClassSearchResult = {
   scores: Record<string, number>
 }
 
-function buildElasticsearchQuery(search: string, tokens: string[], institution?: Institution) {
-  const mustClauses = tokens.map((token) => ({
+function buildElasticsearchQuery(parsed: ParsedSearchQuery, institution?: Institution) {
+  const fieldClauses = parsed.fieldTerms.map((term) => ({
     multi_match: {
-      query: token,
-      fields: [
-        'subjectNumber^3',
-        'subjectTitle^3',
-        'aliases^3',
-        'instructors',
-        'description',
-      ],
-      type: 'phrase_prefix' as const,
+      query: term.value,
+      fields: FIELD_TARGETS[term.field],
+      type: (term.phrase ? 'phrase' : 'phrase_prefix') as 'phrase' | 'phrase_prefix',
     },
   }))
+
+  const freeTextClauses = parsed.freeTextTokens.map((token) => ({
+    multi_match: {
+      query: token.value,
+      fields: ALL_SEARCH_FIELDS,
+      type: (token.phrase ? 'phrase' : 'phrase_prefix') as 'phrase' | 'phrase_prefix',
+    },
+  }))
+
+  const mustClauses = [...fieldClauses, ...freeTextClauses]
 
   const filters: Record<string, unknown>[] = []
   if (institution) {
     filters.push({ term: { institution } })
   }
 
+  const exactBoosts = parsed.freeText
+    ? [
+      { term: { subjectNumber: { value: parsed.freeText, boost: 6 } } },
+      { term: { aliases: { value: parsed.freeText, boost: 3 } } },
+    ]
+    : []
+
   return {
     bool: {
       should: [
-        {
-          term: {
-            subjectNumber: {
-              value: search,
-              boost: 6,
-            },
-          },
-        },
-        {
-          term: {
-            aliases: {
-              value: search,
-              boost: 3,
-            },
-          },
-        },
+        ...exactBoosts,
         {
           bool: {
             must: mustClauses,
@@ -92,15 +104,14 @@ function mergeClassIds(
 export async function resolveClassSearchIds(
   client: Client,
   Class: Model<IClass>,
-  search: string,
-  tokens: string[],
+  parsed: ParsedSearchQuery,
   institutions: Institution[],
   offeredOnly: boolean
 ): Promise<ClassSearchResult> {
   const { harvardOnly, mitOnly, both } = getInstitutionScope(institutions)
 
   if (harvardOnly) {
-    const ids = await findClassIdsByTokenSearch(Class, tokens, {
+    const ids = await findClassIdsByTokenSearch(Class, parsed, {
       institution: 'harvard',
       offeredOnly,
     })
@@ -113,7 +124,7 @@ export async function resolveClassSearchIds(
 
   const searchResults = await client.search({
     index: CLASSES_INDEX,
-    query: buildElasticsearchQuery(search, tokens, mitOnly ? 'mit' : undefined),
+    query: buildElasticsearchQuery(parsed, mitOnly ? 'mit' : undefined),
     highlight: {
       fields: {
         description: {},
@@ -145,11 +156,12 @@ export async function resolveClassSearchIds(
     }
   }
 
-  if (!both || tokens.length === 0) {
+  const hasCriteria = parsed.fieldTerms.length > 0 || parsed.freeTextTokens.length > 0
+  if (!both || !hasCriteria) {
     return { classIds, highlights, scores }
   }
 
-  const harvardIds = await findClassIdsByTokenSearch(Class, tokens, {
+  const harvardIds = await findClassIdsByTokenSearch(Class, parsed, {
     institution: 'harvard',
     offeredOnly,
     limit: 500,

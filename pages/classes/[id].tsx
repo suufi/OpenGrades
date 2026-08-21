@@ -27,7 +27,7 @@ import User from '../../models/User'
 import CourseEmbedding from '../../models/CourseEmbedding'
 
 import { IClass, IClassReview, IContentSubmission, IParams, IReport, IUser, LetterGrade, TimeRange } from '../../types'
-import { formatTermDisplay } from '@/utils/formatTerm'
+import { formatTermDisplay, formatTermSeasonYear } from '@/utils/formatTerm'
 import type { IHarvardMeetingPattern } from '@/types/harvardCourse'
 
 import GradeChart from '../../components/GradeChart'
@@ -39,6 +39,7 @@ import { userCanIncludeHarvardCourses } from '@/utils/userHarvardPreference'
 
 import GradeReportModal from '@/components/GradeReportModal'
 import { DonutChart } from '@mantine/charts'
+import { formatScheduleForDisplay, termDurationLabel } from '@/utils/warehouse'
 import { IconAlertCircle, IconClock, IconGraph, IconMessage, IconPhoto, IconStar, IconThumbDown, IconThumbUp, IconTrash, IconUpload, IconX, IconDatabase, IconEye, IconEyeOff, IconFlag, IconPencil, IconPlus } from '@tabler/icons-react'
 import moment from 'moment-timezone'
 import mongoose from 'mongoose'
@@ -1210,6 +1211,33 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
       leftSection: (<IconTrash size={20} />)
     })
   }
+  const scheduleLines = formatScheduleForDisplay(classProp.schedule)
+  const unitsText = classProp.unitsBreakdown
+    ? (classProp.unitsBreakdown.isVariable
+      ? 'Units arranged'
+      : `${classProp.unitsBreakdown.lecture}-${classProp.unitsBreakdown.lab + classProp.unitsBreakdown.design}-${classProp.unitsBreakdown.preparation} units (${classProp.unitsBreakdown.lecture + classProp.unitsBreakdown.lab + classProp.unitsBreakdown.design + classProp.unitsBreakdown.preparation} total)`)
+    : null
+  const seasonNames = classProp.seasonsOffered
+    ? [
+      classProp.seasonsOffered.fall ? 'Fall' : null,
+      classProp.seasonsOffered.iap ? 'IAP' : null,
+      classProp.seasonsOffered.spring ? 'Spring' : null,
+      classProp.seasonsOffered.summer ? 'Summer' : null,
+    ].filter(Boolean) as string[]
+    : []
+  const subjectDetailParts = [
+    unitsText,
+    classProp.gradeType,
+    classProp.gradeRule && classProp.gradeRule !== 'Not repeatable for credit'
+      ? classProp.gradeRule.toLowerCase().replace(/^./, (c: string) => c.toUpperCase())
+      : null,
+    seasonNames.length > 0
+      ? `Offered ${seasonNames.length === 2 ? seasonNames.join(' & ') : seasonNames.join(', ')}`
+      : (classProp.notOfferedYear ? `Not offered ${classProp.notOfferedYear}` : null),
+    typeof classProp.enrollment === 'number' && classProp.enrollment > 0
+      ? `${classProp.enrollment.toLocaleString()} enrolled`
+      : null,
+  ].filter(Boolean) as string[]
 
   return (
     <Container style={{ padding: 'var(--mantine-spacing-lg)' }}>
@@ -1247,7 +1275,18 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
           isHarvard && <Badge color='indigo' variant='filled'> Harvard </Badge>
         }
         {
-          classProp.units?.includes('P/D/F') && <Badge color='blue' variant='filled'> P/D/F </Badge>
+          classProp.level === 'U' && <Badge color='blue' variant='light'> Undergraduate </Badge>
+        }
+        {
+          classProp.level === 'G' && <Badge color='orange' variant='light'> Graduate </Badge>
+        }
+        {
+          (classProp.gradeType === 'P/D/F' || classProp.units?.includes('P/D/F')) && <Badge color='blue' variant='filled'> P/D/F </Badge>
+        }
+        {
+          termDurationLabel(classProp.termDuration) && (
+            <Badge color='pink' variant='light'> {termDurationLabel(classProp.termDuration)} </Badge>
+          )
         }
 
         {
@@ -1333,6 +1372,35 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
           {renderDescriptionWithLinks(classProp.description)}
         </Text>
       </Card>
+
+      {!isHarvard && classProp.warehouseSyncedAt && subjectDetailParts.length > 0 && (
+        <>
+          <Space h="md" />
+          <Card withBorder shadow="sm" radius="md" padding="lg">
+            <Group justify="space-between" align="baseline" wrap="wrap">
+              <Title order={4}>Subject details</Title>
+              {classProp.catalogUrl && (
+                <Anchor size="xs" c="dimmed" href={classProp.catalogUrl} target="_blank" rel="noopener noreferrer">
+                  MIT Subject Listing ↗
+                </Anchor>
+              )}
+            </Group>
+            <Text size="sm" c="dimmed" mt="sm">
+              {subjectDetailParts.join(' · ')}
+            </Text>
+            {scheduleLines.length > 0 && (
+              <Stack mt="md" gap="xs">
+                <Text size="sm" fw={500}>Meeting times · {formatTermSeasonYear(classProp.term)}</Text>
+                {scheduleLines.map(({ type, meetings }) => (
+                  <Text key={type} size="sm" c="dimmed">
+                    {type}: {meetings.join(' · ')}
+                  </Text>
+                ))}
+              </Stack>
+            )}
+          </Card>
+        </>
+      )}
 
       {!isHarvard && (
         <Group justify='end'>

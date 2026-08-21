@@ -9,6 +9,7 @@ import User from '@/models/User'
 import { hasRecentGradeReport, hasEnoughReviewsForAI } from '@/utils/hasRecentGradeReport'
 import { getClassesPageStats } from '@/utils/plausible'
 import { IClass } from '@/types'
+import { prioritizeMitForNewClasses } from '@/utils/discoverRanking'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -158,10 +159,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
       .sort((a, b) => b.trendingScore - a.trendingScore)
 
-    const newClassesFinal = newClasses
-      .map(item => ({ ...item.latestClass, firstOffered: item.firstOffered }))
-      .filter(cls => !cls.subjectNumber?.endsWith('.UR') && !cls.subjectNumber?.endsWith('.URG'))
-      .slice(0, 10)
+    const newClassesFinal = prioritizeMitForNewClasses(
+      newClasses
+        .map(item => ({ ...item.latestClass, firstOffered: item.firstOffered }))
+        .filter(cls => !cls.subjectNumber?.endsWith('.UR') && !cls.subjectNumber?.endsWith('.URG'))
+    )
 
     const ratingsBySubject = new Map<string, Array<{ year: number, rating: number, classData: Record<string, any> }>>()
     for (const item of classRatings) {

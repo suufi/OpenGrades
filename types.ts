@@ -111,6 +111,35 @@ export interface IClass {
     institution?: 'mit' | 'harvard'
     harvardCatalogId?: string
     harvardSource?: IHarvardCourse
+    // MIT Data Warehouse
+    level?: 'U' | 'G' | null
+    unitsBreakdown?: {
+        lecture: number
+        lab: number
+        design: number
+        preparation: number
+        isVariable: boolean
+    } | null
+    gradeRule?: string | null
+    gradeType?: string | null
+    termDuration?: string | null
+    quarterInformation?: string | null
+    seasonsOffered?: {
+        fall: boolean
+        iap: boolean
+        spring: boolean
+        summer: boolean
+    } | null
+    notOfferedYear?: string | null
+    jointSubjects?: string[]
+    equivalentSubjects?: string[]
+    meetsWithSubjects?: string[]
+    oldSubjectNumber?: string | null
+    schedule?: string | null
+    responsibleFaculty?: { name: string } | null
+    enrollment?: number | null
+    catalogUrl?: string | null
+    warehouseSyncedAt?: Date | null
     createdAt?: Date
     updatedAt?: Date
 }

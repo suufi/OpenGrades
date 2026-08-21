@@ -283,6 +283,14 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
         () => classes.filter((c) => c.offered).length,
         [classes]
     )
+    const enrollmentByTerm = useMemo(() => {
+        const byTerm = new Map<string, number>()
+        for (const c of classesSorted) {
+            if (typeof c.enrollment !== 'number' || c.enrollment <= 0) continue
+            byTerm.set(c.term, Math.max(byTerm.get(c.term) ?? 0, c.enrollment))
+        }
+        return [...byTerm.entries()].map(([term, enrollment]) => ({ term, 'Registrar enrollment': enrollment }))
+    }, [classesSorted])
     const latestClass = useMemo(() => {
         return [...classes].sort((a: any, b: any) => {
             if (b.academicYear !== a.academicYear) return b.academicYear - a.academicYear
@@ -511,7 +519,7 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                     </Center>
 
                     {
-                        (reviewsProp.length > 0 || gradePointsProp.length > 0) && (
+                        (reviewsProp.length > 0 || gradePointsProp.length > 0 || enrollmentByTerm.length >= 2) && (
                             <>
                                 <Space h='lg' />
                                 <Title order={2}>By Term</Title>
@@ -595,6 +603,18 @@ const AggregatedPage: NextPage<AggregateProps> = ({ classesProp, reviewsProp, gr
                                     { name: 'P', color: 'purple', stackId: 'grades' }
                                 ]}
 
+                            />
+                        }
+
+                        {enrollmentByTerm.length >= 2 &&
+                            <BarChart
+                                h={400}
+                                withLegend
+                                data={enrollmentByTerm}
+                                dataKey='term'
+                                series={[{ name: 'Registrar enrollment', color: 'indigo.6' }]}
+                                gridAxis='y'
+                                withTooltip
                             />
                         }
                     </Flex>

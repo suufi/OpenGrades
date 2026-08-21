@@ -170,6 +170,9 @@ const Classes: NextPage = () => {
     communicationFilter: [],
     girFilter: [],
     hassFilter: [],
+    levelFilter: [],
+    seasonFilter: [],
+    halfTermFilter: false,
     schoolFilter: DEFAULT_INSTITUTIONS,
     currentPage: 1,
   }
@@ -228,6 +231,9 @@ const Classes: NextPage = () => {
   const [communicationFilter, setCommunicationFilter] = useState<string[]>(initialState.communicationFilter)
   const [girFilter, setGirFilter] = useState<string[]>(initialState.girFilter)
   const [hassFilter, setHassFilter] = useState<string[]>(initialState.hassFilter)
+  const [levelFilter, setLevelFilter] = useState<string[]>(initialState.levelFilter)
+  const [seasonFilter, setSeasonFilter] = useState<string[]>(initialState.seasonFilter)
+  const [halfTermFilter, setHalfTermFilter] = useState<boolean>(initialState.halfTermFilter)
   const [schoolFilter, setSchoolFilter] = useState<Institution[]>(initialState.schoolFilter)
 
   const [currentPage, setCurrentPage] = useState(initialState.currentPage)
@@ -257,12 +263,15 @@ const Classes: NextPage = () => {
     communicationRequirements: communicationFilter.length > 0 ? communicationFilter.join(',') : undefined,
     girAttributes: girFilter.length > 0 ? girFilter.join(',') : undefined,
     hassAttributes: hassFilter.length > 0 ? hassFilter.join(',') : undefined,
+    levels: levelFilter.length > 0 ? levelFilter.join(',') : undefined,
+    seasons: seasonFilter.length > 0 ? seasonFilter.join(',') : undefined,
+    halfTerm: halfTermFilter ? 'true' : undefined,
     institutions: institutionsToQueryParam(schoolFilter),
     favoritesOnly: favoritesView ? 'true' : undefined,
   }), [
     currentPage, debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter,
     academicYearFilter, departmentFilter, termFilter, communicationFilter,
-    girFilter, hassFilter, schoolFilter, sort, viewMode, favoritesView,
+    girFilter, hassFilter, levelFilter, seasonFilter, halfTermFilter, schoolFilter, sort, viewMode, favoritesView,
   ])
 
   const classesEnabled = router.isReady && (!favoritesView || authStatus === 'authenticated')
@@ -322,11 +331,14 @@ const Classes: NextPage = () => {
       communicationFilter,
       girFilter,
       hassFilter,
+      levelFilter,
+      seasonFilter,
+      halfTermFilter,
       schoolFilter,
       currentPage,
     }
     sessionStorage.setItem('classesPageState', JSON.stringify(state))
-  }, [searchTerm, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, schoolFilter, currentPage])
+  }, [searchTerm, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, levelFilter, seasonFilter, halfTermFilter, schoolFilter, currentPage])
 
 
   // useEffect(() => {
@@ -430,7 +442,7 @@ const Classes: NextPage = () => {
       return
     }
     setCurrentPage(1)
-  }, [debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, schoolFilter, sort, viewMode, favoritesView])
+  }, [debounced, offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter, termFilter, communicationFilter, girFilter, hassFilter, levelFilter, seasonFilter, halfTermFilter, schoolFilter, sort, viewMode, favoritesView])
 
   useHotkeys([
     ['mod+\\', () => {
@@ -443,6 +455,7 @@ const Classes: NextPage = () => {
   const activeFilterCount = Object.entries({
     offeredFilter, reviewableFilter, reviewsOnlyFilter, academicYearFilter, departmentFilter,
     termFilter, communicationFilter, girFilter, hassFilter,
+    levelFilter, seasonFilter, halfTermFilter,
     ...(schoolFilterIsActive ? { schoolFilter } : {}),
   }).filter(([_, value]) => Array.isArray(value) ? value.length > 0 : !!value).length
 
@@ -549,6 +562,7 @@ const Classes: NextPage = () => {
                       <Checkbox label="Offered only" checked={offeredFilter} onChange={(e) => setOfferedFilter(e.target.checked)} />
                       <Checkbox label="Reviewable only" checked={reviewableFilter} onChange={(e) => setReviewable(e.target.checked)} />
                       <Checkbox label="Has reviews" checked={reviewsOnlyFilter} onChange={(e) => setReviewsOnlyFilter(e.target.checked)} />
+                      <Checkbox label="Half-term / partial only" checked={halfTermFilter} onChange={(e) => setHalfTermFilter(e.target.checked)} />
                     </Stack>
                   </Stack>
                 </Grid.Col>
@@ -584,6 +598,16 @@ const Classes: NextPage = () => {
                         { label: 'HASS-H', value: 'HASS-H' },
                         { label: 'HASS-S', value: 'HASS-S' },
                       ]} value={hassFilter} onChange={setHassFilter} />
+                      <MultiSelect placeholder="Level" data={[
+                        { label: 'Undergraduate', value: 'U' },
+                        { label: 'Graduate', value: 'G' },
+                      ]} value={levelFilter} onChange={setLevelFilter} />
+                      <MultiSelect placeholder="Offered in" data={[
+                        { label: 'Fall', value: 'fall' },
+                        { label: 'IAP', value: 'iap' },
+                        { label: 'Spring', value: 'spring' },
+                        { label: 'Summer', value: 'summer' },
+                      ]} value={seasonFilter} onChange={setSeasonFilter} />
                     </Stack>
                   </Stack>
                 </Grid.Col>
