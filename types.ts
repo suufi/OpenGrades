@@ -211,7 +211,8 @@ export interface IScheduledNotification {
     category: NotificationCategory
     scheduledAt: Date | null
     sentAt: Date | null
-    status: 'pending' | 'sent' | 'failed' | 'cancelled'
+    status: 'pending' | 'sending' | 'sent' | 'failed' | 'cancelled'
+    claimedAt?: Date | null
     createdBy: Ref<IUser>
     recipientCount: number
     errorMessage?: string

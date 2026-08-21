@@ -1,5 +1,6 @@
 import { ComponentType } from 'react'
 import {
+    IconBell,
     IconBook,
     IconChartBar,
     IconCirclesRelation,
@@ -57,6 +58,7 @@ export const navConfig: NavItem[] = [
     { label: 'DormSoup', icon: IconSoup, href: 'https://dormsoup.mit.edu/', color: 'green', external: true, section: 'sipb' },
 
     // Other links
+    { label: 'Notifications', icon: IconBell, href: '/notifications', color: 'yellow', section: 'other' },
     { label: 'About', icon: IconInfoCircle, href: '/about', color: 'grape', section: 'other' },
     { label: 'Changelog', icon: IconListDetails, href: '/changelog', color: 'blue', section: 'other' },
     { label: 'Privacy Policy', icon: IconLock, href: '/privacy', color: 'gray', section: 'other' },

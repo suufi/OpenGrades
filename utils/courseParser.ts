@@ -2,12 +2,7 @@
  * Utility functions for parsing MIT course data from API responses
  */
 
-import { decode } from 'html-entities'
-
-export function decodeHtmlEntities(text: string | null | undefined): string {
-    if (!text) return ''
-    return decode(text).replace(/\u00a0/g, " ")
-}
+import { decodeHtmlEntities } from './htmlEntities.ts'
 
 export interface ParsedUnits {
     unitHours: string | null

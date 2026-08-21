@@ -3,16 +3,14 @@ import {
   Badge,
   Button,
   Group,
-  Select,
   Stack,
   Table,
   Text,
-  Textarea,
-  TextInput,
   Title
 } from '@mantine/core'
 import { showNotification } from '@mantine/notifications'
-// import { DateTimePicker } from '@mantine/dates'
+
+import { CATEGORY_OPTIONS, NotificationComposer } from '@/components/admin/NotificationComposer'
 
 interface ScheduledNotification {
   _id: string
@@ -21,21 +19,16 @@ interface ScheduledNotification {
   category: string
   scheduledAt: string | null
   sentAt: string | null
-  status: 'pending' | 'sent' | 'failed' | 'cancelled'
+  status: 'pending' | 'sending' | 'sent' | 'failed' | 'cancelled'
+  data?: { targetPath?: string } | null
   recipientCount: number
   createdBy?: { name: string; kerb: string }
   createdAt: string
 }
 
-const CATEGORY_OPTIONS = [
-  { value: 'feature_updates', label: 'Feature Updates' },
-  { value: 'catalog_updates', label: 'Catalog Updates' },
-  { value: 'pe_updates', label: 'PE Updates' },
-  { value: 'academic_calendar', label: 'Academic Calendar' },
-]
-
 const STATUS_COLORS: Record<string, string> = {
   pending: 'yellow',
+  sending: 'blue',
   sent: 'green',
   failed: 'red',
   cancelled: 'gray',
@@ -44,12 +37,6 @@ const STATUS_COLORS: Record<string, string> = {
 export function NotificationManagement() {
   const [notifications, setNotifications] = useState<ScheduledNotification[]>([])
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
-  const [category, setCategory] = useState<string | null>('feature_updates')
-  const [scheduledAt, setScheduledAt] = useState<Date | null>(null)
 
   const fetchNotifications = async () => {
     setLoading(true)
@@ -69,63 +56,6 @@ export function NotificationManagement() {
   useEffect(() => {
     fetchNotifications()
   }, [])
-
-  const handleSend = async () => {
-    if (!title.trim() || !body.trim() || !category) {
-      showNotification({
-        title: 'Missing fields',
-        message: 'Title, body, and category are required.',
-        color: 'red',
-      })
-      return
-    }
-
-    setSending(true)
-    try {
-      const payload: Record<string, unknown> = {
-        title: title.trim(),
-        body: body.trim(),
-        category,
-      }
-
-      if (scheduledAt) {
-        payload.scheduledAt = scheduledAt.toISOString()
-      }
-
-      const res = await fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      const data = await res.json()
-      if (res.ok) {
-        showNotification({
-          title: scheduledAt ? 'Scheduled' : 'Sent',
-          message: data.message || 'Notification processed successfully.',
-          color: 'green',
-        })
-        setTitle('')
-        setBody('')
-        setScheduledAt(null)
-        fetchNotifications()
-      } else {
-        showNotification({
-          title: 'Error',
-          message: data.message || 'Failed to send notification.',
-          color: 'red',
-        })
-      }
-    } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: 'Network error.',
-        color: 'red',
-      })
-    } finally {
-      setSending(false)
-    }
-  }
 
   const handleCancel = async (id: string) => {
     try {
@@ -161,50 +91,8 @@ export function NotificationManagement() {
     <Stack gap="md">
       <Title order={3}>Push Notifications</Title>
 
-      {/* Compose Form */}
-      <Stack gap="sm" p="md" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 'var(--mantine-radius-md)' }}>
-        <Text size="sm" fw={600}>Compose Notification</Text>
-        <TextInput
-          label="Title"
-          placeholder="e.g. New Feature: Class Network Graph"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          maxLength={200}
-        />
-        <Textarea
-          label="Body"
-          placeholder="Describe the update..."
-          value={body}
-          onChange={e => setBody(e.target.value)}
-          minRows={3}
-          maxLength={1000}
-        />
-        <Group grow>
-          <Select
-            label="Category"
-            data={CATEGORY_OPTIONS}
-            value={category}
-            onChange={(val) => setCategory(val)}
-          />
-          {/* <DateTimePicker
-            label="Schedule (optional)"
-            placeholder="Send immediately"
-            value={scheduledAt}
-            onChange={(val) => setScheduledAt(val ? new Date(val as any) : null)}
-            clearable
-            minDate={new Date()}
-          /> */}
-        </Group>
-        <Group justify="flex-end">
-          <Button
-            loading={sending}
-            onClick={handleSend}
-            color={scheduledAt ? 'violet' : 'blue'}
-          >
-            {scheduledAt ? 'Schedule' : 'Send Now'}
-          </Button>
-        </Group>
-      </Stack>
+      {/* Compose window: templates, registrar calendar, scheduling, anti-spam checks */}
+      <NotificationComposer recent={notifications} onSubmitted={fetchNotifications} />
 
       {/* History Table */}
       <Stack gap="xs">
@@ -245,6 +133,9 @@ export function NotificationManagement() {
                   <Table.Td>
                     <Text size="sm" fw={500} lineClamp={1}>{n.title}</Text>
                     <Text size="xs" c="dimmed" lineClamp={1}>{n.body}</Text>
+                    {n.data?.targetPath && (
+                      <Text size="xs" c="cyan" lineClamp={1}>→ {n.data.targetPath}</Text>
+                    )}
                   </Table.Td>
                   <Table.Td>
                     <Badge size="sm" variant="outline">{getCategoryLabel(n.category)}</Badge>

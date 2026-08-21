@@ -8,6 +8,7 @@ import ClassSearch from '@/components/ClassSearch'
 import DegreeTermsModal from '@/components/DegreeTermsModal'
 import GradeReportModal from '@/components/GradeReportModal'
 import RecommendationsPanel from '@/components/RecommendationsPanel'
+import { UpcomingCalendarBanner } from '@/components/UpcomingCalendarBanner'
 import Class from '@/models/Class'
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
@@ -343,6 +344,8 @@ const Home: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             </Text>
           )}
         </header>
+
+        <UpcomingCalendarBanner />
 
         {!hasClasses && (
           <section className={`${ui.sectionCard} ${classes.panel} ${classes.getStarted}`}>
