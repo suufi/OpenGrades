@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  transpilePackages: ['next-auth'],
   async rewrites() {
     return [
       {
