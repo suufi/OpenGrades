@@ -24,7 +24,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         return res.status(403).json({ success: false, message: 'Account not verified.' })
     }
 
-    const days = Math.min(Math.max(parseInt(req.query.days as string, 10) || 2, 0), 7)
+    const days = Math.min(Math.max(parseInt(req.query.days as string, 10) || 2, 0), 200)
 
     try {
         const { events } = await loadRegistrarCalendar()
