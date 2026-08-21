@@ -1005,7 +1005,7 @@ function formatHarvardMeetingDays(p: IHarvardMeetingPattern): string {
   return days.join(', ') || '—'
 }
 
-const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses, similarCourses, favoriteClasses, referencedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses, similarCourses, favoriteClasses, referencedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter()
   const isHarvard = classProp.institution === 'harvard'
   const harvard = classProp.harvardSource
@@ -1015,6 +1015,9 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
   }
 
   const [reviews, setReviews] = useState(classReviewsProp)
+  useEffect(() => {
+    setReviews(classReviewsProp)
+  }, [classReviewsProp])
   const [gradeReportModalOpened, setGradeReportModalOpened] = useState(false)
   const [isFavorite, setIsFavorite] = useState((favoriteClasses || []).includes(classProp.subjectNumber))
   const { mutateAsync: toggleFavoriteMutation } = useToggleFavorite()
@@ -1531,6 +1534,9 @@ const ClassPage: NextPage<ClassPageProps> = ({ userProp, classProp, classReviews
     </Container >
   )
 }
+const ClassPage: NextPage<ClassPageProps> = (props: InferGetServerSidePropsType<typeof getServerSideProps>) => (
+  <ClassPageContent key={props.classProp._id} {...props} />
+)
 
 export const getServerSideProps = (async (context) => {
   const { id } = context.params as IParams
