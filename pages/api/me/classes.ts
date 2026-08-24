@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
+import { isDemoAccountEmail } from '@/utils/demoAccount'
 
 import ClassReview from '@/models/ClassReview'
 import User from '@/models/User'
@@ -60,6 +61,7 @@ async function handler(
 
                     if (body.partialReviews) {
                         const reviewsToMake = []
+                        const isDemoAuthor = isDemoAccountEmail(email)
                         const existingReviews = await ClassReview.find({ author: new mongoose.Types.ObjectId(user._id) }).lean()
                         const existingReviewsByClass = new Map(existingReviews.map((r: IClassReview) => [r.class.toString(), r]))
 
@@ -88,6 +90,7 @@ async function handler(
                                 display: false,
                                 firstYear: review.firstYear,
                                 partial: true,
+                                ...(isDemoAuthor ? { demo: true } : {})
                             })
                         }
                         await ClassReview.create(reviewsToMake)

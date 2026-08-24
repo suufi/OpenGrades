@@ -66,6 +66,11 @@ const ClassReviewSchema = new mongoose.Schema<IClassReview>({
   partial: {
     type: Boolean,
     default: false
+  },
+  // Written by a mobile review demo account
+  demo: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true })
 

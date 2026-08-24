@@ -240,7 +240,8 @@ export interface IClassReview {
     letterGrade: LetterGrade
     methodOfGradeCalculation: string
     verified: boolean,
-    partial: boolean
+    partial: boolean,
+    demo?: boolean
     userVote?: number | null
     upvotes?: number
     downvotes?: number

@@ -37,7 +37,7 @@ async function handler(
         const classes = await Class.find({ $or: [{ subjectNumber }, { aliases: { $in: [subjectNumber] } }] }).lean()
         const classIds = classes.map(c => c._id)
 
-        const reviews = await ClassReview.find({ class: { $in: classIds } }).lean()
+        const reviews = await ClassReview.find({ class: { $in: classIds }, demo: { $ne: true } }).lean()
 
         return res.status(200).json({ success: true, data: { classes, reviews } })
 

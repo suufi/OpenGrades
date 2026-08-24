@@ -30,7 +30,7 @@ async function handler(
         if (!classDoc) {
           return res.status(404).json({ success: false, message: 'Class not found' })
         }
-        const userCount = await ClassReview.countDocuments({ class: classDoc._id })
+        const userCount = await ClassReview.countDocuments({ class: classDoc._id, demo: { $ne: true } })
         return res.status(200).json({ success: true, data: { ...classDoc, userCount } })
       } catch (error: unknown) {
         if (error instanceof Error) {

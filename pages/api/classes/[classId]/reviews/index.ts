@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
+import { isDemoAccountEmail } from '@/utils/demoAccount'
 
 import AuditLog from '@/models/AuditLog'
 import Class from '@/models/Class'
@@ -61,15 +62,19 @@ async function handler(
           classId = cls._id.toString()
         }
 
-        // Fetch reviews with or without author population
-        let reviews = canSeeAuthors
-          ? await ClassReview.find({ class: classId, display: true }).populate(['class', 'author']).lean()
-          : await ClassReview.find({ class: classId, display: true }).populate(['class']).lean()
-
-        const reviewIds = reviews.map((r) => r._id)
         const voterId = user?._id && mongoose.Types.ObjectId.isValid(user._id.toString())
           ? new mongoose.Types.ObjectId(user._id.toString())
           : null
+        const reviewFilter = voterId
+          ? { class: classId, $or: [{ display: true }, { author: voterId, demo: true }] }
+          : { class: classId, display: true }
+
+        // Fetch reviews with or without author population
+        let reviews = canSeeAuthors
+          ? await ClassReview.find(reviewFilter).populate(['class', 'author']).lean()
+          : await ClassReview.find(reviewFilter).populate(['class']).lean()
+
+        const reviewIds = reviews.map((r) => r._id)
         const voteAggregates = reviewIds.length > 0
           ? await ReviewVote.aggregate([
             { $match: { classReview: { $in: reviewIds } } },
@@ -195,6 +200,7 @@ async function handler(
             }
           })
         }
+        const isDemoAuthor = isDemoAccountEmail(author.email)
 
         await ClassReview.create({
           class: classIdObj,
@@ -209,7 +215,8 @@ async function handler(
           backgroundComments: data.backgroundComments,
           numericGrade: data.numericGrade,
           letterGrade: data.letterGrade,
-          methodOfGradeCalculation: data.methodOfGradeCalculation
+          methodOfGradeCalculation: data.methodOfGradeCalculation,
+          ...(isDemoAuthor ? { display: false, demo: true } : {})
         })
 
         await AuditLog.create({

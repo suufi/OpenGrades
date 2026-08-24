@@ -379,6 +379,7 @@ async function handler(
 
           // Get the review count for each class
           const reviewCounts = await ClassReview.aggregate([
+            { $match: { demo: { $ne: true } } },
             { $group: { _id: '$class', count: { $sum: 1 } } }
           ])
 
@@ -423,7 +424,7 @@ async function handler(
 
         // Get the review count for each class in the current page
         const reviewCounts = await ClassReview.aggregate([
-          { $match: { partial: false, class: { $in: classIdsOnThisPage } } },
+          { $match: { partial: false, demo: { $ne: true }, class: { $in: classIdsOnThisPage } } },
           { $group: { _id: '$class', count: { $sum: 1 } } }
         ])
 

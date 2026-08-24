@@ -8,6 +8,7 @@ import { generateOptimizedQuery } from '@/utils/queryGenerator'
 import User from '@/models/User'
 import { ICourseOption } from '@/types'
 import { hasRecentGradeReport, hasEnoughReviewsForAI } from '@/utils/hasRecentGradeReport'
+import { isDemoAccountEmail } from '@/utils/demoAccount'
 import { userCanIncludeHarvardCourses } from '@/utils/userHarvardPreference'
 import { resolveThinkingParts, stripThinkingTags } from '@/utils/llmThinking'
 import { normalizeCourseNumber } from '@/utils/courseNumbers'
@@ -43,7 +44,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // Check grade report recency
         const userForAccess = await User.findOne({ email: requestUser.email })
             .select('_id lastGradeReportUpload includeHarvardCourses')
-        if (!userForAccess || !hasRecentGradeReport(userForAccess.lastGradeReportUpload)) {
+        // App Store review demo accounts bypass the contribution gates.
+        const isDemo = isDemoAccountEmail(requestUser.email)
+        if (!userForAccess || (!isDemo && !hasRecentGradeReport(userForAccess.lastGradeReportUpload))) {
             return res.status(403).json({
                 success: false,
                 message: 'Access to AI search requires a grade report upload within the last 4 months'
@@ -52,7 +55,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
         // Check review contribution
         const reviewCheck = await hasEnoughReviewsForAI(userForAccess._id.toString())
-        if (!reviewCheck.hasAccess) {
+        if (!isDemo && !reviewCheck.hasAccess) {
             return res.status(403).json({
                 success: false,
                 message: `Access to AI search requires writing full reviews for at least ${reviewCheck.percentageRequired}% of your classes. You have ${reviewCheck.fullReviews}/${reviewCheck.requiredReviews} required reviews.`

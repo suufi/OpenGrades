@@ -112,6 +112,7 @@ jobs:
           echo "PLAUSIBLE_DOMAIN=${{ secrets.PLAUSIBLE_DOMAIN }}" >> .env
           echo "PLAUSIBLE_API_KEY=${{ secrets.PLAUSIBLE_API_KEY }}" >> .env
           echo "PLAUSIBLE_API_DOMAIN=${{ secrets.PLAUSIBLE_API_DOMAIN }}" >> .env
+          echo "DEMO_ACCOUNT_EMAILS=${{ secrets.DEMO_ACCOUNT_EMAILS }}" >> .env
 
 
 

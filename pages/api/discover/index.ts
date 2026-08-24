@@ -7,6 +7,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getUserFromRequest } from '@/utils/authMiddleware'
 import User from '@/models/User'
 import { hasRecentGradeReport, hasEnoughReviewsForAI } from '@/utils/hasRecentGradeReport'
+import { isDemoAccountEmail } from '@/utils/demoAccount'
 import { getClassesPageStats } from '@/utils/plausible'
 import { IClass } from '@/types'
 import { prioritizeMitForNewClasses } from '@/utils/discoverRanking'
@@ -30,7 +31,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       .lean()
     const hasRecent = hasRecentGradeReport(dbUser?.lastGradeReportUpload)
     const reviewCheck = await hasEnoughReviewsForAI(user._id.toString())
-    if (!hasRecent || !reviewCheck.hasAccess) {
+    // App Store review demo accounts bypass the contribution gates.
+    if (!isDemoAccountEmail(user.email) && (!hasRecent || !reviewCheck.hasAccess)) {
       return res.status(403).json({
         success: false,
         code: 'DISCOVER_ELIGIBILITY_REQUIRED',
@@ -61,6 +63,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const [hiddenGemsAgg, recentReviews, newClasses, classRatings] = await Promise.all([
       ClassReview.aggregate([
+        { $match: { demo: { $ne: true } } },
         {
           $group: {
             _id: '$class',
@@ -80,7 +83,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       ]),
 
       ClassReview.aggregate([
-        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $match: { createdAt: { $gte: thirtyDaysAgo }, demo: { $ne: true } } },
         { $group: { _id: '$class', recentReviewCount: { $sum: 1 } } },
         { $sort: { recentReviewCount: -1 } },
         { $limit: 10 }
@@ -101,6 +104,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       ]),
 
       ClassReview.aggregate([
+        { $match: { demo: { $ne: true } } },
         {
           $lookup: {
             from: 'classes',

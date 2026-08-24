@@ -8,6 +8,7 @@ import type {
 } from "next"
 import { getServerSession, Profile } from "next-auth"
 import AuditLog from '@/models/AuditLog'
+import { isDemoAccountEmail } from '@/utils/demoAccount'
 import type { NextAuthOptions } from "next-auth"
 
 function getLatestGradYear(): number {
@@ -92,6 +93,27 @@ export const config = {
     events: {
         async signIn ({ profile }: { profile?: Profile }) {
             await mongoConnection()
+
+            if (isDemoAccountEmail(profile?.email)) {
+                const existing = await User.findOne({ email: profile?.email }).select('trustLevel').lean()
+                await User.findOneAndUpdate(
+                    { email: profile?.email },
+                    {
+                        $set: {
+                            sub: profile?.email,
+                            name: profile?.name,
+                            email: profile?.email,
+                            kerb: profile?.email?.split('@')[0],
+                            affiliation: 'affiliate',
+                            verified: true,
+                            trustLevel: Math.max(1, existing?.trustLevel ?? 0),
+                            lastGradeReportUpload: new Date()
+                        }
+                    },
+                    { upsert: true }
+                )
+                return
+            }
 
             if (!process.env.MIT_PEOPLE_API_CLIENT_ID || !process.env.MIT_PEOPLE_API_CLIENT_SECRET) {
                 throw new Error('MIT People API credentials are not configured')
