@@ -482,15 +482,17 @@ const Classes: NextPage = () => {
         <div className={ClassesPageClasses.pageHeader}>
           <Group gap="md" align="center" wrap="wrap" className={ClassesPageClasses.pageHeaderLeft}>
             <Title order={1} className={ui.heroTitle}>Classes</Title>
-            <SegmentedControl
-              size="xs"
-              value={favoritesView ? 'favorites' : 'all'}
-              onChange={setView}
-              data={[
-                { label: 'All', value: 'all' },
-                { label: 'Favorites', value: 'favorites' },
-              ]}
-            />
+            {authStatus !== 'unauthenticated' && (
+              <SegmentedControl
+                size="xs"
+                value={favoritesView ? 'favorites' : 'all'}
+                onChange={setView}
+                data={[
+                  { label: 'All', value: 'all' },
+                  { label: 'Favorites', value: 'favorites' },
+                ]}
+              />
+            )}
           </Group>
           <button type="button" className={ClassesPageClasses.tipsToggle} onClick={toggleTips}>
             {tipsOpened ? 'Hide search tips' : 'Search tips'}

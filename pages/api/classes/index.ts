@@ -830,7 +830,7 @@ async function handler(
         console.log(body)
         console.log(typeof body)
 
-        if (user && user?.trustLevel < 2) {
+        if (!user || user.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 
@@ -859,7 +859,7 @@ async function handler(
         console.log(body)
         console.log(typeof body)
 
-        if (user && user?.trustLevel < 2) {
+        if (!user || user.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 

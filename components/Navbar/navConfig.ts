@@ -68,6 +68,8 @@ export const navConfig: NavItem[] = [
 
 // Links shown to unauthenticated users
 export const publicNavConfig: NavItem[] = [
+    { label: 'Home', icon: IconHome, href: '/', color: 'blue', section: 'main' },
+    { label: 'Classes', icon: IconBook, href: '/classes', color: 'orange', section: 'main' },
     { label: 'About', icon: IconInfoCircle, href: '/about', color: 'grape', section: 'main' },
     { label: 'Changelog', icon: IconListDetails, href: '/changelog', color: 'blue', section: 'other' },
     { label: 'Privacy Policy', icon: IconLock, href: '/privacy', color: 'gray', section: 'other' },

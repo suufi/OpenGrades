@@ -23,6 +23,7 @@ import { NavigationLinks, UserSection } from '@/components/Navbar'
 import Logo from '@/components/Logo'
 import { formatCourseOptionCode } from '@/utils/courseOptions'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
+import { isPublicPath } from '@/utils/publicRoutes'
 
 import PlausibleProvider from 'next-plausible'
 
@@ -651,7 +652,7 @@ function ContentFetcher(props: AppProps) {
   const router = useRouter()
 
   if (status === 'unauthenticated') {
-    if (router.pathname.startsWith('/about') || router.pathname.startsWith('/privacy')) {
+    if (isPublicPath(router.pathname)) {
       return <Component {...pageProps} />
     }
     return <NotLoggedIn />
@@ -781,6 +782,7 @@ export default function AppWrapper({ Component, pageProps, router }: AppProps) {
       <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: light)" />
       <meta name="theme-color" content="#008CFF" media="(prefers-color-scheme: dark)" />
+      <meta name="apple-itunes-app" content="app-id=6761009968" />
       <meta name="google-site-verification" content="fXojmVQpuE4vWKn_PgHDimVPychoR4hwhUTnGM7TJuo" />
       <meta name="description" content="MIT OpenGrades is a platform for students to share their experiences with classes at MIT." />
       <meta name="keywords" content="MIT, OpenGrades, Course Reviews, Course Ratings, MIT Course Reviews, MIT Course Ratings" />

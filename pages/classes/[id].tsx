@@ -44,9 +44,11 @@ import { IconAlertCircle, IconClock, IconGraph, IconMessage, IconPhoto, IconStar
 import moment from 'moment-timezone'
 import mongoose from 'mongoose'
 import { Session, getServerSession } from 'next-auth'
+import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 import authOptions from "@/pages/api/auth/[...nextauth]"
 import styles from '../../styles/ClassPage.module.css'
+import ui from '@/styles/Interface.module.css'
 import { hasRecentGradeReport } from '@/utils/hasRecentGradeReport'
 import { usePlausibleTracker } from '@/utils/plausible'
 import { buildExactCourseNumberRegex, createMitCourseNumberRegex, normalizeCourseNumber } from '@/utils/courseNumbers'
@@ -849,7 +851,7 @@ function AddContent({ classData, refreshData }: AddContentProps) {
 }
 
 interface ClassPageProps {
-  userProp: IUser
+  userProp: IUser | null
   classProp: IClass
   classReviewsProp: IClassReview[]
   contentSubmissionProp: IContentSubmission[]
@@ -1007,6 +1009,7 @@ function formatHarvardMeetingDays(p: IHarvardMeetingPattern): string {
 
 const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmissionProp, gradePointsProp, myReview, reportsProp, lastGradeReportUpload, embeddingStatus, relatedClasses, similarCourses, favoriteClasses, referencedClasses }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter()
+  const signedIn = Boolean(userProp)
   const isHarvard = classProp.institution === 'harvard'
   const harvard = classProp.harvardSource
 
@@ -1205,7 +1208,7 @@ const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmis
     }
   ]
 
-  if (userProp.trustLevel && userProp.trustLevel >= 2) {
+  if (userProp?.trustLevel && userProp.trustLevel >= 2) {
     actions.push({
       id: 'delete',
       label: 'Delete Class',
@@ -1256,17 +1259,19 @@ const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmis
         <Title style={{ flex: 1, minWidth: 0 }}>
           ({classProp.subjectNumber}) {classProp.subjectTitle}
         </Title>
-        <Tooltip label={isFavorite ? 'Remove from favorites' : 'Add to favorites'} withArrow>
-          <ActionIcon
-            variant={isFavorite ? 'filled' : 'light'}
-            color={isFavorite ? 'yellow' : 'gray'}
-            onClick={toggleFavorite}
-            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            mt={6}
-          >
-            <IconStar size={18} />
-          </ActionIcon>
-        </Tooltip>
+        {signedIn && (
+          <Tooltip label={isFavorite ? 'Remove from favorites' : 'Add to favorites'} withArrow>
+            <ActionIcon
+              variant={isFavorite ? 'filled' : 'light'}
+              color={isFavorite ? 'yellow' : 'gray'}
+              onClick={toggleFavorite}
+              aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              mt={6}
+            >
+              <IconStar size={18} />
+            </ActionIcon>
+          </Tooltip>
+        )}
       </Group>
 
       <Title order={4}>
@@ -1323,7 +1328,7 @@ const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmis
         }
 
         {
-          userProp.trustLevel && userProp.trustLevel >= 2 && embeddingStatus?.hasDescriptionEmbedding && (
+          userProp?.trustLevel && userProp.trustLevel >= 2 && embeddingStatus?.hasDescriptionEmbedding && (
             <Badge color='cyan' variant='light' leftSection={<IconDatabase size={12} />}> Description Embedded </Badge>
           )
         }
@@ -1406,7 +1411,7 @@ const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmis
         </>
       )}
 
-      {!isHarvard && (
+      {!isHarvard && signedIn && (
         <Group justify='end'>
           <Button variant='transparent' onClick={() => router.push(`/classes/aggregate/${classProp.subjectNumber}`)}>
             See Aggregated Data
@@ -1420,6 +1425,17 @@ const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmis
           <Text c="dimmed" size="sm">
             MIT OpenGrades reviews and grade data are not available for Harvard catalog listings.
           </Text>
+        ) : !signedIn ? (
+          <div className={ui.noticePanel}>
+            <Group justify="space-between" align="center" gap="md">
+              <Text size="sm" c="dimmed" style={{ flex: '1 1 16rem' }}>
+                Reviews and grade distributions for this class are visible to MIT students.
+              </Text>
+              <Button variant="default" onClick={() => signIn('mit-oidc', { callbackUrl: router.asPath })}>
+                Sign in with MIT
+              </Button>
+            </Group>
+          </div>
         ) : (
         <>
         {
@@ -1530,10 +1546,101 @@ const ClassPageContent = ({ userProp, classProp, classReviewsProp, contentSubmis
       )}
       </Stack>
 
-      <Spotlight actions={actions} shortcut="mod + K" />
+      {signedIn && <Spotlight actions={actions} shortcut="mod + K" />}
     </Container >
   )
 }
+async function loadPublicClassExtras(
+  id: string,
+  classData: Pick<IClass, 'subjectNumber' | 'prerequisites' | 'corequisites' | 'description' | 'aliases'>,
+  includeHarvard: boolean
+) {
+  const prereqNumbers = extractCourseNumbers(classData.prerequisites || '')
+  const coreqNumbers = extractCourseNumbers(classData.corequisites || '')
+
+  const [prerequisiteClasses, corequisiteClasses, requiredByClasses] = await Promise.all([
+    Class.find({
+      subjectNumber: { $in: prereqNumbers },
+      offered: true,
+    }).select('subjectNumber subjectTitle department academicYear institution').lean(),
+
+    Class.find({
+      subjectNumber: { $in: coreqNumbers },
+      offered: true,
+    }).select('subjectNumber subjectTitle department academicYear institution').lean(),
+
+    Class.find({
+      offered: true,
+      $or: [
+        { prerequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } },
+        { corequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } }
+      ]
+    }).select('subjectNumber subjectTitle department academicYear institution').lean()
+  ])
+
+  const dedupeByInstitutionAndSubjectNumber = (items: IClass[]) => {
+    const seen = new Set<string>()
+    return items.filter((c) => {
+      if (!c?.subjectNumber) return false
+      const institution = c.institution === 'harvard' ? 'harvard' : 'mit'
+      const key = `${institution}:${c.subjectNumber}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }
+
+  const summarize = (c: IClass) => ({
+    _id: c._id?.toString?.(),
+    subjectNumber: c.subjectNumber,
+    subjectTitle: c.subjectTitle,
+    department: c.department,
+    institution: (c.institution as any) || 'mit'
+  })
+
+  let similarCourses: SimilarCourseEntry[] = []
+  try {
+    const similar = await findSimilarCoursesByEmbedding(id, {
+      limit: 12,
+      includeHarvard,
+      scope: 'public'
+    })
+    similarCourses = similar.map(s => ({
+      _id: s.class._id!.toString(),
+      subjectNumber: s.class.subjectNumber,
+      subjectTitle: s.class.subjectTitle,
+      department: s.class.department,
+      term: s.class.term,
+      institution: s.class.institution || 'mit',
+      score: s.score
+    }))
+  } catch (err) {
+    console.error('Failed to load similar courses:', err)
+  }
+
+  const descriptionNumbers = extractCourseNumbers(classData.description || '')
+  const excludeNumbers = new Set<string>([
+    (classData.subjectNumber || '').toUpperCase(),
+    ...(classData.aliases || []).map((a: string) => a.toUpperCase())
+  ])
+  const referencedNumbers = descriptionNumbers.filter((n) => !excludeNumbers.has(n))
+  const referencedClasses = referencedNumbers.length > 0
+    ? await Class.find({ subjectNumber: { $in: referencedNumbers }, offered: true })
+      .select('subjectNumber subjectTitle description term')
+      .lean()
+    : []
+
+  return {
+    relatedClasses: {
+      prerequisites: dedupeByInstitutionAndSubjectNumber(prerequisiteClasses).map(summarize),
+      corequisites: dedupeByInstitutionAndSubjectNumber(corequisiteClasses).map(summarize),
+      requiredBy: dedupeByInstitutionAndSubjectNumber(requiredByClasses).map(summarize),
+    },
+    similarCourses,
+    referencedClasses,
+  }
+}
+
 const ClassPage: NextPage<ClassPageProps> = (props: InferGetServerSidePropsType<typeof getServerSideProps>) => (
   <ClassPageContent key={props.classProp._id} {...props} />
 )
@@ -1550,9 +1657,9 @@ export const getServerSideProps = (async (context) => {
   }
 
   await mongoConnection()
-  console.log(id)
+  if (!mongoose.isValidObjectId(id)) return { notFound: true }
   const classData = await Class.findById(id).lean()
-  const contentSubmissionData: IContentSubmission[] = await ContentSubmission.find({ class: id }).lean()
+  if (!classData) return { notFound: true }
 
   const session = await auth(context.req, context.res)
   let myReview = null
@@ -1560,6 +1667,7 @@ export const getServerSideProps = (async (context) => {
   if (session) {
     if (session.user && session.user?.email) {
       const user: IUser = await User.findOne({ email: session.user.email })
+      const contentSubmissionData: IContentSubmission[] = await ContentSubmission.find({ class: id }).lean()
       myReview = await ClassReview.findOne({ class: id, author: user._id }).populate('class').lean()
       const favoriteClasses = user?.favoriteClasses || []
 
@@ -1671,99 +1779,9 @@ export const getServerSideProps = (async (context) => {
         }
       }
 
-      // Fetch related classes data
-      const prereqNumbers = extractCourseNumbers(classData.prerequisites || '')
-      const coreqNumbers = extractCourseNumbers(classData.corequisites || '')
-
-      const [prerequisiteClasses, corequisiteClasses, requiredByClasses] = await Promise.all([
-        Class.find({
-          subjectNumber: { $in: prereqNumbers },
-          offered: true,
-        }).select('subjectNumber subjectTitle department academicYear institution').lean(),
-
-        Class.find({
-          subjectNumber: { $in: coreqNumbers },
-          offered: true,
-        }).select('subjectNumber subjectTitle department academicYear institution').lean(),
-
-        Class.find({
-          offered: true,
-          $or: [
-            { prerequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } },
-            { corequisites: { $regex: buildExactCourseNumberRegex(classData.subjectNumber) } }
-          ]
-        }).select('subjectNumber subjectTitle department academicYear institution').lean()
-      ])
-
-      const dedupeByInstitutionAndSubjectNumber = (items: IClass[]) => {
-        const seen = new Set<string>()
-        return items.filter((c) => {
-          if (!c?.subjectNumber) return false
-          const institution = c.institution === 'harvard' ? 'harvard' : 'mit'
-          const key = `${institution}:${c.subjectNumber}`
-          if (seen.has(key)) return false
-          seen.add(key)
-          return true
-        })
-      }
-
-      const includeHarvard = userCanIncludeHarvardCourses(user)
-      let similarCourses: SimilarCourseEntry[] = []
-      try {
-        const similar = await findSimilarCoursesByEmbedding(id, {
-          limit: 12,
-          includeHarvard,
-          scope: 'public'
-        })
-        console.log('found similar courses:', similar)
-        similarCourses = similar.map(s => ({
-          _id: s.class._id!.toString(),
-          subjectNumber: s.class.subjectNumber,
-          subjectTitle: s.class.subjectTitle,
-          department: s.class.department,
-          term: s.class.term,
-          institution: s.class.institution || 'mit',
-          score: s.score
-        }))
-      } catch (err) {
-        console.error('Failed to load similar courses:', err)
-      }
-
-      const relatedClasses = {
-        prerequisites: dedupeByInstitutionAndSubjectNumber(prerequisiteClasses).map((c) => ({
-          _id: c._id?.toString?.(),
-          subjectNumber: c.subjectNumber,
-          subjectTitle: c.subjectTitle,
-          department: c.department,
-          institution: (c.institution as any) || 'mit'
-        })),
-        corequisites: dedupeByInstitutionAndSubjectNumber(corequisiteClasses).map((c) => ({
-          _id: c._id?.toString?.(),
-          subjectNumber: c.subjectNumber,
-          subjectTitle: c.subjectTitle,
-          department: c.department,
-          institution: (c.institution as any) || 'mit'
-        })),
-        requiredBy: dedupeByInstitutionAndSubjectNumber(requiredByClasses).map((c) => ({
-          _id: c._id?.toString?.(),
-          subjectNumber: c.subjectNumber,
-          subjectTitle: c.subjectTitle,
-          department: c.department,
-          institution: (c.institution as any) || 'mit'
-        }))
-      }
-
-      const descriptionNumbers = extractCourseNumbers(classData.description || '')
-      const excludeNumbers = new Set<string>([
-        (classData.subjectNumber || '').toUpperCase(),
-        ...(classData.aliases || []).map((a: string) => a.toUpperCase())
-      ])
-      const referencedNumbers = descriptionNumbers.filter((n) => !excludeNumbers.has(n))
-      const referencedClasses = referencedNumbers.length > 0
-        ? await Class.find({ subjectNumber: { $in: referencedNumbers }, offered: true })
-          .select('subjectNumber subjectTitle description term')
-          .lean()
-        : []
+      const { relatedClasses, similarCourses, referencedClasses } = await loadPublicClassExtras(
+        id, classData, userCanIncludeHarvardCourses(user)
+      )
 
       return {
         props: {
@@ -1785,10 +1803,23 @@ export const getServerSideProps = (async (context) => {
     }
   }
 
+  const { relatedClasses, similarCourses, referencedClasses } = await loadPublicClassExtras(id, classData, false)
   return {
-    redirect: {
-      destination: '/api/auth/signin',
-      permanent: false
+    props: {
+      session: null,
+      userProp: null,
+      classProp: JSON.parse(JSON.stringify(classData)),
+      classReviewsProp: [],
+      contentSubmissionProp: [],
+      gradePointsProp: [],
+      myReview: null,
+      reportsProp: [],
+      lastGradeReportUpload: false,
+      embeddingStatus: null,
+      relatedClasses: JSON.parse(JSON.stringify(relatedClasses)),
+      similarCourses: JSON.parse(JSON.stringify(similarCourses)),
+      favoriteClasses: [],
+      referencedClasses: JSON.parse(JSON.stringify(referencedClasses)),
     }
   }
 })

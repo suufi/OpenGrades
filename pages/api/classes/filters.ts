@@ -1,6 +1,5 @@
 import Class from '@/models/Class'
 import mongoConnection from '@/utils/mongoConnection'
-import { getUserFromRequest } from '@/utils/authMiddleware'
 import { withApiLogger } from '@/utils/apiLogger'
 import { sortDepartmentCodes } from '@/utils/departments'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -18,12 +17,7 @@ async function handler(
     await mongoConnection()
     const { method } = req
 
-    const user = await getUserFromRequest(req, res)
-    if (!user) return res.status(403).json({ success: false, message: 'Please sign in.' })
-    if (user?.trustLevel < 1) {
-        return res.status(403).json({ success: false, message: 'Not authorized.' })
-    }
-
+    // Public: department codes and years are catalog metadata.
     if (method !== 'GET') {
         return res.status(405).json({ success: false, message: 'Method not allowed' })
     }

@@ -40,7 +40,7 @@ async function handler(
       break
     case 'PATCH':
       try {
-        if (user?.trustLevel < 2) {
+        if (!user || user.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
         const classId = req.query.classId
@@ -84,7 +84,7 @@ async function handler(
       break
     case 'DELETE':
       try {
-        if (user && user?.trustLevel < 2) {
+        if (!user || user.trustLevel < 2) {
           return res.status(403).json({ success: false, message: 'You\'re not allowed to do that.' })
         }
 

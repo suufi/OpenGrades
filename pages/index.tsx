@@ -7,6 +7,7 @@ import Head from 'next/head'
 import ClassSearch from '@/components/ClassSearch'
 import DegreeTermsModal from '@/components/DegreeTermsModal'
 import GradeReportModal from '@/components/GradeReportModal'
+import Landing, { type LandingStats } from '@/components/Landing'
 import RecommendationsPanel from '@/components/RecommendationsPanel'
 import { UpcomingCalendarBanner } from '@/components/UpcomingCalendarBanner'
 import Class from '@/models/Class'
@@ -569,6 +570,7 @@ interface ServerSideProps {
   userProp: IUser & { referredBy: { kerb: string } },
   reviewsProp: IClassReview[],
   academicYearsProp: number[],
+  landingStatsProp?: LandingStats,
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (context) => {
@@ -612,10 +614,19 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (co
       }
     }
   }
+  const [classCount, userCount, reviewCount] = await Promise.all([
+    // Distinct subjects, so a class offered every term counts once.
+    Class.distinct('subjectNumber', { institution: { $ne: 'harvard' } }).then((subjects) => subjects.length),
+    User.countDocuments(),
+    ClassReview.countDocuments({ partial: false, demo: { $ne: true } }),
+  ])
 
   return {
-    props: {} as ServerSideProps
+    props: { session: null, landingStatsProp: { classCount, userCount, reviewCount } } as ServerSideProps
   }
 }
 
-export default Home
+const IndexPage: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (props) =>
+  props.session ? <Home {...props} /> : <Landing stats={props.landingStatsProp!} />
+
+export default IndexPage

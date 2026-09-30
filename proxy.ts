@@ -29,4 +29,4 @@ export { default as proxy } from "next-auth/middleware"
 //   }
 // })
 
-export const config = { matcher: ['/classes', '/classes(.*)', '/settings', '/leaderboard', '/auditlogs', '/reports'] }
+export const config = { matcher: ['/settings', '/leaderboard', '/auditlogs', '/reports'] }
