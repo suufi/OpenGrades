@@ -65,7 +65,7 @@ test('resolveContextualSearchIntent enriches short context-dependent follow-ups'
   assert.deepEqual(
     resolveContextualSearchIntent('more', history),
     {
-      searchQuery: 'robotics classes. Want me to compare them by workload?. more',
+      searchQuery: 'robotics classes. I found a few options. Want me to compare them by workload?. more',
       harvardOnly: false,
       usedConversationContext: true,
     }

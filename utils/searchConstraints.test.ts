@@ -10,7 +10,7 @@ import {
 
 test('extractSearchConstraints captures combined query constraints used by search API', () => {
   assert.deepEqual(
-    extractSearchConstraints('undergrad spring half-term p/f classes at most 12 units small classes'),
+    extractSearchConstraints('undergrad spring half-term pass/fail classes at most 12 units small classes'),
     {
       levels: ['U'],
       seasons: ['spring'],
