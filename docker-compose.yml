@@ -59,6 +59,7 @@ services:
       - /home/suufi/.deploy/nginx:/etc/nginx/conf.d
       - /etc/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       - opengrades
 
