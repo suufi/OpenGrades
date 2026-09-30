@@ -88,3 +88,20 @@ test('allows adjacent leftovers when one subject outnumbers groups', () => {
     ['a1', 'b1', 'a2', 'a3', 'a4']
   )
 })
+
+test('preserves per-subject order across multiple round-robin passes', () => {
+  const items: Item[] = [
+    { id: 'a1', subjectNumber: 'A' },
+    { id: 'a2', subjectNumber: 'A' },
+    { id: 'a3', subjectNumber: 'A' },
+    { id: 'b1', subjectNumber: 'B' },
+    { id: 'b2', subjectNumber: 'B' },
+    { id: 'c1', subjectNumber: 'C' },
+    { id: 'c2', subjectNumber: 'C' },
+  ]
+
+  assert.deepEqual(
+    interleaveBySubjectNumber(items).map((i) => i.id),
+    ['a1', 'b1', 'c1', 'a2', 'b2', 'c2', 'a3']
+  )
+})
