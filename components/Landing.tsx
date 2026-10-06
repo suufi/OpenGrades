@@ -5,9 +5,8 @@ import Link from 'next/link'
 
 import styles from '@/styles/Landing.module.css'
 import ui from '@/styles/Interface.module.css'
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/utils/appStoreLinks'
 
-const APP_STORE_URL = 'https://apps.apple.com/app/id6761009968'
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=edu.mit.OpenGrades'
 const FEEDBACK_URL = 'https://forms.gle/pyj7zY45AVnjX2Nc8'
 const LAUNCH_ARTICLE_URL = 'https://thetech.com/2025/01/23/opengrades-debut'
 

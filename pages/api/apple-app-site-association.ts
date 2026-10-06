@@ -14,6 +14,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               comment: "Exclude API paths so Auth callbacks don't break",
             },
             {
+              "/": "/app",
+              exclude: true,
+              comment: "The store redirect must open in the browser even when the app is installed",
+            },
+            {
               "/": "*",
               comment: "Allow all other paths",
             },
