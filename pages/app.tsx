@@ -3,17 +3,23 @@ import type { GetServerSideProps, NextPage } from 'next'
 import Head from 'next/head'
 
 import ui from '@/styles/Interface.module.css'
-import { APP_STORE_URL, PLAY_STORE_URL, storeUrlForUserAgent } from '@/utils/appStoreLinks'
+import { storeUrl, storeUrlForUserAgent } from '@/utils/appStoreLinks'
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-    const destination = storeUrlForUserAgent(req.headers['user-agent'])
+interface Props {
+    appStoreUrl: string
+    playStoreUrl: string
+}
+
+export const getServerSideProps: GetServerSideProps<Props> = async ({ req, query }) => {
+    const providerToken = process.env.APP_STORE_PROVIDER_TOKEN
+    const destination = storeUrlForUserAgent(req.headers['user-agent'], query, providerToken)
     if (destination) {
         return { redirect: { destination, permanent: false } }
     }
-    return { props: {} }
+    return { props: { appStoreUrl: storeUrl('ios', query, providerToken), playStoreUrl: storeUrl('android', query) } }
 }
 
-const GetTheAppPage: NextPage = () => (
+const GetTheAppPage: NextPage<Props> = ({ appStoreUrl, playStoreUrl }) => (
     <Container size="sm" px="md" className={ui.page}>
         <Head>
             <title>Get the app - MIT OpenGrades</title>
@@ -28,10 +34,10 @@ const GetTheAppPage: NextPage = () => (
         </header>
 
         <Group className={ui.actionRow}>
-            <Button component="a" href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">
+            <Button component="a" href={appStoreUrl} target="_blank" rel="noopener noreferrer">
                 App Store
             </Button>
-            <Button component="a" href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" variant="default">
+            <Button component="a" href={playStoreUrl} target="_blank" rel="noopener noreferrer" variant="default">
                 Google Play
             </Button>
         </Group>
